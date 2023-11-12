@@ -3,3 +3,4 @@
 #include <iostream>
 
 void printStartupAsciiTitle();
+void printHelp();

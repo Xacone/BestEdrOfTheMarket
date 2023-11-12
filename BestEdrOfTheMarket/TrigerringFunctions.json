@@ -31,7 +31,6 @@
     ],
     "WS2_32.dll": []
   },
-
   "StackBasedHooking": {
     "Functions": [
       "NtCreateUserProcess",
@@ -43,12 +42,9 @@
       "NtResumeThread"
     ]
   },
-
-
   "SSNCrushingRoutines": {
     "Functions": [
       "NtCreateSection"
     ]
   }
-
 }

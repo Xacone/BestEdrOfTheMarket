@@ -61,7 +61,7 @@ BYTE* hexStringToByteArray(const std::string& hexString, size_t& length) {
     std::stringstream ss(hexString);
     for (size_t i = 0; i < length; ++i) {
         int byteValue;
-        ss >> std::hex >> byteValue;
+        ss >> std::hex >> byteValue; 
         byteArray[i] = static_cast<BYTE>(byteValue);
     }
 

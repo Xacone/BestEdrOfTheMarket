@@ -14,3 +14,23 @@ std::string startupAsciiTitle = R"( ____            _     _____ ____  ____     _
 void printStartupAsciiTitle() {
 	std::cout << startupAsciiTitle << std::endl;
 }
+
+void printHelp() {
+	std::cout << "\033[0;38;2;135;206;250m";
+	printStartupAsciiTitle();
+	std::cout << "\033[0m";
+	std::cout
+		<< "\n\t\t\033[0;38;2;128;0;32mhttps://github.com/Xacone/BestEdrOfTheMarket\033[0m"
+		<< "\n\n\tUsage: BestEdrOfTheMarket.exe [args]"
+		<< "\n\n\t\t /help : Shows this help message and exits"
+		<< "\n\t\t /v Verbosity \n"
+		<< "\n\t\t /iat IAT hooking "
+		<< "\n\t\t /nt Inline Nt-level hooking"
+		<< "\n\t\t /k32 Inline Kernel32/Kernelbase hooking"
+		<< "\n\t\t /ssn SSN crushing"
+		<< "\n\t\t /amsi AMSI patching mitigation"
+		<< "\n\t\t /etw ETW patching mitigation"
+		<< "\n\t\t /rop ROP mitigation"
+
+		<< std::endl;
+}

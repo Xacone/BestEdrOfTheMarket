@@ -7,8 +7,8 @@
 
 							You gotta worry about them malicious processes
 
-								      Made w/ <3 by Yazidou
-				
+									  Made w/ <3 by Yazidou
+
 */
 
 #include <iostream>
@@ -51,7 +51,7 @@ struct IATImportInfo {
 	DWORD_PTR functionAddress;
 };
 
-int main();
+int main(int, char*[]);
 BOOL CtrlHandler(DWORD);
 void pidFilling();
 void startup();
@@ -122,11 +122,15 @@ BOOL CtrlHandler(DWORD fdwCtrlType) {
 	return false;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
 
-	deleteCallStackMonitoringThreads();
-	printStartupAsciiTitle();
-	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
+	for (int arg = 0; arg < argc; arg++) {
+		if (!strcmp(argv[arg], "/help")) {
+			printHelp();
+			return 0;
+		}
+ 	}
+
 	startup();
 
 	return 0;
@@ -188,6 +192,10 @@ void pidFilling() {
 
 void startup() {
 
+	deleteCallStackMonitoringThreads();
+	printStartupAsciiTitle();
+	
+	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
 
 	// Filling appropriate maps based on json files contents
 
@@ -202,7 +210,7 @@ void startup() {
 				stackLevelMonitoredFunctions.insert({
 					(string)root["StackBasedHooking"]["Functions"][i].asString(),
 					"NONE"
-				});
+					});
 			}
 		}
 
@@ -213,6 +221,7 @@ void startup() {
 	trigFunctions.close();
 
 	// Filling pattern matching signatures
+
 	ifstream maliciousPatterns("YaroRules.json");
 	if (maliciousPatterns.is_open()) {
 
@@ -220,15 +229,15 @@ void startup() {
 		maliciousPatterns >> root;
 		if (root["Patterns"].size() > 0) {
 			for (int i = 0; i < root["Patterns"].size(); i++) {
-								
+
 				string str_pattern = root["Patterns"][i].asString();
 				size_t length;
 
 
 				BYTE* pattern = hexStringToByteArray(str_pattern, length);
-				
+
 				patterns.insert({ i , pattern });
-				
+
 				for (size_t i = 0; i < length; ++i) {
 					std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
 				}
@@ -238,18 +247,19 @@ void startup() {
 
 	// Console Conctrol Handling
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
-	
+
 	// Demanding PID
 	pidFilling();
 
 	//cout << " [DEBUG] Working threads table size : " << threads.size() << endl;
 
 	// Opening el famoso Handle on target process by its PID
-	targetProcess= OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)targetProcId);
+	targetProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)targetProcId);
 	if (!targetProcess) {
 		cout << "[X] Can't find that PID ! Give me a valid one please >:( .\n" << endl;
 		startup();
-	} else {
+	}
+	else {
 		cout << "[*] Here we go !\n" << endl;
 	}
 
@@ -286,7 +296,7 @@ void startup() {
 
 	// cout << "functions names mapping before : " << functionsNamesMapping.size() << endl;
 	modUtils.clearFunctionsNamesMapping();
-	
+
 	/// TODO
 	/// Check that they do exist 
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "ntdll.dll");
@@ -300,7 +310,7 @@ void startup() {
 
 	LPVOID IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)dll));
 	//cout << "\n\n [DEBUG] start addr of concerned -->  " << IatHookableDllStartAddr << endl;
-	
+
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, dll, IatHookableDllStartAddr);
 	functionsNamesMapping = modUtils.getFunctionsNamesMapping();
 
@@ -312,7 +322,7 @@ void startup() {
 			routinesToCrush.at(i)
 		));
 	}
-	
+
 	DWORD_PTR hVirtualAlloc;
 	for (const auto& entry : *modUtils.getFunctionsNamesMapping()) {
 		if (entry.first.find("hVirtualAlloc") != string::npos && entry.first.find("VirtualAllocEx") == string::npos) {
@@ -443,7 +453,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 							/// TODO
 							/// Look in list of callstack-hooked functions
 							auto it = stackLevelMonitoredFunctions.find(retainedName);
-							if(it != stackLevelMonitoredFunctions.end()) {
+							if (it != stackLevelMonitoredFunctions.end()) {
 								cout << "\x1B[48;5;4m" << "\n[!] " << retainedName << " triggered, analysis..." << "\x1B[0m" << "\n" << endl;
 								active = FALSE;
 								SuspendThread(hThread);
@@ -454,7 +464,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 									active = TRUE;
 								}
 								else {
-									main();
+									startup();
 								}
 							}
 						}
@@ -557,12 +567,12 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 									 */
 
 									for (int i = 0; i < 4; i++) {
-										
+
 										BYTE* paramValue = new BYTE[4096];
 										size_t bytesRead;
-									
+
 										// cout << "\n\n@Param [" << i << "] : " << (DWORD64)stackFrame64.Params[i] << endl;
-										
+
 										if (ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 2048, &bytesRead)) {
 											// cout << "\nHexDump : " << endl;
 
@@ -572,7 +582,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 												BYTE* pattern = pair.second;
 
 												if (bytesRead >= sizeof(pattern)) {
-	
+
 													if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, sizeof(pattern))) {
 
 														MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
@@ -655,5 +665,4 @@ bool searchForOccurenceInByteArray(BYTE* tab, int tailleTab, BYTE* chaineHex, in
 	}
 	return false;
 }
-
 
