@@ -38,41 +38,18 @@
 
 #pragma comment(lib, "dbghelp.lib")
 
+using namespace std;
+
 // D�finition des structures PE
 typedef IMAGE_DOS_HEADER PE_DOS_HEADER;
 typedef IMAGE_NT_HEADERS64 PE_NT_HEADERS;
 typedef IMAGE_EXPORT_DIRECTORY PE_EXPORT_DIRECTORY;
-
-using namespace std;
 
 struct IATImportInfo {
 	char* moduleName;
 	char* functionName;
 	DWORD_PTR functionAddress;
 };
-
-/// TODO 1 : Move that for now
-/// TODO 2 : Set up a json file with these heuristics
-
-// IMAGE_DOS_SIGNATURE 0x5A4D
-BYTE* DLL_Heur1 = (BYTE*)IMAGE_DOS_SIGNATURE;
-
-// "\x1B[48;5;4m" -> Blue
-// "\x1B[48;5;22m" -> Green
-// "\x1B[0m" -> Reset
-
-// PEB retrieving from [fs:30] 
-BYTE* FS_PEB_x32 = new BYTE[4]{ 0x64, 0x8B, 0x71, 0x30 };
- 
-// PEB_LDR_DATA parsing heuristics
-BYTE* PEB_LDR_DATA_Heur1 = new BYTE[3]{ 0x8b, 0x76, 0x0c };
-BYTE* PEB_LDR_DATA_Heur2 = new BYTE[3]{ 0x8b, 0x76, 0x1c };
-BYTE* PEB_LDR_DATA_Heur3 = new BYTE[3]{ 0x8b, 0x6e, 0x08 };
-BYTE* PEB_LDR_DATA_Heur4 = new BYTE[3]{ 0x8b, 0x7e, 0x20 };
-
-// x64 
-// PEB retrieving from [gs:60]
-BYTE* FS_PEB_x64 = new BYTE[6]{ 0x65, 0x48, 0x8b, 0x04, 0x25, 0x60 };
 
 int main();
 BOOL CtrlHandler(DWORD);
@@ -125,28 +102,29 @@ HANDLE targetProcess;
 // Global pointer on a Pe64Utils instance 
 Pe64Utils* _pe64Utils;
 
+// Flagged Pattern from YaroRules.json (unordored_map)
+// int : pattern id
+// BYTE* : pattern converted to bytes (see hexStringToByteArray) 
+std::unordered_map<int, BYTE*> patterns;
+
+// Handled threads on target processes
+unordered_map<DWORD, HANDLE> ThreadsState;
+
+
 BOOL CtrlHandler(DWORD fdwCtrlType) {
 
 	switch (fdwCtrlType) {
 	case CTRL_C_EVENT:
 
-		deleteCallStackMonitoringThreads();
 		cout << "Terminating..." << endl;
-
-		// Heuristics
-		free(FS_PEB_x32);
-		free(PEB_LDR_DATA_Heur1);
-		free(PEB_LDR_DATA_Heur2);
-		free(PEB_LDR_DATA_Heur3);
-		free(PEB_LDR_DATA_Heur4);
-		free(FS_PEB_x64);
-
+		deleteCallStackMonitoringThreads();
 	}
 	return false;
 }
 
 int main() {
 
+	deleteCallStackMonitoringThreads();
 	printStartupAsciiTitle();
 	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
 	startup();
@@ -154,7 +132,6 @@ int main() {
 	return 0;
 }
 
-unordered_map<DWORD, HANDLE> ThreadsState;
 
 BOOL initialized = FALSE;
 
@@ -211,13 +188,14 @@ void pidFilling() {
 
 void startup() {
 
+
 	// Filling appropriate maps based on json files contents
 
-	ifstream file("TrigerringFunctions.json");
-	if (file.is_open()) {
+	ifstream trigFunctions("TrigerringFunctions.json");
+	if (trigFunctions.is_open()) {
 
 		Json::Value root;
-		file >> root;
+		trigFunctions >> root;
 
 		if (root["StackBasedHooking"]["Functions"].size() > 0) {
 			for (int i = 0; i < root["StackBasedHooking"]["Functions"].size(); i++) {
@@ -230,6 +208,31 @@ void startup() {
 
 		for (int i = 0; i < root["SSNCrushingRoutines"]["Functions"].size(); i++) {
 			routinesToCrush.push_back((string)root["SSNCrushingRoutines"]["Functions"][i].asString());
+		}
+	}
+	trigFunctions.close();
+
+	// Filling pattern matching signatures
+	ifstream maliciousPatterns("YaroRules.json");
+	if (maliciousPatterns.is_open()) {
+
+		Json::Value root;
+		maliciousPatterns >> root;
+		if (root["Patterns"].size() > 0) {
+			for (int i = 0; i < root["Patterns"].size(); i++) {
+								
+				string str_pattern = root["Patterns"][i].asString();
+				size_t length;
+
+
+				BYTE* pattern = hexStringToByteArray(str_pattern, length);
+				
+				patterns.insert({ i , pattern });
+				
+				for (size_t i = 0; i < length; ++i) {
+					std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
+				}
+			}
 		}
 	}
 
@@ -264,8 +267,8 @@ void startup() {
 		injected_iat_dll = dllLoader.InjectDll(GetProcessId(targetProcess), dll, addressOfDll);
 	}
 
-	if (dllLoader.InjectDll(GetProcessId(targetProcess), (char*)"C:\\Users\\1234Y\\source\\repos\\ntdII\\x64\\Release\\ntdII.dll", addressOfDll)) {
-	}
+	//if (dllLoader.InjectDll(GetProcessId(targetProcess), (char*)"C:\\Users\\1234Y\\source\\repos\\ntdII\\x64\\Release\\ntdII.dll", addressOfDll)) {
+	//}
 
 	PPEB targPeb = getHandledProcessPeb(targetProcess);
 	cout << "[*] Process PEB at " << targPeb << endl;
@@ -554,41 +557,48 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 									 */
 
 									for (int i = 0; i < 4; i++) {
-										BYTE* paramValue = new BYTE[2048];
+										
+										BYTE* paramValue = new BYTE[4096];
 										size_t bytesRead;
+									
 										// cout << "\n\n@Param [" << i << "] : " << (DWORD64)stackFrame64.Params[i] << endl;
+										
 										if (ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 2048, &bytesRead)) {
 											// cout << "\nHexDump : " << endl;
 
-											BYTE test[] = { 0x64, 0x8B, 0x71, 0x30 };
+											for (const auto& pair : patterns) {
 
-											if (bytesRead >= sizeof(test)) {
-												if (searchForOccurenceInByteArray(paramValue, bytesRead, test, sizeof(test))) {
-													MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
-													TerminateProcess(hProcess, -1);
-													cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !" << "\x1B[0m" << endl;
-													CloseHandle(hProcess);
-													for (HANDLE& h : threadsHandles) {
-														CloseHandle(h);
+												int id = pair.first;
+												BYTE* pattern = pair.second;
+
+												if (bytesRead >= sizeof(pattern)) {
+	
+													if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, sizeof(pattern))) {
+
+														MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
+
+														TerminateProcess(hProcess, -1);
+
+														cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\n" << "\x1B[0m" << endl;
+
+														CloseHandle(hProcess);
+
+														for (HANDLE& h : threadsHandles) {
+															CloseHandle(h);
+														}
+
+														delete[] paramValue;
+														return TRUE;
+
+														//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
 													}
-
-													delete[] paramValue;
-													return TRUE;
-
-													//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
 												}
 											}
-
-											/*
-											for (size_t j = 0; j < bytesRead; j++) {
-												cout << hex << setw(2) << setfill('0') << (int)paramValue[j] << " ";
-											}
-											*/
 										}
 										else {
 											continue;
 										}
-										delete[] paramValue; // N'oubliez pas de lib�rer la m�moire allou�e
+										delete[] paramValue;
 									}
 
 									/* verbose

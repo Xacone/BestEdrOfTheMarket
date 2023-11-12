@@ -2,6 +2,10 @@
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <string>
+#include <sstream>
+#include <iomanip>
+#include <iostream>
+#include <algorithm>
 
 
 LPCWSTR ConvertCharToLPCWSTR(const char* charArray)
@@ -34,4 +38,32 @@ char* WideStringToChar(const WCHAR wideArray[250]) {
     }
 
     return charArray;
+}
+
+std::vector<BYTE> hexStringToBytesVector(const std::string& hexString) {
+    std::vector<BYTE> bytes;
+
+    for (size_t i = 0; i < hexString.length(); i += 2) {
+        std::string byteString = hexString.substr(i, 2);
+        BYTE byte = static_cast<BYTE>(std::stoi(byteString, nullptr, 16));
+        bytes.push_back(byte);
+    }
+
+    return bytes;
+}
+
+BYTE* hexStringToByteArray(const std::string& hexString, size_t& length) {
+
+    length = std::count_if(hexString.begin(), hexString.end(), [](char c) { return !std::isspace(c); }) / 2;
+
+    BYTE* byteArray = new BYTE[length];
+
+    std::stringstream ss(hexString);
+    for (size_t i = 0; i < length; ++i) {
+        int byteValue;
+        ss >> std::hex >> byteValue;
+        byteArray[i] = static_cast<BYTE>(byteValue);
+    }
+
+    return byteArray;
 }
