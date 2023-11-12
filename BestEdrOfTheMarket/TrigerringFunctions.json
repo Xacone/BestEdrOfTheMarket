@@ -1,0 +1,54 @@
+﻿{
+  "DLLBasedHooking": {
+    "NTDLL.dll": [
+      "NtAllocateVirtualMemory",
+      "NtProtectVirtualMemory",
+      "NtAdjustPrivilegesToken",
+      "NtWriteVirtualMemory",
+      "NtFreeVirtualMemory",
+      "NtMapViewOfSection",
+      "NtCreateThread",
+      "NtCreateThreadEx",
+      "NtCreateUserProcess",
+      "NtOpenProcess"
+    ],
+    "KERNELBASE.dll": [
+      "LoadLibraryA",
+      "VirtualProtect",
+      "VirtualAlloc",
+      "SuspendThread",
+      "ReadProcessMemory"
+    ],
+    "KERNEL32.dll": [
+      "LoadLibraryA",
+      "VirtualProtect",
+      "VirtualAlloc",
+      "SuspendThread",
+      "ReadProcessMemory"
+    ],
+    "WININET.dll": [
+      "InternetReadFile"
+    ],
+    "WS2_32.dll": []
+  },
+
+  "StackBasedHooking": {
+    "Functions": [
+      "NtCreateUserProcess",
+      "NtAllocateVirtualMemory",
+      "NtDelayExecution",
+      "WaitForSingleObject",
+      "WaitForSingleObjectEx",
+      "NtWaitForSingleObject",
+      "NtResumeThread"
+    ]
+  },
+
+
+  "SSNCrushingRoutines": {
+    "Functions": [
+      "NtCreateSection"
+    ]
+  }
+
+}

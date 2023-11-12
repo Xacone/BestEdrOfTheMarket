@@ -1,0 +1,13 @@
+{
+	"Dll_Heuristics": {
+		"image_dos_sig" : "4D5A"
+	},
+	"Peb_Access": {
+		"fs_peb_x32": "8b760c",
+		"fs_peb_x64": "65488b042560",
+		"peb_ldr_h1": "8b761c",
+		"peb_ldr_h2": "8b6e08",
+		"peb_ldr_h3": "8b7e20",
+		"peb_ldr_h4": "8b760c"
+	}
+}
