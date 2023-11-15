@@ -51,7 +51,7 @@ struct IATImportInfo {
 	DWORD_PTR functionAddress;
 };
 
-int main(int, char*[]);
+int main(int, char* []);
 BOOL CtrlHandler(DWORD);
 void pidFilling();
 void startup();
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
 			printHelp();
 			return 0;
 		}
- 	}
+	}
 
 	startup();
 
@@ -194,7 +194,7 @@ void startup() {
 
 	deleteCallStackMonitoringThreads();
 	printStartupAsciiTitle();
-	
+
 	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
 
 	// Filling appropriate maps based on json files contents
@@ -316,12 +316,13 @@ void startup() {
 
 	/// TODO ARGV option !!
 
-
+	/*
 	for (int i = 0; i < routinesToCrush.size(); i++) {
 		doingSomethingWithTheSyscall(targetProcess, (DWORD_PTR)modUtils.getFunctionsNamesMapping()->at(
 			routinesToCrush.at(i)
 		));
 	}
+	*/
 
 	DWORD_PTR hVirtualAlloc;
 	for (const auto& entry : *modUtils.getFunctionsNamesMapping()) {
@@ -425,24 +426,15 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 						// +0x1 --> Skeeping mov r10,rcx (4c) & heading to --> (8bd1) mov edx,ecx
 						// +0x14 --> ?
 
-						/// TODO : Check the validity of that thing 
-						char* nameFromVaRaw = getFunctionNameFromVA((DWORD_PTR)context.Rip);
-						char* nameFromVaMinus0x1 = getFunctionNameFromVA((DWORD_PTR)context.Rip - 0x1);
-						char* nameFromVaMinus0x14 = getFunctionNameFromVA((DWORD_PTR)context.Rip - 0x14);
+						/// TODO : Check the validity of that thing (refactored)
 
+						char* nameFromVaRaw = NULL;
 						char* retainedName = NULL;
-
-						if (nameFromVaMinus0x14 != NULL) {
-							retainedName = nameFromVaMinus0x14;
-						}
-						else {
+						for (int i = -0x15; i <= +0x15; ++i) {
+							nameFromVaRaw = getFunctionNameFromVA((DWORD_PTR)context.Rip + i);
 							if (nameFromVaRaw != NULL) {
 								retainedName = nameFromVaRaw;
-							}
-							else {
-								if (nameFromVaMinus0x1 != NULL) {
-									retainedName = nameFromVaMinus0x1;
-								}
+								break;
 							}
 						}
 
@@ -566,6 +558,9 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 									cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
 									 */
 
+									cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
+
+
 									for (int i = 0; i < 4; i++) {
 
 										BYTE* paramValue = new BYTE[4096];
@@ -665,4 +660,3 @@ bool searchForOccurenceInByteArray(BYTE* tab, int tailleTab, BYTE* chaineHex, in
 	}
 	return false;
 }
-

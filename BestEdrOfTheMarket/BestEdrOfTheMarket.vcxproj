@@ -27,6 +27,8 @@
     <ClCompile Include="Startup.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Docs\Setup.md" />
+    <None Include="..\README.md" />
     <None Include="TrigerringFunctions.json" />
     <None Include="YaroRules.json" />
   </ItemGroup>

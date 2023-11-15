@@ -13,7 +13,7 @@
       "NtOpenProcess"
     ],
     "KERNELBASE.dll": [
-      "LoadLibraryA",
+      "LoadLibraryA", 
       "VirtualProtect",
       "VirtualAlloc",
       "SuspendThread",
@@ -34,8 +34,18 @@
   "StackBasedHooking": {
     "Functions": [
       "NtCreateUserProcess",
+      "RtlpFindAndCommitPages",
+      "RtlpExtendHeap",
+      "RtlpAllocateHeap",
+      "RtlpAllocateHeapInternal",
       "NtAllocateVirtualMemory",
-      "NtDelayExecution",
+      "LdrpCallInitRoutine",
+      "LdrpInitializeNode",
+      "LdrpLoadDllInternal",
+      "LdrpLoadForwardedDll",
+      "NtWriteFile",
+      "NtWriteVirtualMemory",
+      "NtAllocateVirtualMemory",
       "WaitForSingleObject",
       "WaitForSingleObjectEx",
       "NtWaitForSingleObject",

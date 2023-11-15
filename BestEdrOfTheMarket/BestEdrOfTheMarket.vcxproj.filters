@@ -41,6 +41,12 @@
     <None Include="YaroRules.json">
       <Filter>Fichiers de ressources</Filter>
     </None>
+    <None Include="..\README.md">
+      <Filter>Fichiers de ressources</Filter>
+    </None>
+    <None Include="..\Docs\Setup.md">
+      <Filter>Fichiers de ressources</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Startup.h">
