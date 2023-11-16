@@ -133,12 +133,9 @@ C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\winnt.h(2613,1): 
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(209,22): warning C4018: '<' : incompatibilité signed/unsigned
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(217,21): warning C4018: '<' : incompatibilité signed/unsigned
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(231,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(581,60): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(494,9): warning C4101: 'thCount' : variable locale non référencée
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(499,18): warning C4101: 'pwow64_context' : variable locale non référencée
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(493,9): warning C4101: 'thIDs' : variable locale non référencée
-  Génération de code en cours
-  Previous IPDB and IOBJ mismatch, fall back to full compilation.
-  All 1321 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
-  Fin de la génération du code
-  BestEdrOfTheMarket.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarket.exe
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(618,79): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(618,59): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(497,9): warning C4101: 'thCount' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(502,18): warning C4101: 'pwow64_context' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(496,9): warning C4101: 'thIDs' : variable locale non référencée
+LINK : fatal error LNK1104: impossible d'ouvrir le fichier 'C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarket.exe'

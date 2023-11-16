@@ -233,14 +233,15 @@ void startup() {
 				string str_pattern = root["Patterns"][i].asString();
 				size_t length;
 
-
 				BYTE* pattern = hexStringToByteArray(str_pattern, length);
 
 				patterns.insert({ i , pattern });
 
+				/*
 				for (size_t i = 0; i < length; ++i) {
 					std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
 				}
+				*/
 			}
 		}
 	}
@@ -332,10 +333,12 @@ void startup() {
 		}
 	}
 
+	/*
 	auto it = functionsAddressesOfAddresses->find("VirtualAlloc");
 	if (it != functionsAddressesOfAddresses->end()) {
 		hookIatTableEntry(targetProcess, functionsAddressesOfAddresses->at("VirtualAlloc"), (PVOID)&hVirtualAlloc);
 	}
+	*/
 
 	cout << endl;
 
@@ -558,51 +561,84 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 									cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
 									 */
 
-									cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
+									//cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
 
+									for (int i = 0; i < 5; i++) {
 
-									for (int i = 0; i < 4; i++) {
-
-										BYTE* paramValue = new BYTE[4096];
+										BYTE* paramValue = new BYTE[1024];
 										size_t bytesRead;
 
 										// cout << "\n\n@Param [" << i << "] : " << (DWORD64)stackFrame64.Params[i] << endl;
 
-										if (ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 2048, &bytesRead)) {
-											// cout << "\nHexDump : " << endl;
+										ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead);
 
-											for (const auto& pair : patterns) {
+											//for (const auto& pair : patterns) {
 
-												int id = pair.first;
-												BYTE* pattern = pair.second;
+											//	int id = pair.first;
+											//	BYTE* pattern = pair.second;
 
-												if (bytesRead >= sizeof(pattern)) {
+											//	size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
 
-													if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, sizeof(pattern))) {
+											//	if (bytesRead >= patternSize) {
 
-														MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
+											//		if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, patternSize)) {
 
-														TerminateProcess(hProcess, -1);
+											//			MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
 
-														cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\n" << "\x1B[0m" << endl;
+											//			TerminateProcess(hProcess, -1);
 
-														CloseHandle(hProcess);
+											//			cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\n" << "\x1B[0m" << endl;
 
-														for (HANDLE& h : threadsHandles) {
-															CloseHandle(h);
-														}
+											//			CloseHandle(hProcess);
 
-														delete[] paramValue;
-														return TRUE;
+											//			for (HANDLE& h : threadsHandles) {
+											//				CloseHandle(h);
+											//			}
 
-														//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
+											//			//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
+
+											//			delete[] paramValue;
+											//			return TRUE;
+
+											//		
+											//		}
+											//	}
+											//}
+										
+
+										for (const auto& pair : patterns) {
+
+											int id = pair.first;
+											BYTE* pattern = pair.second;
+
+											size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
+
+											if (bytesRead >= patternSize) {
+
+												if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, patternSize)) {
+
+													MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
+
+													TerminateProcess(hProcess, -1);
+
+													cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\n" << "\x1B[0m" << endl;
+
+													CloseHandle(hProcess);
+
+													for (HANDLE& h : threadsHandles) {
+														CloseHandle(h);
 													}
+
+													//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
+
+													delete[] paramValue;
+													return TRUE;
+
+
 												}
 											}
 										}
-										else {
-											continue;
-										}
+
 										delete[] paramValue;
 									}
 
