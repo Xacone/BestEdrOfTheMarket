@@ -572,40 +572,6 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 										ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead);
 
-											//for (const auto& pair : patterns) {
-
-											//	int id = pair.first;
-											//	BYTE* pattern = pair.second;
-
-											//	size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
-
-											//	if (bytesRead >= patternSize) {
-
-											//		if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, patternSize)) {
-
-											//			MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
-
-											//			TerminateProcess(hProcess, -1);
-
-											//			cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\n" << "\x1B[0m" << endl;
-
-											//			CloseHandle(hProcess);
-
-											//			for (HANDLE& h : threadsHandles) {
-											//				CloseHandle(h);
-											//			}
-
-											//			//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
-
-											//			delete[] paramValue;
-											//			return TRUE;
-
-											//		
-											//		}
-											//	}
-											//}
-										
-
 										for (const auto& pair : patterns) {
 
 											int id = pair.first;
@@ -617,11 +583,11 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 												if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, patternSize)) {
 
-													MessageBoxA(NULL, "Wooo Shellcode injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
+													MessageBoxA(NULL, "Wooo injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
 
 													TerminateProcess(hProcess, -1);
 
-													cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\n" << "\x1B[0m" << endl;
+													cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\x1B[0m\n" << endl;
 
 													CloseHandle(hProcess);
 
