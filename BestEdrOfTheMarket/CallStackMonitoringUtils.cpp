@@ -115,7 +115,6 @@ std::unordered_map<int, BYTE*> patterns;
 // Handled threads on target processes
 unordered_map<DWORD, HANDLE> ThreadsState;
 
-
 BOOL CtrlHandler(DWORD fdwCtrlType) {
 
 	switch (fdwCtrlType) {
@@ -127,12 +126,50 @@ BOOL CtrlHandler(DWORD fdwCtrlType) {
 	return false;
 }
 
+// argvs (Might be a better way to do that..?)
+BOOL _verbose_ = FALSE;
+BOOL _iat_ = FALSE;
+BOOL _nt_ = FALSE;
+BOOL _k32_ = FALSE;
+BOOL _stack_ = FALSE;
+BOOL _ssn_ = FALSE;
+BOOL _amsi_ = FALSE;
+BOOL _etw_ = FALSE;
+BOOL _rop_ = FALSE;
+
 int main(int argc, char* argv[]) {
 
 	for (int arg = 0; arg < argc; arg++) {
 		if (!strcmp(argv[arg], "/help")) {
 			printHelp();
 			return 0;
+		}
+		if (!strcmp(argv[arg], "/v")) {
+			_verbose_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/iat")) {
+			_iat_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/nt")) {
+			_nt_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/k32")) {
+			_k32_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/stack")) {
+			_stack_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/ssn")) {
+			_ssn_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/amsi")) {
+			_amsi_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/etw")) {
+			_etw_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/rop")) {
+			_rop_ = TRUE;
 		}
 	}
 
@@ -193,7 +230,14 @@ void pidFilling() {
 	cin >> targetProcId;
 }
 
-void MapsAndArraysFilling() {
+void startup() {
+
+	deleteCallStackMonitoringThreads();
+	printStartupAsciiTitle();
+
+	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
+
+	// Filling appropriate maps based on json files contents
 
 	ifstream trigFunctions("TrigerringFunctions.json");
 	if (trigFunctions.is_open()) {
@@ -244,21 +288,10 @@ void MapsAndArraysFilling() {
 					std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
 				}
 				*/
+
 			}
 		}
 	}
-}
-
-void startup() {
-
-	deleteCallStackMonitoringThreads();
-	printStartupAsciiTitle();
-
-	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
-
-	// Filling appropriate maps based on json files contents
-	MapsAndArraysFilling();
-
 	// Console Conctrol Handling
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 
@@ -270,7 +303,7 @@ void startup() {
 	// Opening el famoso Handle on target process by its PID
 	targetProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)targetProcId);
 	if (!targetProcess) {
-		cout << "[X] Can't find that PID ! Give me a valid one please >:( .\n" << endl;
+		cout << "[X] Can't find that PID ! Give me a valid one please ! .\n" << endl;
 		startup();
 	}
 	else {
@@ -281,22 +314,22 @@ void startup() {
 	_pe64Utils = &modUtils;
 	DllLoader dllLoader(targetProcess);
 
-	// IAT Hooking DLL Injection
-
 	LPVOID addressOfDll;
 	BOOL injected_iat_dll = false;
-
 	char* dll = (char*)"DLLs\\iat.dll";
 	DWORD bufferSize = GetFullPathNameA(dll, 0, nullptr, nullptr);
 	char* absolutePathBuf = new char[bufferSize];
-	DWORD result = GetFullPathNameA(dll, bufferSize, absolutePathBuf, nullptr);
 
-	if (result != 0) {
-		cout << "Abs ::: " << absolutePathBuf << endl;
-	}
+	if (_iat_) {
+		
+		DWORD result = GetFullPathNameA(dll, bufferSize, absolutePathBuf, nullptr);
 
-	while (!injected_iat_dll) {
-		injected_iat_dll = dllLoader.InjectDll(GetProcessId(targetProcess), absolutePathBuf, addressOfDll);
+		while (!injected_iat_dll) {
+			injected_iat_dll = dllLoader.InjectDll(GetProcessId(targetProcess), absolutePathBuf, addressOfDll);
+		}
+
+		/// TODO DEBUG LOADED DLL !!
+
 	}
 
 	//if (dllLoader.InjectDll(GetProcessId(targetProcess), (char*)"C:\\Users\\1234Y\\source\\repos\\ntdII\\x64\\Release\\ntdII.dll", addressOfDll)) {
@@ -319,63 +352,66 @@ void startup() {
 	// cout << "functions names mapping before : " << functionsNamesMapping.size() << endl;
 	modUtils.clearFunctionsNamesMapping();
 
-	/// TODO
-	/// Check that they do exist 
+	/// TODO : Check that they do exist
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "ntdll.dll");
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "kernel32.dll");
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "KERNELBASE.dll");
 
-	/*
-	// Waiting for the IAT-hooking DLL to be loaded 
-	while (modUtils.getModulesOrder()->count((string)dll) == 0) {
-		Sleep(50);
-		cout << "coucou" << endl;
+	LPVOID IatHookableDllStartAddr = NULL;
+	
+	if (_iat_) {
+		IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)absolutePathBuf));
 	}
-	*/
 
-	LPVOID IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)absolutePathBuf));
+	
 	//cout << "\n\n [DEBUG] start addr of concerned -->  " << IatHookableDllStartAddr << endl;
-
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, dll, IatHookableDllStartAddr);
 	functionsNamesMapping = modUtils.getFunctionsNamesMapping();
 
-	/// TODO ARGV option !!
+	if (_ssn_) {
+		
+		for (int i = 0; i < routinesToCrush.size(); i++) {
+			doingSomethingWithTheSyscall(targetProcess, (DWORD_PTR)modUtils.getFunctionsNamesMapping()->at(
+				routinesToCrush.at(i)
+			));
+		}
 
-	/*
-	for (int i = 0; i < routinesToCrush.size(); i++) {
-		doingSomethingWithTheSyscall(targetProcess, (DWORD_PTR)modUtils.getFunctionsNamesMapping()->at(
-			routinesToCrush.at(i)
-		));
 	}
-	*/
 
-	DWORD_PTR _hTarget;
 
-	for (string func : iatLevelHookedFunctions) {
-		string target = (string)"h" + func;
-		for (const auto& entry : *modUtils.getFunctionsNamesMapping()) {
-			if (entry.first.find(target) != string::npos && entry.first.find(target + "Ex") == string::npos) {
-				/* verbose */
-				//cout << "Hookable " << func << " at " << hex << entry.second << endl;
-				_hTarget = entry.second;
+	if (_iat_) {
+
+		DWORD_PTR _hTarget;
+		for (string func : iatLevelHookedFunctions) {
+			string target = (string)"h" + func;
+			for (const auto& entry : *modUtils.getFunctionsNamesMapping()) {
+				if (entry.first.find(target) != string::npos && entry.first.find(target + "Ex") == string::npos) {
+					/* verbose */
+					//cout << "Hookable " << func << " at " << hex << entry.second << endl;
+					_hTarget = entry.second;
+				}
+			}
+			auto it = functionsAddressesOfAddresses->find(func);
+			if (it != functionsAddressesOfAddresses->end()) {
+				hookIatTableEntry(targetProcess, functionsAddressesOfAddresses->at(func), (PVOID)&_hTarget);
 			}
 		}
 
-		auto it = functionsAddressesOfAddresses->find(func);
-		if (it != functionsAddressesOfAddresses->end()) {
-			hookIatTableEntry(targetProcess, functionsAddressesOfAddresses->at(func), (PVOID)&_hTarget);
+	}
+
+
+	if (_stack_) {
+
+		cout << endl;
+		while (true) {
+			checkProcThreads(targetProcId);
+			Sleep(1500);
 		}
-	}
 
-	cout << endl;
+		for (int i = 0; i < threads.size(); i++) {
+			threads.at(i)->join();
+		}
 
-	while (true) {
-		checkProcThreads(targetProcId);
-		Sleep(1500);
-	}
-
-	for (int i = 0; i < threads.size(); i++) {
-		threads.at(i)->join();
 	}
 }
 
@@ -497,12 +533,22 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 				}
 				else {
 					cout << "[*] Thread " << threadEntry32.th32ThreadID << " destroyed." << endl;
+					ThreadsState.erase((DWORD)threadEntry32.th32ThreadID);
+					if (ThreadsState.size() == 0) {
+						deleteCallStackMonitoringThreads();
+						startup();
+					}
 					//terminate();
 					break;
 				}
 			}
 			else {
 				cout << "[*] Thread " << threadEntry32.th32ThreadID << " destroyed." << endl;
+				ThreadsState.erase((DWORD)threadEntry32.th32ThreadID);
+				if (ThreadsState.size() == 0) {
+					deleteCallStackMonitoringThreads();
+					startup();
+				}
 				//terminate();
 				break;
 			}
@@ -625,6 +671,9 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 													//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
 
 													delete[] paramValue;
+
+													deleteCallStackMonitoringThreads();
+
 													return TRUE;
 
 

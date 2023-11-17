@@ -130,13 +130,18 @@ C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\ntstatus.h(14
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\winnt.h(2612,1): message : voir la définition précédente de 'STATUS_SXS_EARLY_DEACTIVATION'
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\ntstatus.h(14985,1): warning C4005: 'STATUS_SXS_INVALID_DEACTIVATION' : redéfinition de macro
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\winnt.h(2613,1): message : voir la définition précédente de 'STATUS_SXS_INVALID_DEACTIVATION'
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(205,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(213,21): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(217,21): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(233,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(610,79): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(610,59): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(523,9): warning C4101: 'thCount' : variable locale non référencée
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(528,18): warning C4101: 'pwow64_context' : variable locale non référencée
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(522,9): warning C4101: 'thIDs' : variable locale non référencée
-LINK : fatal error LNK1104: impossible d'ouvrir le fichier 'C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarket.exe'
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(249,22): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(257,21): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(261,21): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(277,22): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(657,79): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(657,59): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(570,9): warning C4101: 'thCount' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(575,18): warning C4101: 'pwow64_context' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(569,9): warning C4101: 'thIDs' : variable locale non référencée
+  Génération de code en cours
+  15 of 1339 functions ( 1.1%) were compiled, the rest were copied from previous compilation.
+    7 functions were new in current compilation
+    13 functions had inline decision re-evaluated but remain unchanged
+  Fin de la génération du code
+  BestEdrOfTheMarket.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarket.exe
