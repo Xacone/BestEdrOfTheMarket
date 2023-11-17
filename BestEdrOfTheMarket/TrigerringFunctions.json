@@ -44,5 +44,29 @@
     "Functions": [
       "NtCreateSection"
     ]
+  },
+  "IATHooking": {
+    "Functions": [
+      "VirtualAlloc",
+      "VirtualAllocEx",
+      "HeapAlloc",
+      "HeapFree",
+      "GetCurrentProcess",
+      "ReadProcessMemory",
+      "GetModuleHandleA",
+      "GetProcAddress",
+      "LoadLibraryA",
+      "LocalFree",
+      "VirtualQuery",
+      "RtlCaptureContext",
+      "RtlLookupFunctionEntry",
+      "IsDebuggerPresent",
+      "GetCurrentThreadId",
+      "OpenProcess",
+      "WriteProcessMemory",
+      "InternetOpenW",
+      "InternetOpenUrlW",
+      "InternetReadFile"
+    ]
   }
 }
