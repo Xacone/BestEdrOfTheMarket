@@ -1,4 +1,5 @@
 ﻿{
+  // Not editable
   "DLLBasedHooking": {
     "NTDLL.dll": [
       "NtAllocateVirtualMemory",
@@ -7,13 +8,13 @@
       "NtWriteVirtualMemory",
       "NtFreeVirtualMemory",
       "NtMapViewOfSection",
-      "NtCreateThread",
-      "NtCreateThreadEx",
-      "NtCreateUserProcess",
-      "NtOpenProcess"
+      //"NtCreateThread",
+      "NtCreateThreadEx"//,
+      //"NtCreateUserProcess",
+      //"NtOpenProcess"
     ],
     "KERNELBASE.dll": [
-      "LoadLibraryA", 
+      "LoadLibraryA",
       "VirtualProtect",
       "VirtualAlloc",
       "SuspendThread",
@@ -31,6 +32,7 @@
     ],
     "WS2_32.dll": []
   },
+  // Editable !
   "StackBasedHooking": {
     "Functions": [
       "NtCreateUserProcess",
@@ -40,11 +42,13 @@
       "NtAllocateVirtualMemory"
     ]
   },
+  // Editable !
   "SSNCrushingRoutines": {
     "Functions": [
       "NtCreateSection"
     ]
   },
+  // Editable !
   "IATHooking": {
     "Functions": [
       "VirtualAlloc",

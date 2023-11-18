@@ -44,15 +44,14 @@ using namespace std;
 typedef IMAGE_DOS_HEADER PE_DOS_HEADER;
 typedef IMAGE_NT_HEADERS64 PE_NT_HEADERS;
 typedef IMAGE_EXPORT_DIRECTORY PE_EXPORT_DIRECTORY;
-
 struct IATImportInfo {
 	char* moduleName;
 	char* functionName;
 	DWORD_PTR functionAddress;
 };
 
+// Signatures
 int main(int, char* []);
-
 bool searchForOccurenceInByteArray(BYTE*, int, BYTE*, int);
 DWORD_PTR printFunctionsMappingKeys(const char*);
 void MonitorThreadCallStack(HANDLE, THREADENTRY32);
@@ -127,7 +126,7 @@ BOOL CtrlHandler(DWORD fdwCtrlType) {
 }
 
 // argvs (Might be a better way to do that..?)
-BOOL _verbose_ = FALSE;
+BOOL _v_ = FALSE;
 BOOL _iat_ = FALSE;
 BOOL _nt_ = FALSE;
 BOOL _k32_ = FALSE;
@@ -140,12 +139,13 @@ BOOL _rop_ = FALSE;
 int main(int argc, char* argv[]) {
 
 	for (int arg = 0; arg < argc; arg++) {
+
 		if (!strcmp(argv[arg], "/help")) {
 			printHelp();
 			return 0;
 		}
 		if (!strcmp(argv[arg], "/v")) {
-			_verbose_ = TRUE;
+			_v_ = TRUE;
 		}
 		if (!strcmp(argv[arg], "/iat")) {
 			_iat_ = TRUE;
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
 		}
 		if (!strcmp(argv[arg], "/rop")) {
 			_rop_ = TRUE;
-		}
+		}	
 	}
 
 	startup();
@@ -315,25 +315,54 @@ void startup() {
 	DllLoader dllLoader(targetProcess);
 
 	LPVOID addressOfDll;
+	
 	BOOL injected_iat_dll = false;
-	char* dll = (char*)"DLLs\\iat.dll";
-	DWORD bufferSize = GetFullPathNameA(dll, 0, nullptr, nullptr);
-	char* absolutePathBuf = new char[bufferSize];
+	BOOL injected_nt_dll = false;
+	BOOL injected_k32_dll = false;
+
+	char* iat_hooking_dll = (char*)"DLLs\\iat.dll";
+	char* nt_hooking_dll = (char*)"DLLs\\ntdII.dll";
+	char* k32_hooking_dll = (char*)"DLLs\\KerneI32.dll";
+
+
+	DWORD iatDllBufferSize = GetFullPathNameA(iat_hooking_dll, 0, nullptr, nullptr);
+	DWORD ntDllBufferSize = GetFullPathNameA(nt_hooking_dll, 0, nullptr, nullptr);
+	DWORD k32DllBufferSize = GetFullPathNameA(k32_hooking_dll, 0, nullptr, nullptr);
+
+	char* iatDllAbsolutePathBuf = new char[iatDllBufferSize];
+	char* ntDllAbsolutePathBuf = new char[ntDllBufferSize];
+	char* k32DllAbsolutePathBuf = new char[k32DllBufferSize];
+
+	DWORD absoluteDllPath;
+
+	/// TODO: Print abs paths in verbose
 
 	if (_iat_) {
 		
-		DWORD result = GetFullPathNameA(dll, bufferSize, absolutePathBuf, nullptr);
-
+		absoluteDllPath = GetFullPathNameA(iat_hooking_dll, iatDllBufferSize, iatDllAbsolutePathBuf, nullptr);
 		while (!injected_iat_dll) {
-			injected_iat_dll = dllLoader.InjectDll(GetProcessId(targetProcess), absolutePathBuf, addressOfDll);
+			injected_iat_dll = dllLoader.InjectDll(GetProcessId(targetProcess), iatDllAbsolutePathBuf, addressOfDll);
 		}
-
-		/// TODO DEBUG LOADED DLL !!
 
 	}
 
-	//if (dllLoader.InjectDll(GetProcessId(targetProcess), (char*)"C:\\Users\\1234Y\\source\\repos\\ntdII\\x64\\Release\\ntdII.dll", addressOfDll)) {
-	//}
+	if (_nt_) {
+		
+		absoluteDllPath = GetFullPathNameA(nt_hooking_dll, ntDllBufferSize, ntDllAbsolutePathBuf, nullptr);
+		while (!injected_nt_dll) {
+			injected_nt_dll = dllLoader.InjectDll(GetProcessId(targetProcess), ntDllAbsolutePathBuf, addressOfDll);
+		}
+
+	}
+
+	if (_k32_) {
+		
+		absoluteDllPath = GetFullPathNameA(k32_hooking_dll, k32DllBufferSize, k32DllAbsolutePathBuf, nullptr);
+		while (!injected_k32_dll) {
+			injected_k32_dll = dllLoader.InjectDll(GetProcessId(targetProcess), k32DllAbsolutePathBuf, addressOfDll);
+		}
+	
+	}
 
 	PPEB targPeb = getHandledProcessPeb(targetProcess);
 	cout << "[*] Process PEB at " << targPeb << endl;
@@ -342,14 +371,11 @@ void startup() {
 	modUtils.getFirstModuleIAT();
 
 	cout << "[*] " << modUtils.getIATFunctionsMapping()->size() << " imported functions" << endl;
-	//cout << "size remplissage IAT 2 : " << modUtils.getIATFunctionsAddressesMapping()->size() << endl;
 
 	functionsNamesImportsMapping = modUtils.getIATFunctionsMapping();
 	functionsAddressesOfAddresses = modUtils.getIATFunctionsAddressesMapping();
-
 	ThreadsState.clear();
 
-	// cout << "functions names mapping before : " << functionsNamesMapping.size() << endl;
 	modUtils.clearFunctionsNamesMapping();
 
 	/// TODO : Check that they do exist
@@ -360,12 +386,14 @@ void startup() {
 	LPVOID IatHookableDllStartAddr = NULL;
 	
 	if (_iat_) {
-		IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)absolutePathBuf));
+		IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)iatDllAbsolutePathBuf));
+		if (_v_) {
+			cout << "\n\n [DEBUG] Start addr of IAT Hooking DLL ->  " << IatHookableDllStartAddr << endl;
+		}
 	}
 
-	
-	//cout << "\n\n [DEBUG] start addr of concerned -->  " << IatHookableDllStartAddr << endl;
-	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, dll, IatHookableDllStartAddr);
+
+	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, iat_hooking_dll, IatHookableDllStartAddr);
 	functionsNamesMapping = modUtils.getFunctionsNamesMapping();
 
 	if (_ssn_) {
@@ -387,7 +415,9 @@ void startup() {
 			for (const auto& entry : *modUtils.getFunctionsNamesMapping()) {
 				if (entry.first.find(target) != string::npos && entry.first.find(target + "Ex") == string::npos) {
 					/* verbose */
-					//cout << "Hookable " << func << " at " << hex << entry.second << endl;
+					if (_v_) {
+						cout << "\tHookable " << func << " at " << hex << entry.second << endl;
+					}
 					_hTarget = entry.second;
 				}
 			}
@@ -444,9 +474,10 @@ DWORD_PTR printFunctionsMappingKeys(const char* target) {
 	auto it = functionsNamesMapping->find(target);
 	if (it != functionsNamesMapping->end()) {
 		DWORD_PTR addr = it->second;
-		/* verbose
-		cout << target << " @ -> " << hex << addr << endl;
-		*/
+		/* verbose */
+		if (_v_) {
+			cout << target << " @ -> " << hex << addr << endl;
+		}
 		return addr;
 	}
 	else {
@@ -484,9 +515,11 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 							}
 						}
 
-						/* verbose
-						cout << dec << "[" << threadEntry32.th32ThreadID << "]" << " RIP : " << hex << context.Rip;
-						*/
+						/* verbose */
+						if (_v_) {
+							cout << dec << "[" << threadEntry32.th32ThreadID << "]" << " RIP : " << hex << context.Rip;
+						}
+						
 
 						// +0x0 --> Raw VA
 						// +0x1 --> Skeeping mov r10,rcx (4c) & heading to --> (8bd1) mov edx,ecx
@@ -598,9 +631,10 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 							stackFrame64.AddrStack.Offset = context.Rsp;
 							stackFrame64.AddrStack.Mode = AddrModeFlat;
 
-							/* verbose
-							cout << "Thread current instruction start addr : " << hex << context.Rip << endl;
-							*/
+							/* verbose */
+							if (_v_) {
+								cout << "[" << GetThreadId(hThread) << "] " << "Thread current instruction start addr : " << hex << context.Rip << endl;
+							}
 
 							while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
 								hProcess,
@@ -630,18 +664,19 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 								if (SymGetSymFromAddr64(hProcess, stackFrame64.AddrPC.Offset, NULL, symbol)) {
 
-									/* verbose
-									cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
-									 */
-
-									//cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
+									/* verbose */
+									if (_v_) {
+										cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
+									}
 
 									for (int i = 0; i < 5; i++) {
 
 										BYTE* paramValue = new BYTE[1024];
 										size_t bytesRead;
 
-										// cout << "\n\n@Param [" << i << "] : " << (DWORD64)stackFrame64.Params[i] << endl;
+										if (_v_) {
+											cout << "\n\n@Param [" << i << "] : " << (DWORD64)stackFrame64.Params[i] << endl;
+										}
 
 										ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead);
 
