@@ -1,15 +1,4 @@
 {
-	"Dll_Heuristics": {
-		"image_dos_sig": "4d 5a"
-	},
-	"Peb_Access": {
-		"fs_peb_x32": "8b 76 0c",
-		"fs_peb_x64": "65 48 8b 04 25 60",
-		"peb_ldr_h1": "8b 76 1c",
-		"peb_ldr_h2": "8b 6e 08",
-		"peb_ldr_h3": "8b 7e 20",
-		"peb_ldr_h4": "8b 76 0c"
-	},
 	"Patterns": [
 		"d2 65 48 8b 52 60 48 8b 52 18 48 8b 52 20 48 8b 72 50 48",
 		"49 be 77 73 32 5f 33 32 00 00",

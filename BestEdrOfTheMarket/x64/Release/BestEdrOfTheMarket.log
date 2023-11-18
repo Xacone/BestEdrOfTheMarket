@@ -139,8 +139,4 @@ C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cp
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(603,9): warning C4101: 'thCount' : variable locale non référencée
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(608,18): warning C4101: 'pwow64_context' : variable locale non référencée
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\CallStackMonitoringUtils.cpp(602,9): warning C4101: 'thIDs' : variable locale non référencée
-  Génération de code en cours
-  Previous IPDB and IOBJ mismatch, fall back to full compilation.
-  All 1339 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
-  Fin de la génération du code
-  BestEdrOfTheMarket.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarket.exe
+LINK : fatal error LNK1104: impossible d'ouvrir le fichier 'C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarket.exe'

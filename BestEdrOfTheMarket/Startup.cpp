@@ -25,13 +25,16 @@ void printHelp() {
 		<< "\n\n\t\t /help : Shows this help message and exits"
 		<< "\n\t\t /v Verbosity \n"
 		<< "\n\t\t /iat IAT hooking "
-		<< "\n\t\t /stack Call Stack Monitoring"
+		<< "\n\t\t /stack threds call stack monitoring"
 		<< "\n\t\t /nt Inline Nt-level hooking"
 		<< "\n\t\t /k32 Inline Kernel32/Kernelbase hooking"
 		<< "\n\t\t /ssn SSN crushing"
+		
+		/*
 		<< "\n\t\t /amsi AMSI patching mitigation"
 		<< "\n\t\t /etw ETW patching mitigation"
 		<< "\n\t\t /rop ROP mitigation"
+		*/
 
 		<< std::endl;
 }
