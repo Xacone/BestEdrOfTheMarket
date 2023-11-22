@@ -65,7 +65,7 @@ void checkThreads();
 void pidFilling();
 void startup();
 
-// Reserved to call stack monitoring theads
+// Reserved to call stack monitoring threads
 BOOL active = TRUE;
 
 // Call stack monitoring working threads
