@@ -1,0 +1,83 @@
+\doxysection{Conversion\+Utils.\+h}
+\hypertarget{_conversion_utils_8h_source}{}\label{_conversion_utils_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <Windows.h>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <TlHelp32.h>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <sstream>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <iomanip>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <algorithm>}}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ std::string\ removeBOM(\textcolor{keyword}{const}\ std::string\&\ input)\ \{}
+\DoxyCodeLine{00011\ \ \ \ \ \textcolor{keywordflow}{if}\ (input.size()\ >=\ 3\ \&\&\ input[0]\ ==\ \textcolor{stringliteral}{'\(\backslash\)xEF'}\ \&\&\ input[1]\ ==\ \textcolor{stringliteral}{'\(\backslash\)xBB'}\ \&\&\ input[2]\ ==\ \textcolor{stringliteral}{'\(\backslash\)xBF'})\ \{}
+\DoxyCodeLine{00012\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ input.substr(3);}
+\DoxyCodeLine{00013\ \ \ \ \ \}}
+\DoxyCodeLine{00014\ \ \ \ \ \textcolor{keywordflow}{else}\ \{}
+\DoxyCodeLine{00015\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ input;}
+\DoxyCodeLine{00016\ \ \ \ \ \}}
+\DoxyCodeLine{00017\ \}}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ LPCWSTR\ ConvertCharToLPCWSTR(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ charArray)}
+\DoxyCodeLine{00021\ \{}
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{int}\ length\ =\ strlen(charArray)\ +\ 1;}
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{int}\ lengthW\ =\ MultiByteToWideChar(CP\_ACP,\ 0,\ charArray,\ length,\ NULL,\ 0);}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{keywordtype}{wchar\_t}*\ wideArray\ =\ \textcolor{keyword}{new}\ \textcolor{keywordtype}{wchar\_t}[lengthW];}
+\DoxyCodeLine{00025\ \ \ \ \ MultiByteToWideChar(CP\_ACP,\ 0,\ charArray,\ length,\ wideArray,\ lengthW);}
+\DoxyCodeLine{00026\ \ \ \ \ \textcolor{keywordflow}{return}\ wideArray;}
+\DoxyCodeLine{00027\ \}}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ WCharToConstChar(\textcolor{keyword}{const}\ WCHAR*\ wstr)}
+\DoxyCodeLine{00030\ \{}
+\DoxyCodeLine{00031\ \ \ \ \ std::string\ str;}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{int}\ len\ =\ WideCharToMultiByte(CP\_UTF8,\ 0,\ wstr,\ -\/1,\ NULL,\ 0,\ NULL,\ NULL);}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordflow}{if}\ (len\ >\ 0)}
+\DoxyCodeLine{00034\ \ \ \ \ \{}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ str.resize(len);}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ WideCharToMultiByte(CP\_UTF8,\ 0,\ wstr,\ -\/1,\ \&str[0],\ len,\ NULL,\ NULL);}
+\DoxyCodeLine{00037\ \ \ \ \ \}}
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordflow}{return}\ str.c\_str();}
+\DoxyCodeLine{00039\ \}}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ \textcolor{keywordtype}{char}*\ WideStringToChar(\textcolor{keyword}{const}\ WCHAR\ wideArray[250])\ \{}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{comment}{//\ Convertir\ le\ tableau\ WCHAR\ en\ char*}}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keywordtype}{char}*\ charArray\ =\ \textcolor{keyword}{new}\ \textcolor{keywordtype}{char}[250];\ \ \textcolor{comment}{//\ Assumer\ que\ chaque\ caractère\ WCHAR\ se\ traduit\ en\ un\ caractère\ char.}}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ i\ =\ 0;\ i\ <\ 250;\ i++)\ \{}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ charCount\ =\ WideCharToMultiByte(CP\_UTF8,\ 0,\ \&wideArray[i],\ 1,\ \&charArray[i],\ 1,\ NULL,\ NULL);}
+\DoxyCodeLine{00047\ \ \ \ \ \}}
+\DoxyCodeLine{00048\ }
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordflow}{return}\ charArray;}
+\DoxyCodeLine{00050\ \}}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00052\ std::vector<BYTE>\ hexStringToBytesVector(\textcolor{keyword}{const}\ std::string\&\ hexString)\ \{}
+\DoxyCodeLine{00053\ \ \ \ \ std::vector<BYTE>\ bytes;}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00055\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ hexString.length();\ i\ +=\ 2)\ \{}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ std::string\ byteString\ =\ hexString.substr(i,\ 2);}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ BYTE\ \textcolor{keywordtype}{byte}\ =\ \textcolor{keyword}{static\_cast<}BYTE\textcolor{keyword}{>}(std::stoi(byteString,\ \textcolor{keyword}{nullptr},\ 16));}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ bytes.push\_back(\textcolor{keywordtype}{byte});}
+\DoxyCodeLine{00059\ \ \ \ \ \}}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordflow}{return}\ bytes;}
+\DoxyCodeLine{00062\ \}}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ BYTE*\ hexStringToByteArray(\textcolor{keyword}{const}\ std::string\&\ hexString,\ \textcolor{keywordtype}{size\_t}\&\ length)\ \{}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ \ \ \ \ length\ =\ std::count\_if(hexString.begin(),\ hexString.end(),\ [](\textcolor{keywordtype}{char}\ c)\ \{\ return\ !std::isspace(c);\ \})\ /\ 2;}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00068\ \ \ \ \ BYTE*\ byteArray\ =\ \textcolor{keyword}{new}\ BYTE[length];}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00070\ \ \ \ \ std::stringstream\ ss(hexString);}
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ length;\ ++i)\ \{}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ byteValue;}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ ss\ >>\ std::hex\ >>\ byteValue;\ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ byteArray[i]\ =\ \textcolor{keyword}{static\_cast<}BYTE\textcolor{keyword}{>}(byteValue);}
+\DoxyCodeLine{00075\ \ \ \ \ \}}
+\DoxyCodeLine{00076\ }
+\DoxyCodeLine{00077\ \ \ \ \ \textcolor{keywordflow}{return}\ byteArray;}
+\DoxyCodeLine{00078\ \}}
+
+\end{DoxyCode}

@@ -1,0 +1,60 @@
+\doxysection{IPCUtils.\+h}
+\hypertarget{_i_p_c_utils_8h_source}{}\label{_i_p_c_utils_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <Windows.h>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <tchar.h>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <strsafe.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{using\ namespace\ }std;}
+\DoxyCodeLine{00009\ }
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#define\ PIPE\_BUFFER\_SIZE\ 512}}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \textcolor{keywordtype}{void}\ killThatProcess(HANDLE\ hProc,\ HANDLE\ hPipe)\ \{}
+\DoxyCodeLine{00013\ \ \ \ \ CloseHandle(hPipe);}
+\DoxyCodeLine{00014\ \ \ \ \ TerminateProcess(hProc,\ -\/1);}
+\DoxyCodeLine{00015\ \}}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00017\ HANDLE\ initPipe(LPCWSTR\ pipeName)\ \{}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \ \ \ \ HANDLE\ hPipe;}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00021\ \ \ \ \ hPipe\ =\ CreateNamedPipe(}
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ pipeName,}
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ PIPE\_ACCESS\_DUPLEX,}
+\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ PIPE\_TYPE\_MESSAGE\ |\ PIPE\_READMODE\_MESSAGE\ |\ PIPE\_WAIT,}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ PIPE\_UNLIMITED\_INSTANCES,}
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ PIPE\_BUFFER\_SIZE,}
+\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ PIPE\_BUFFER\_SIZE,}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ 0,}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ NULL}
+\DoxyCodeLine{00030\ \ \ \ \ );}
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordflow}{if}\ (hPipe\ ==\ INVALID\_HANDLE\_VALUE\ ||\ hPipe\ ==\ NULL)\ \{}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ cout\ <<\ \textcolor{stringliteral}{"{}Error\ when\ initializing\ BEOTM\ pipe."{}}\ <<\ endl;}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ exit(-\/25);}
+\DoxyCodeLine{00035\ \ \ \ \ \}}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordflow}{return}\ hPipe;}
+\DoxyCodeLine{00038\ \}}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \textcolor{keywordtype}{int}\ waitForReponseOnPipe(HANDLE\ hPipe,\ TCHAR*\ buffer,\ DWORD*\ pdwBytesRead)\ \{}
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keywordflow}{while}\ (\textcolor{keyword}{true})\ \{}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (ConnectNamedPipe(hPipe,\ NULL))\ \{}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (ReadFile(hPipe,\ buffer,\ \textcolor{keyword}{sizeof}(buffer),\ pdwBytesRead,\ NULL)\ !=\ 0)\ \{}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ LPCWSTR\ response\ =\ L\textcolor{stringliteral}{"{}Et\ c'est\ des\ snitchhhhh\ !!"{}};}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ WriteFile(hPipe,\ response,\ \textcolor{keyword}{sizeof}(response),\ pdwBytesRead,\ NULL);}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \ \ \ \ DisconnectNamedPipe(hPipe);}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00052\ \ \ \ \ \}}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \ \ \ \ \textcolor{keywordflow}{return}\ 0;}
+\DoxyCodeLine{00055\ \}}
+
+\end{DoxyCode}

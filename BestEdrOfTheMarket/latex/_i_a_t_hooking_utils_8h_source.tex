@@ -1,0 +1,28 @@
+\doxysection{IATHooking\+Utils.\+h}
+\hypertarget{_i_a_t_hooking_utils_8h_source}{}\label{_i_a_t_hooking_utils_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}ErrorsReportingUtils.h"{}}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{keywordtype}{void}\ hookIatTableEntry(HANDLE\ hProc,\ PVOID\ origin,\ PVOID\ target)\ \{}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \ \ \ \ PVOID\ toOverwrite\ =\ origin;}
+\DoxyCodeLine{00008\ \ \ \ \ DWORD\ oldProtect\ =\ 0;}
+\DoxyCodeLine{00009\ \ \ \ \ SIZE\_T\ bytesWritten;}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \ \ \ \ \textcolor{keywordflow}{if}\ (!VirtualProtectEx(hProc,\ origin,\ 8,\ PAGE\_READWRITE,\ \&oldProtect))\ \{}
+\DoxyCodeLine{00012\ \ \ \ \ \ \ \ \ exit(-\/21);}
+\DoxyCodeLine{00013\ \ \ \ \ \}}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keywordflow}{if}\ (!WriteProcessMemory(hProc,\ origin,\ (PVOID)target,\ 8,\ \&bytesWritten))\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ printLastError();}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ exit(-\/22);}
+\DoxyCodeLine{00018\ \ \ \ \ \}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordflow}{if}\ (!VirtualProtectEx(hProc,\ origin,\ 8,\ oldProtect,\ \&oldProtect))\ \{}
+\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ exit(-\/23);}
+\DoxyCodeLine{00022\ \ \ \ \ \}}
+\DoxyCodeLine{00023\ \}}
+
+\end{DoxyCode}

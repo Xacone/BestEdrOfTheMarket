@@ -22,12 +22,13 @@
 #include <chrono>
 #include <tchar.h>
 #include <fstream>
+#include <sstream>
 
 #include <DbgHelp.h>
-#include <WDBGEXTS.H>
 #include <Psapi.h>
 
 #include "Pe64Utils.h"
+#include "HeapUtils.h"
 
 #include "Startup.h"
 #include "ProcessStructUtils.h"
@@ -35,6 +36,8 @@
 #include "SSNHookingUtils.h"
 #include "IATHookingUtils.h"
 #include "json/json.h"
+
+#include "IPCUtils.h"
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -50,13 +53,15 @@ struct IATImportInfo {
 	DWORD_PTR functionAddress;
 };
 
-// Signatures
+// Signatures (temporary, they will be moved from there)
 int main(int, char* []);
+bool containsSequence(const BYTE*, size_t, const BYTE*, size_t);
 bool searchForOccurenceInByteArray(BYTE*, int, BYTE*, int);
-DWORD_PTR printFunctionsMappingKeys(const char*);
 void MonitorThreadCallStack(HANDLE, THREADENTRY32);
+DWORD_PTR printFunctionsMappingKeys(const char*);
 BOOL analyseProcessThreadsStackTrace(HANDLE);
 void deleteCallStackMonitoringThreads();
+boolean monitorHeapForProc(HeapUtils);
 char* getFunctionNameFromVA(DWORD_PTR);
 PPEB getHandledProcessPeb(HANDLE);
 BOOL CtrlHandler(DWORD);
@@ -65,7 +70,8 @@ void checkThreads();
 void pidFilling();
 void startup();
 
-// Reserved to call stack monitoring theads
+
+// Reserved to call stack monitoring threads
 BOOL active = TRUE;
 
 // Call stack monitoring working threads
@@ -106,31 +112,43 @@ HANDLE targetProcess;
 // Global pointer on a Pe64Utils instance 
 Pe64Utils* _pe64Utils;
 
-// Flagged Pattern from YaroRules.json (unordored_map)
+// Flagged Pattern from YaroRules.json for stack monitoring 
 // int : pattern id
 // BYTE* : pattern converted to bytes (see hexStringToByteArray) 
-std::unordered_map<int, BYTE*> patterns;
+std::unordered_map<int, BYTE*> stackPatterns;
+
+// Flagged Pattern from YaroRules.json for heap monitoring 
+// BYTE* : pattern converted to bytes (see hexStringToByteArray) 
+// SIZE_T : pattern size
+std::unordered_map<BYTE*, SIZE_T> heapPatterns;
 
 // Handled threads on target processes
 unordered_map<DWORD, HANDLE> ThreadsState;
 
+/// <summary>
+/// Control Handler for proper deletion of the threads when hitting Ctrl+C/// </summary>
+/// <param name="fdwCtrlType">Control type</param>
+/// <returns></returns>
 BOOL CtrlHandler(DWORD fdwCtrlType) {
 
 	switch (fdwCtrlType) {
+
 	case CTRL_C_EVENT:
 
 		cout << "Terminating..." << endl;
 		deleteCallStackMonitoringThreads();
+		return true;
 	}
 	return false;
 }
 
-// argvs (Might be a better way to do that..?)
+// args (Might be a better way to do that..?)
 BOOL _v_ = FALSE;
 BOOL _iat_ = FALSE;
 BOOL _nt_ = FALSE;
 BOOL _k32_ = FALSE;
 BOOL _stack_ = FALSE;
+BOOL _heap_ = FALSE;
 BOOL _ssn_ = FALSE;
 BOOL _amsi_ = FALSE;
 BOOL _etw_ = FALSE;
@@ -159,6 +177,9 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[arg], "/stack")) {
 			_stack_ = TRUE;
 		}
+		if (!strcmp(argv[arg], "/heap")) {
+			_heap_ = TRUE;
+		}
 		if (!strcmp(argv[arg], "/ssn")) {
 			_ssn_ = TRUE;
 		}
@@ -178,8 +199,14 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
+// Set to true when the first enumeration of the process threads is accomplished
 BOOL initialized = FALSE;
 
+/// <summary>
+/// Checks for threads creating and deletion in the target process, it creates a call stack monitoring worker thread for each thread that spawned
+/// </summary>
+/// <param name="pid">PID of the target process</param>
+/// <returns></returns>
 unordered_map<DWORD, HANDLE> checkProcThreads(DWORD pid) {
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
 	if (snapshot && (snapshot != INVALID_HANDLE_VALUE)) {
@@ -219,18 +246,28 @@ unordered_map<DWORD, HANDLE> checkProcThreads(DWORD pid) {
 	else {
 		cerr << "[!] Error while snapshotting current processes state." << endl;
 	}
-
+	
 	CloseHandle(snapshot);
 
 	return ThreadsState;
 }
 
+
+// PID filling
 void pidFilling() {
 	cout << "\n[*] Choose the PID to monitor : ";
 	cin >> targetProcId;
 }
 
+
 void startup() {
+
+	/*
+	HANDLE ntdllPipe = initPipe(L"\\\\.\\pipe\\beotm");
+	TCHAR ntdllPipeBuffer[PIPE_BUFFER_SIZE];
+	DWORD dwBytesRead = 0;
+	waitForReponseOnPipe(ntdllPipe, ntdllPipeBuffer, &dwBytesRead); 
+	*/
 
 	deleteCallStackMonitoringThreads();
 	printStartupAsciiTitle();
@@ -242,8 +279,24 @@ void startup() {
 	ifstream trigFunctions("TrigerringFunctions.json");
 	if (trigFunctions.is_open()) {
 
+		std::ostringstream contentStream;
+		contentStream << trigFunctions.rdbuf();
+		std::string fileContent = contentStream.str();
+
+		// Parse the JSON content
 		Json::Value root;
-		trigFunctions >> root;
+		Json::Reader reader;
+
+		fileContent = removeBOM(fileContent);
+		
+		cout << endl;
+		if (!reader.parse(fileContent.c_str(), root, false)) {
+			std::cout << "\n[X] Invalid TrigerringFunctions.json ! Please check the validity of the file." << std::endl;
+			std::cout << reader.getFormattedErrorMessages() << std::endl;
+			exit(-23);
+		} else {
+			std::cout << "[*] Successfully parsed TrigerringFunctions.json" << std::endl;
+		}
 
 		if (root["StackBasedHooking"]["Functions"].size() > 0) {
 			for (int i = 0; i < root["StackBasedHooking"]["Functions"].size(); i++) {
@@ -261,37 +314,73 @@ void startup() {
 		for (int i = 0; i < root["IATHooking"]["Functions"].size(); i++) {
 			iatLevelHookedFunctions.push_back((string)root["IATHooking"]["Functions"][i].asString());
 		}
-
 	}
 
 	trigFunctions.close();
 
-	// Filling pattern matching signatures
+	// Filling pattern matching signatures for heap & stack monitoring
 
 	ifstream maliciousPatterns("YaroRules.json");
 	if (maliciousPatterns.is_open()) {
+	
+		std::ostringstream contentStream;
+		contentStream << maliciousPatterns.rdbuf();
+		std::string fileContent = contentStream.str();
 
+		// Parse the JSON content
 		Json::Value root;
-		maliciousPatterns >> root;
-		if (root["Patterns"].size() > 0) {
-			for (int i = 0; i < root["Patterns"].size(); i++) {
+		Json::Reader reader;
 
-				string str_pattern = root["Patterns"][i].asString();
+		fileContent = removeBOM(fileContent);
+
+		if (!reader.parse(fileContent.c_str(), root, false)) {
+			std::cout << "\n[X] Invalid YaroRules.json ! Please check the validity of the file." << std::endl;
+			std::cout << reader.getFormattedErrorMessages() << std::endl;
+			exit(-23);
+		}
+		else {
+			std::cout << "[*] Successfully parsed YaroRules.json" << std::endl;
+		}
+
+		if (root["StackPatterns"].size() > 0) {
+			for (int i = 0; i < root["StackPatterns"].size(); i++) {
+
+				string str_pattern = root["StackPatterns"][i].asString();
 				size_t length;
 
 				BYTE* pattern = hexStringToByteArray(str_pattern, length);
+				stackPatterns.insert({ i , pattern });
 
-				patterns.insert({ i , pattern });
-
-				/*
-				for (size_t i = 0; i < length; ++i) {
-					std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
+				if (_v_) {
+					cout << "[*] Loaded Stac Patterns : " << endl;
+					for (size_t i = 0; i < length; ++i) {
+						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
+					}
 				}
-				*/
+			}
+		}
 
+		if (root["HeapPatterns"].size() > 0) {
+			for (int i = 0; i < root["HeapPatterns"].size(); i++) {
+
+				string str_pattern = root["HeapPatterns"][i].asString();
+				size_t length;
+
+				BYTE* pattern = hexStringToByteArray(str_pattern, length);
+				heapPatterns.insert({ pattern , length });
+
+				if (_v_) {
+					cout << "[*] Loaded Heap Patterns : " << endl;
+					for (size_t i = 0; i < length; ++i) {
+						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
+					}
+				}
 			}
 		}
 	}
+
+	maliciousPatterns.close();
+
 	// Console Conctrol Handling
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 
@@ -309,6 +398,12 @@ void startup() {
 	else {
 		cout << "[*] Here we go !\n" << endl;
 	}
+
+	// Heap Monitoring 
+	HeapUtils memUtils(targetProcess);
+	thread* heapMonThread = new thread(monitorHeapForProc, memUtils);
+	threads.push_back(heapMonThread);
+
 
 	Pe64Utils modUtils(targetProcess);
 	_pe64Utils = &modUtils;
@@ -341,6 +436,9 @@ void startup() {
 		
 		absoluteDllPath = GetFullPathNameA(iat_hooking_dll, iatDllBufferSize, iatDllAbsolutePathBuf, nullptr);
 		while (!injected_iat_dll) {
+			if (_v_) {
+				cout << "[*] Injected iat.dll" << endl;
+			}
 			injected_iat_dll = dllLoader.InjectDll(GetProcessId(targetProcess), iatDllAbsolutePathBuf, addressOfDll);
 		}
 
@@ -349,6 +447,9 @@ void startup() {
 	if (_nt_) {
 		
 		absoluteDllPath = GetFullPathNameA(nt_hooking_dll, ntDllBufferSize, ntDllAbsolutePathBuf, nullptr);
+		if (_v_) {
+			cout << "[*] Injected hooked ntdll.dll" << endl;
+		}
 		while (!injected_nt_dll) {
 			injected_nt_dll = dllLoader.InjectDll(GetProcessId(targetProcess), ntDllAbsolutePathBuf, addressOfDll);
 		}
@@ -359,13 +460,19 @@ void startup() {
 		
 		absoluteDllPath = GetFullPathNameA(k32_hooking_dll, k32DllBufferSize, k32DllAbsolutePathBuf, nullptr);
 		while (!injected_k32_dll) {
+			if (_v_) {
+				cout << "[*] Injected hooked kernel32.dll" << endl;
+			}
 			injected_k32_dll = dllLoader.InjectDll(GetProcessId(targetProcess), k32DllAbsolutePathBuf, addressOfDll);
 		}
 	
 	}
 
 	PPEB targPeb = getHandledProcessPeb(targetProcess);
-	cout << "[*] Process PEB at " << targPeb << endl;
+
+	if (_v_) {
+		cout << "[*] Process PEB at " << targPeb << endl;
+	}
 
 	modUtils.enumerateProcessModulesAndTheirPools();
 	modUtils.getFirstModuleIAT();
@@ -388,7 +495,7 @@ void startup() {
 	if (_iat_) {
 		IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)iatDllAbsolutePathBuf));
 		if (_v_) {
-			cout << "\n\n [DEBUG] Start addr of IAT Hooking DLL ->  " << IatHookableDllStartAddr << endl;
+			cout << "\nStart address of IAT Hooking DLL ->  " << IatHookableDllStartAddr << endl;
 		}
 	}
 
@@ -405,7 +512,6 @@ void startup() {
 		}
 
 	}
-
 
 	if (_iat_) {
 
@@ -429,13 +535,12 @@ void startup() {
 
 	}
 
-
 	if (_stack_) {
-
+		
 		cout << endl;
 		while (true) {
 			checkProcThreads(targetProcId);
-			Sleep(1500);
+			Sleep(1500); // Old : 1500
 		}
 
 		for (int i = 0; i < threads.size(); i++) {
@@ -443,23 +548,35 @@ void startup() {
 		}
 
 	}
+
+	while (true) {
+		Sleep(100000);
+	}
+
 }
 
+/*
+Proper deletion of call stack monitoring threads, invoked when hitting Ctrl+C or when the process is terminated
+*/
 void deleteCallStackMonitoringThreads() {
-	//cout << "[DEBUG] Killing " << threads.size() << " working threads..." << endl;
+	if (_v_) {
+		cout << "[DEBUG] Killing " << threads.size() << " working threads..." << endl;
+	}
 	if (threads.size() > 0) {
 		for (thread* t : threads) {
 			cout << "[*] Killing worker thread " << dec << t->get_id() << endl;
 			t->detach();
 			delete t;
-		}
+		} 
 		threads.clear();
-	}
+	} 
+
 }
 
+/*
+Returns the name of a function by searching for its memory address in a functionsNamesMapping (associates function names with their addresses). Used to identify functions during the analysis of call stacks
+*/
 char* getFunctionNameFromVA(DWORD_PTR targetAddr) {
-
-	// lock_guard<std::mutex> lock(functionsNamesMappingMutex);
 
 	for (const auto& pair : *functionsNamesMapping) {
 		if (pair.second == targetAddr) {
@@ -469,6 +586,10 @@ char* getFunctionNameFromVA(DWORD_PTR targetAddr) {
 	return NULL;
 }
 
+/*
+	Prints the address of an export	
+	const char* target : Export name
+*/
 DWORD_PTR printFunctionsMappingKeys(const char* target) {
 
 	auto it = functionsNamesMapping->find(target);
@@ -486,6 +607,9 @@ DWORD_PTR printFunctionsMappingKeys(const char* target) {
 	return NULL;
 }
 
+/*
+	
+*/
 void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 
 	Pe64Utils* modUtils = _pe64Utils;
@@ -506,6 +630,8 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 
 					if (previousRip != context.Rip) {
 
+						
+						/*
 						if (!modUtils->isAddressInModulesMemPools(context.Rip)) {
 							cout << "\x1B[48;5;4m" << "\n[!] Out-of-modules-pools return address, analysis..." << "\x1B[0m" << "\n" << endl;
 							SuspendThread(hThread);
@@ -514,6 +640,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 								ResumeThread(hThread);
 							}
 						}
+						*/
 
 						/* verbose */
 						if (_v_) {
@@ -586,12 +713,12 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 				break;
 			}
 		}
-	}
-	else {
+	} else {
 		cout << "[X] Failed to retrieve thread context" << endl;
+		deleteCallStackMonitoringThreads();
+		startup();
 	}
 }
-
 
 BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
@@ -622,7 +749,6 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 						CONTEXT context;
 						context.ContextFlags = CONTEXT_CONTROL;
 						if (GetThreadContext(hThread, &context)) {
-
 
 							stackFrame64.AddrPC.Offset = context.Rip;
 							stackFrame64.AddrPC.Mode = AddrModeFlat;
@@ -680,7 +806,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 										ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead);
 
-										for (const auto& pair : patterns) {
+										for (const auto& pair : stackPatterns) {
 
 											int id = pair.first;
 											BYTE* pattern = pair.second;
@@ -695,7 +821,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 													TerminateProcess(hProcess, -1);
 
-													cout << "\x1B[41m" << "[!] Shellcode injection detected ! Malicious process killed !\x1B[0m\n" << endl;
+													cout << "\x1B[41m" << "[!] Malicious injection detected ! Malicious process killed !\x1B[0m\n" << endl;
 
 													CloseHandle(hProcess);
 
@@ -758,6 +884,53 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 	return FALSE;
 }
 
+
+/// <summary>
+/// 
+/// </summary>
+/// <param name="heapUtils"></param>
+/// <returns></returns>
+boolean monitorHeapForProc(HeapUtils heapUtils) {
+
+	//memUtils.printAllHeapRegionsContent();
+
+	while (true) {
+		
+		try { heapUtils.getHeapRegions(); }
+		catch (exception& e) { continue; }
+
+		for (size_t i = 0; i < heapUtils.getHeapCount(); i++) {
+			BYTE* data = heapUtils.getHeapRegionContent(i);
+
+			//printByteArrayWithoutZerosAndBreaks(data, heapUtils.getHeapSize(i));
+
+			for (const auto& pair : heapPatterns) {
+
+				if (containsSequence(data, heapUtils.getHeapSize(i), pair.first, pair.second)) {
+
+					TerminateProcess(targetProcess, -1);
+					MessageBoxA(nullptr, "DLL injection detected !", "Best EDR Of The Market", MB_ICONWARNING);
+					cout << "\x1B[41m" << "[!] Malicious injection detected ! Malicious process killed !\x1B[0m\n" << endl;
+
+					CloseHandle(targetProcess);
+					deleteCallStackMonitoringThreads();
+
+					startup();
+
+					/// TODO: verbose ?
+					//printByteArray(data, memUtils.getHeapSize(i));
+					//printByteArray(pair.first, strlen((const char*)pair.second));
+					return TRUE;
+				}
+			}
+			free(data);
+		}
+		Sleep(1200);
+	}
+	return FALSE;
+}
+
+
 bool searchForOccurenceInByteArray(BYTE* tab, int tailleTab, BYTE* chaineHex, int tailleChaineHex) {
 	for (int i = 0; i <= tailleTab - tailleChaineHex; i++) {
 		bool correspondance = true;
@@ -768,6 +941,16 @@ bool searchForOccurenceInByteArray(BYTE* tab, int tailleTab, BYTE* chaineHex, in
 			}
 		}
 		if (correspondance) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// new one 
+bool containsSequence(const BYTE* haystack, size_t haystackSize, const BYTE* needle, size_t needleSize) {
+	for (size_t i = 0; i <= haystackSize - needleSize; ++i) {
+		if (memcmp(haystack + i, needle, needleSize) == 0) {
 			return true;
 		}
 	}

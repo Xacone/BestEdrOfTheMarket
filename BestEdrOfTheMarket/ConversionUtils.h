@@ -7,6 +7,15 @@
 #include <iostream>
 #include <algorithm>
 
+std::string removeBOM(const std::string& input) {
+
+    if (input.size() >= 3 && input[0] == '\xEF' && input[1] == '\xBB' && input[2] == '\xBF') {
+        return input.substr(3);
+    }
+    else {
+        return input;
+    }
+}
 
 LPCWSTR ConvertCharToLPCWSTR(const char* charArray)
 {
@@ -30,8 +39,8 @@ const char* WCharToConstChar(const WCHAR* wstr)
 }
 
 char* WideStringToChar(const WCHAR wideArray[250]) {
-    // Convertir le tableau WCHAR en char*
-    char* charArray = new char[250];  // Assumer que chaque caractère WCHAR se traduit en un caractère char.
+
+    char* charArray = new char[250];  
 
     for (int i = 0; i < 250; i++) {
         int charCount = WideCharToMultiByte(CP_UTF8, 0, &wideArray[i], 1, &charArray[i], 1, NULL, NULL);
@@ -41,6 +50,7 @@ char* WideStringToChar(const WCHAR wideArray[250]) {
 }
 
 std::vector<BYTE> hexStringToBytesVector(const std::string& hexString) {
+
     std::vector<BYTE> bytes;
 
     for (size_t i = 0; i < hexString.length(); i += 2) {
@@ -67,3 +77,55 @@ BYTE* hexStringToByteArray(const std::string& hexString, size_t& length) {
 
     return byteArray;
 }
+
+void printByteArray(const BYTE* byteArray, size_t size) {
+
+    for (size_t i = 0; i < size; ++i) {
+        std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)(byteArray[i]) << " ";
+    }
+    std::cout << std::dec << std::endl;
+}
+
+void printByteArrayWithoutZerosAndBreaks(const BYTE* byteArray, size_t size) {
+
+    for (size_t i = 0; i < size; ++i) {
+        if (byteArray[i] != 0x00 && byteArray[i] != 0xcc) {
+            std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)(byteArray[i]) << " ";
+        }
+    }      
+    std::cout << std::dec << std::endl;
+}
+
+
+//void printAsciiDumpWithoutZeros(const BYTE* byteArray, size_t size, size_t bytesPerLine = 16) {
+//    
+//    for (size_t i = 0; i < size; i += bytesPerLine) {
+//        for (size_t j = 0; j < bytesPerLine; ++j) {
+//            size_t index = i + j;
+//            if (byteArray[index] != 0x00) {
+//                 if (index < size) {
+//                    std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)(byteArray[index]) << " ";
+//                }
+//            }
+//            else {
+//                std::cout << "   "; // Padding for incomplete lines
+//            }
+//        }
+//
+//        // Print ASCII representation
+//        std::cout << "   ";
+//        for (size_t j = 0; j < bytesPerLine; ++j) {
+//            size_t index = i + j;
+//            if (byteArray[index] != 0x00) {
+//                if (index < size) {
+//                        char c = (byteArray[index] >= 32 && byteArray[index] <= 126) ? byteArray[index] : '.';
+//                        std::cout << c;
+//                    }
+//                } else {
+//                    std::cout << " ";
+//                }
+//        }
+//
+//        std::cout << std::endl;
+//    }
+//}
