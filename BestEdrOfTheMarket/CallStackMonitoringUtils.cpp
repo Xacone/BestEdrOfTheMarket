@@ -137,8 +137,9 @@ BOOL CtrlHandler(DWORD fdwCtrlType) {
 
 		cout << "Terminating..." << endl;
 		deleteCallStackMonitoringThreads();
-		return true;
+		exit(0);
 	}
+
 	return false;
 }
 
@@ -630,7 +631,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 
 					if (previousRip != context.Rip) {
 
-						
+						// for future use ...
 						/*
 						if (!modUtils->isAddressInModulesMemPools(context.Rip)) {
 							cout << "\x1B[48;5;4m" << "\n[!] Out-of-modules-pools return address, analysis..." << "\x1B[0m" << "\n" << endl;
@@ -680,8 +681,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 									ResumeThread(hThread);
 									cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
 									active = TRUE;
-								}
-								else {
+								} else {
 									startup();
 								}
 							}
