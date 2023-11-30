@@ -20,8 +20,7 @@
     "Functions": [
       "NtCreateUserProcess",
       "NtCreateThread",
-      "NtCreateThreadEx",
-      "NtWriteFile"
+      "NtCreateThreadEx"
     ]
   },
   "SSNCrushingRoutines": {
