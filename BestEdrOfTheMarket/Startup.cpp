@@ -20,6 +20,7 @@ void printHelp() {
 	printStartupAsciiTitle();
 	std::cout << "\033[0m";
 	std::cout
+
 		<< "\n\t\t\033[0;38;2;128;0;32mhttps://github.com/Xacone/BestEdrOfTheMarket\033[0m"
 		<< "\n\n\tUsage: BestEdrOfTheMarket.exe [args]"
 		<< "\n\n\t\t /help : Shows this help message and exits"

@@ -19,10 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CallStackMonitoringUtils.cpp" />
-    <ClCompile Include="IATHookingUtils.cpp" />
-    <ClCompile Include="ModulesMemPools.cpp" />
-    <ClCompile Include="ParchingMitig.cpp" />
+    <ClCompile Include="MonitoringUtils.cpp" />
     <ClCompile Include="ProcessStructUtils.cpp" />
     <ClCompile Include="Startup.cpp" />
   </ItemGroup>
@@ -36,16 +33,13 @@
     <ClInclude Include="ConversionUtils.h" />
     <ClInclude Include="ErrorsReportingUtils.h" />
     <ClInclude Include="IATHookingUtils.h" />
-    <ClInclude Include="Imports.h" />
     <ClInclude Include="IPCUtils.h" />
     <ClInclude Include="HeapUtils.h" />
-    <ClInclude Include="ModuleExportsUtils.h" />
     <ClInclude Include="ModuleLoadingUtils.h" />
     <ClInclude Include="Pe64Utils.h" />
     <ClInclude Include="ProcessStructUtils.h" />
     <ClInclude Include="SSNHookingUtils.h" />
     <ClInclude Include="Startup.h" />
-    <ClInclude Include="Structs.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

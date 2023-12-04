@@ -347,6 +347,8 @@ void startup() {
 			std::cout << "[*] Successfully parsed YaroRules.json" << std::endl;
 		}
 
+		cout << endl;
+
 		if (root["StackPatterns"].size() > 0) {
 			for (int i = 0; i < root["StackPatterns"].size(); i++) {
 
@@ -356,11 +358,12 @@ void startup() {
 				BYTE* pattern = hexStringToByteArray(str_pattern, length);
 				stackPatterns.insert({ i , pattern });
 
-				if (_v_) {
-					cout << "[*] Loaded Stac Patterns : " << endl;
+				if (_debug_) {
+					cout << "[DEBUG] Loaded Stack Pattern : \n\t" << endl;
 					for (size_t i = 0; i < length; ++i) {
 						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
 					}
+					cout << "\n" << endl;
 				}
 			}
 		}
@@ -374,11 +377,12 @@ void startup() {
 				BYTE* pattern = hexStringToByteArray(str_pattern, length);
 				heapPatterns.insert({ pattern , length });
 
-				if (_v_) {
-					cout << "[*] Loaded Heap Patterns : " << endl;
+				if (_debug_) {
+					cout << "[DEBUG] Loaded Heap Pattern : \n\t" << endl;
 					for (size_t i = 0; i < length; ++i) {
 						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
 					}
+					cout << "\n" << endl;
 				}
 			}
 		}
@@ -424,7 +428,7 @@ void startup() {
 	char* iat_hooking_dll = (char*)"DLLs\\iat.dll";
 	char* nt_hooking_dll = (char*)"DLLs\\ntdII.dll";
 	char* k32_hooking_dll = (char*)"DLLs\\KerneI32.dll";
-
+	
 	DWORD iatDllBufferSize = GetFullPathNameA(iat_hooking_dll, 0, nullptr, nullptr);
 	DWORD ntDllBufferSize = GetFullPathNameA(nt_hooking_dll, 0, nullptr, nullptr);
 	DWORD k32DllBufferSize = GetFullPathNameA(k32_hooking_dll, 0, nullptr, nullptr);
@@ -442,7 +446,7 @@ void startup() {
 		absoluteDllPath = GetFullPathNameA(iat_hooking_dll, iatDllBufferSize, iatDllAbsolutePathBuf, nullptr);
 		while (!injected_iat_dll) {
 			if (_v_) {
-				cout << "[*] Injected iat.dll" << endl;
+				cout << "[INFO] Injected iat.dll" << endl;
 			}
 			injected_iat_dll = dllLoader.InjectDll(GetProcessId(targetProcess), iatDllAbsolutePathBuf, addressOfDll);
 		}
@@ -453,7 +457,7 @@ void startup() {
 		
 		absoluteDllPath = GetFullPathNameA(nt_hooking_dll, ntDllBufferSize, ntDllAbsolutePathBuf, nullptr);
 		if (_v_) {
-			cout << "[*] Injected hooked ntdll.dll" << endl;
+			cout << "[INFO] Injected hooked ntdll.dll" << endl;
 		}
 		while (!injected_nt_dll) {
 			injected_nt_dll = dllLoader.InjectDll(GetProcessId(targetProcess), ntDllAbsolutePathBuf, addressOfDll);
@@ -466,7 +470,7 @@ void startup() {
 		absoluteDllPath = GetFullPathNameA(k32_hooking_dll, k32DllBufferSize, k32DllAbsolutePathBuf, nullptr);
 		while (!injected_k32_dll) {
 			if (_v_) {
-				cout << "[*] Injected hooked kernel32.dll" << endl;
+				cout << "[INFO] Injected hooked kernel32.dll" << endl;
 			}
 			injected_k32_dll = dllLoader.InjectDll(GetProcessId(targetProcess), k32DllAbsolutePathBuf, addressOfDll);
 		}
@@ -476,7 +480,7 @@ void startup() {
 	PPEB targPeb = getHandledProcessPeb(targetProcess);
 
 	if (_v_) {
-		cout << "[*] Process PEB at " << targPeb << endl;
+		cout << "[INFO] Process PEB at " << targPeb << endl;
 	}
 
 	modUtils.enumerateProcessModulesAndTheirPools();
@@ -500,7 +504,7 @@ void startup() {
 	if (_iat_) {
 		IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)iatDllAbsolutePathBuf));
 		if (_v_) {
-			cout << "\nStart address of IAT Hooking DLL ->  " << IatHookableDllStartAddr << endl;
+			cout << "\n[INFO] Start address of IAT Hooking DLL ->  " << IatHookableDllStartAddr << endl;
 		}
 	}
 
@@ -527,7 +531,7 @@ void startup() {
 				if (entry.first.find(target) != string::npos && entry.first.find(target + "Ex") == string::npos) {
 					/* verbose */
 					if (_v_) {
-						cout << "\tHookable " << func << " at " << hex << entry.second << endl;
+						cout << "[INFO] \tHookable " << func << " at " << hex << entry.second << endl;
 					}
 					_hTarget = entry.second;
 				}
@@ -545,7 +549,7 @@ void startup() {
 		cout << endl;
 		while (true) {
 			checkProcThreads(targetProcId);
-			Sleep(1500); // Old : 1500
+			Sleep(950); // Ref : 1500
 		}
 
 		for (int i = 0; i < threads.size(); i++) {
@@ -636,6 +640,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 					if (previousRip != context.Rip) {
 
 						// for future use ...
+						
 						/*
 						if (!modUtils->isAddressInModulesMemPools(context.Rip)) {
 							cout << "\x1B[48;5;4m" << "\n[!] Out-of-modules-pools return address, analysis..." << "\x1B[0m" << "\n" << endl;
@@ -646,6 +651,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 							}
 						}
 						*/
+						
 
 						/* verbose */
 						if (_v_) {
@@ -653,21 +659,41 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 						}
 						
 
-						// +0x0 --> Raw VA
-						// +0x1 --> Skeeping mov r10,rcx (4c) & heading to --> (8bd1) mov edx,ecx
-						// +0x14 --> ?
-
-						/// TODO : Check the validity of that thing (refactored)
+						IMAGEHLP_SYMBOL64* symbol = (IMAGEHLP_SYMBOL64*)malloc(sizeof(IMAGEHLP_SYMBOL64) + 1024);
+						symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
+						symbol->MaxNameLength = 1024;
 
 						char* nameFromVaRaw = NULL;
 						char* retainedName = NULL;
-						for (int i = -0x15; i <= +0x15; ++i) {
-							nameFromVaRaw = getFunctionNameFromVA((DWORD_PTR)context.Rip + i);
-							if (nameFromVaRaw != NULL) {
-								retainedName = nameFromVaRaw;
-								break;
+
+						if (SymGetSymFromAddr64(targetProcess, context.Rip, NULL, symbol)) {
+							/* verbose */
+							if (_debug_) {
+								cout << " [DEBUG] RIP @ " << symbol->Name << endl;
+							}
+						} 
+						else {
+
+							// +0x0 --> Raw VA
+							// +0x1 --> Skeeping mov r10,rcx (4c) & heading to --> (8bd1) mov edx,ecx
+							// +0x14 --> ?
+							/// TODO : Check the validity of that thing (refactored)
+
+
+							for (int i = -0x15; i <= +0x15; ++i) {
+								nameFromVaRaw = getFunctionNameFromVA((DWORD_PTR)context.Rip + i);
+
+								if (nameFromVaRaw != NULL) {
+									retainedName = nameFromVaRaw;
+									if (_debug_) {
+										cout << "[DEBUG] RIP @:" << (char*)retainedName << endl;
+									}
+									break;
+								}
 							}
 						}
+
+						
 
 						//unique_lock<mutex> lock(mapMutex);
 
@@ -821,7 +847,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 												if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, patternSize)) {
 
-													MessageBoxA(NULL, "Wooo injection detected !", "Best EDR Of The Market", MB_ICONEXCLAMATION);
+													MessageBoxA(NULL, "Wooo injection detected (stack) !!", "Best EDR Of The Market", MB_ICONEXCLAMATION);
 
 													TerminateProcess(hProcess, -1);
 
@@ -850,8 +876,9 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 									}
 
 									/* verbose */
-									if (_debug_) {
+									if (_v_) {
 										cout << "\n ------------------------------------------------- " << endl;
+										cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
 										cout << "\t\tRAX : " << hex << context.Rax << endl
 											<< "\t\tRBX : " << hex << context.Rbx << endl
 											<< "\t\tRCX : " << hex << context.Rcx << endl
@@ -862,7 +889,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 											<< "\t\tRSP : " << hex << context.Rsp << endl
 											<< "\t\tRIP : " << hex << context.Rip << endl
 											<< "\t\tR10 : " << hex << context.R10 << endl;
-										cout << "\n\n" << endl;
+										cout << "\n" << endl;
 									}
 
 									
@@ -918,7 +945,7 @@ boolean monitorHeapForProc(HeapUtils heapUtils) {
 				if (containsSequence(data, heapUtils.getHeapSize(i), pair.first, pair.second)) {
 
 					TerminateProcess(targetProcess, -1);
-					MessageBoxA(nullptr, "DLL injection detected !", "Best EDR Of The Market", MB_ICONWARNING);
+					MessageBoxA(nullptr, "Wooo injection detected (heap) !!", "Best EDR Of The Market", MB_ICONWARNING);
 					cout << "\x1B[41m" << "[!] Malicious injection detected ! Malicious process killed !\x1B[0m\n" << endl;
 
 					CloseHandle(targetProcess);
