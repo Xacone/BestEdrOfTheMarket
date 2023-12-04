@@ -35,9 +35,11 @@
 #include "ModuleLoadingUtils.h"
 #include "SSNHookingUtils.h"
 #include "IATHookingUtils.h"
-#include "json/json.h"
+#include "ColorsUtils.h"
 
 #include "IPCUtils.h"
+
+#include "json/json.h"
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -568,7 +570,7 @@ void startup() {
 Proper deletion of call stack monitoring threads, invoked when hitting Ctrl+C or when the process is terminated
 */
 void deleteCallStackMonitoringThreads() {
-	if (_v_) {
+	if (_debug_) {
 		cout << "[DEBUG] Killing " << threads.size() << " working threads..." << endl;
 	}
 	if (threads.size() > 0) {
@@ -606,7 +608,7 @@ DWORD_PTR printFunctionsMappingKeys(const char* target) {
 		DWORD_PTR addr = it->second;
 		/* verbose */
 		if (_v_) {
-			cout << target << " @ -> " << hex << addr << endl;
+			cout << "[INFO] " << target << " @ -> " << hex << addr << endl;
 		}
 		return addr;
 	}
@@ -655,7 +657,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 
 						/* verbose */
 						if (_v_) {
-							cout << dec << "[" << threadEntry32.th32ThreadID << "]" << " RIP : " << hex << context.Rip;
+							cout << "[INFO] " << dec << "[" << dec << threadEntry32.th32ThreadID << "]" << " RIP : " << hex << context.Rip << "\n";
 						}
 						
 
@@ -668,8 +670,8 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 
 						if (SymGetSymFromAddr64(targetProcess, context.Rip, NULL, symbol)) {
 							/* verbose */
-							if (_debug_) {
-								cout << " [DEBUG] RIP @ " << symbol->Name << endl;
+							if (_v_) {
+								cout << " [INFO] RIP @ " << symbol->Name << endl;
 							}
 						} 
 						else {
@@ -704,6 +706,10 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 							auto it = stackLevelMonitoredFunctions.find(retainedName);
 							if (it != stackLevelMonitoredFunctions.end()) {
 								cout << "\x1B[48;5;4m" << "\n[!] " << retainedName << " triggered, analysis..." << "\x1B[0m" << "\n" << endl;
+								if (_debug_) {
+									cout << "\033[1;37;40m";
+									cout << "\t\t " << "-------------------------- STACK TRACE --------------------------\n" << " \t\t\t" << endl;
+								}
 								active = FALSE;
 								SuspendThread(hThread);
 								BOOL problemFound = analyseProcessThreadsStackTrace(targetProcess);
@@ -712,8 +718,10 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 									cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
 									active = TRUE;
 								} else {
+									cout << "\033[0m";
 									startup();
 								}
+								cout << "\033[0m";
 							}
 						}
 					}
@@ -767,7 +775,8 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 		memset(&stackFrame64, 0, sizeof(STACKFRAME64));
 
 		if (snapshot == INVALID_HANDLE_VALUE) {
-			cout << "nop 2" << endl;
+			cout << "[ERROR] INVALID_HANDLE_VALUE returned by CreateToolhelp32Snapshot." << endl;
+			exit(-1);
 		}
 
 		if (Thread32First(snapshot, &threadEntry)) {
@@ -789,7 +798,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 							/* verbose */
 							if (_v_) {
-								cout << "[" << GetThreadId(hThread) << "] " << "Thread current instruction start addr : " << hex << context.Rip << endl;
+								cout << "[INFO] " << "[" << GetThreadId(hThread) << "] " << "Thread current instruction start addr : " << hex << context.Rip << endl;
 							}
 
 							while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
@@ -821,8 +830,8 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 								if (SymGetSymFromAddr64(hProcess, stackFrame64.AddrPC.Offset, NULL, symbol)) {
 
 									/* verbose */
-									if (_v_) {
-										cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
+									if (_debug_) {
+										cout << "\t\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
 									}
 
 									for (int i = 0; i < 5; i++) {
@@ -830,8 +839,8 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 										BYTE* paramValue = new BYTE[1024];
 										size_t bytesRead;
 
-										if (_v_) {
-											cout << "\n\n@Param [" << i << "] : " << (DWORD64)stackFrame64.Params[i] << endl;
+										if (_debug_) {
+											cout << "\t\t\t@Param [" << i << "] : " << hex << (DWORD_PTR)stackFrame64.Params[i] << endl;
 										}
 
 										ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead);
@@ -867,7 +876,6 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 													return TRUE;
 
-
 												}
 											}
 										}
@@ -876,14 +884,14 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 									}
 
 									/* verbose */
-									if (_v_) {
+									/*
+									if (_debug_) {
 										cout << "\n ------------------------------------------------- " << endl;
-										cout << "\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
+										cout << "\t" << "[DEBUG] " << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
 										cout << "\t\tRAX : " << hex << context.Rax << endl
 											<< "\t\tRBX : " << hex << context.Rbx << endl
 											<< "\t\tRCX : " << hex << context.Rcx << endl
 											<< "\t\tRDX : " << hex << context.Rdx << endl
-											<< "\t\tRIP : " << hex << context.Rax << endl
 											<< "\t\tRSI : " << hex << context.Rsi << endl
 											<< "\t\tRBP : " << hex << context.Rbp << endl
 											<< "\t\tRSP : " << hex << context.Rsp << endl
@@ -891,6 +899,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 											<< "\t\tR10 : " << hex << context.R10 << endl;
 										cout << "\n" << endl;
 									}
+									*/
 
 									
 								}
