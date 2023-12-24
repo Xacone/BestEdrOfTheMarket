@@ -13,16 +13,17 @@
       "VirtualAlloc"
     ],
     "KERNEL32.dll": [
-      "VirtualAlloc"
+      "VirtualAlloc" 
     ]
   },
   "StackBasedHooking": {
     "Functions": [
-      "RtlUserThreadStart",
-
       "NtCreateUserProcess",
-      "NtCreateThread",
-      "NtCreateThreadEx"
+      "NtSetInformationThread",
+      "ZwProtectVirtualMemory",
+      "ZwOpenFile",
+      "NtOpenFile",
+      "ZwCreateThreadEx"
     ]
   },
   "SSNCrushingRoutines": {

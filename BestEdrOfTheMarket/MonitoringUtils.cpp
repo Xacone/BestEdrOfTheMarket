@@ -23,6 +23,8 @@
 #include <tchar.h>
 #include <fstream>
 #include <sstream>
+#include <locale>
+#include <codecvt>
 
 #include <DbgHelp.h>
 #include <Psapi.h>
@@ -36,6 +38,7 @@
 #include "SSNHookingUtils.h"
 #include "IATHookingUtils.h"
 #include "ColorsUtils.h"
+#include "SymbolsUtils.h"
 
 #include "IPCUtils.h"
 
@@ -43,7 +46,11 @@
 
 #pragma comment(lib, "dbghelp.lib")
 
+#pragma warning(disable : 266) // temporary
+
 using namespace std;
+
+#define RIP_RANGE 0x29
 
 // PE structs
 typedef IMAGE_DOS_HEADER PE_DOS_HEADER;
@@ -57,7 +64,11 @@ struct IATImportInfo {
 
 // Signatures (temporary, they will be moved from there)
 int main(int, char* []);
+
+DWORD64 GetDetailedStackTraceWithReturnAddresses(HANDLE, HANDLE);
+
 bool containsSequence(const BYTE*, size_t, const BYTE*, size_t);
+void MonitorPointersToUnbackedAddresses(HANDLE, THREADENTRY32);
 bool searchForOccurenceInByteArray(BYTE*, int, BYTE*, int);
 void MonitorThreadCallStack(HANDLE, THREADENTRY32);
 DWORD_PTR printFunctionsMappingKeys(const char*);
@@ -155,8 +166,11 @@ BOOL _heap_ = FALSE;
 BOOL _ssn_ = FALSE;
 BOOL _amsi_ = FALSE;
 BOOL _etw_ = FALSE;
+BOOL _backed_ = FALSE;
 BOOL _rop_ = FALSE;
 BOOL _debug_ = FALSE;
+
+BOOL _boost_ = FALSE;
 
 int main(int argc, char* argv[]) {
 
@@ -193,12 +207,20 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[arg], "/etw")) {
 			_etw_ = TRUE;
 		}
+		if (!strcmp(argv[arg], "/backed")) {
+			_backed_ = TRUE;
+		}
 		if (!strcmp(argv[arg], "/rop")) {
 			_rop_ = TRUE;
 		}	
 		if (!strcmp(argv[arg], "/debug")) {
 			_debug_ = TRUE;
 		}
+
+		if (!strcmp(argv[arg], "/boost")) {
+			_boost_ = TRUE;
+		}
+
 	}
 
 	startup();
@@ -217,6 +239,7 @@ BOOL initialized = FALSE;
 unordered_map<DWORD, HANDLE> checkProcThreads(DWORD pid) {
 	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
 	if (snapshot && (snapshot != INVALID_HANDLE_VALUE)) {
+
 		THREADENTRY32 threadEntry;
 		threadEntry.dwSize = sizeof(THREADENTRY32);
 
@@ -226,20 +249,40 @@ unordered_map<DWORD, HANDLE> checkProcThreads(DWORD pid) {
 					HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, threadEntry.th32ThreadID);
 					if (hThread != nullptr) {
 						if (!initialized || ThreadsState.find(threadEntry.th32ThreadID) == ThreadsState.end()) {
-
+							
 							ThreadsState[threadEntry.th32ThreadID] = hThread;
-							if (!initialized) {
-								active = TRUE;
-								cout << "[*] Thread : " << dec << threadEntry.th32ThreadID << endl;
-								thread* th = new thread(MonitorThreadCallStack, hThread, threadEntry);
-								threads.push_back(th);
-							}
-							else {
-								active = TRUE;
-								cout << "[*] Spawned Thread : " << dec << threadEntry.th32ThreadID << endl;
-								thread* th = new thread(MonitorThreadCallStack, hThread, threadEntry);
-								threads.push_back(th);
-							}
+
+								if (!initialized) {
+									active = TRUE;
+									cout << "[*] Thread : " << dec << threadEntry.th32ThreadID << endl;
+
+									if (_stack_) {
+										thread* stackMonitoringThread = new thread(MonitorThreadCallStack, hThread, threadEntry);
+										threads.push_back(stackMonitoringThread);
+									}
+
+									if (_backed_) {
+										thread* unbackedAddressesMonitoringThread = new thread(MonitorPointersToUnbackedAddresses, hThread, threadEntry);
+										threads.push_back(unbackedAddressesMonitoringThread);
+									}
+								} else {
+
+									active = TRUE;
+									cout << "[*] Spawned Thread : " << dec << threadEntry.th32ThreadID << endl;
+
+									if (_stack_) {
+										thread* stackMonitoringThread = new thread(MonitorThreadCallStack, hThread, threadEntry);
+										threads.push_back(stackMonitoringThread);
+									}
+
+									if (_backed_) {
+										thread* unbackedAddressesMonitoringThread = new thread(MonitorPointersToUnbackedAddresses, hThread, threadEntry);
+										threads.push_back(unbackedAddressesMonitoringThread);
+									}
+								}
+
+
+							
 						}
 					}
 					else {
@@ -257,6 +300,57 @@ unordered_map<DWORD, HANDLE> checkProcThreads(DWORD pid) {
 	CloseHandle(snapshot);
 
 	return ThreadsState;
+}
+
+void MonitorPointersToUnbackedAddresses(HANDLE hThread, THREADENTRY32 threadEntry32) {
+	
+	Pe64Utils* modUtils = _pe64Utils;
+
+	CONTEXT context;
+	memset(&context, 0, sizeof(CONTEXT));
+	context.ContextFlags = CONTEXT_FULL;
+
+	if (hThread) {
+		if (GetThreadContext(hThread, &context)) {
+
+			// Fetching first RIP
+			DWORD64 previousRip = context.Rip;
+
+			while (_backed_) {
+
+				if (GetThreadContext(hThread, &context)) {
+
+					if (context.Rip != previousRip) {
+
+						cout << "changed : " << hex << (DWORD_PTR)context.Rip << endl;
+
+						if (!modUtils->isAddressInModulesMemPools(context.Rip)) {
+
+							printRedAlert("Unbacked return address, analysis...");
+							//SuspendThread(hThread);
+
+							BYTE paramValue[2048];
+							size_t bytesRead;
+
+							if (ReadProcessMemory(targetProcess, (LPVOID)context.Rip, paramValue, sizeof(paramValue), &bytesRead)) {
+
+								cout << (string)"got that on " << hex << (DWORD_PTR)context.Rip << endl;
+
+								printByteArray(paramValue, bytesRead);
+							}
+							else {
+								cout << "eh bah non chef" << endl;
+							}
+						}
+
+						previousRip = context.Rip;
+					}
+				}
+
+				Sleep(1);
+			}
+		}
+	}
 }
 
 
@@ -405,10 +499,15 @@ void startup() {
 	if (!targetProcess) {
 		cout << "[X] Can't find that PID ! Give me a valid one please ! .\n" << endl;
 		startup();
-	}
-	else {
+	} else {
 		cout << "[*] Here we go !\n" << endl;
 	}
+
+	if (!SymInitialize(targetProcess, nullptr, TRUE)) {
+		std::cerr << "SymInitialize failed. Error code: " << GetLastError() << std::endl;
+		exit(-222);
+	}
+
 
 	// Heap Monitoring 
 	if (_heap_) {
@@ -501,6 +600,9 @@ void startup() {
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "kernel32.dll");
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "KERNELBASE.dll");
 
+	// Powershell
+	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "win32u.dll");
+
 	LPVOID IatHookableDllStartAddr = NULL;
 	
 	if (_iat_) {
@@ -546,12 +648,12 @@ void startup() {
 
 	}
 
-	if (_stack_) {
+	if (_stack_ || _backed_) {
 		
 		cout << endl;
 		while (true) {
 			checkProcThreads(targetProcId);
-			Sleep(950); // Ref : 1500
+			Sleep(1500); // Ref : 1500
 		}
 
 		for (int i = 0; i < threads.size(); i++) {
@@ -618,8 +720,9 @@ DWORD_PTR printFunctionsMappingKeys(const char* target) {
 	return NULL;
 }
 
+
 /*
-	
+	///TODO : DOC
 */
 void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 
@@ -630,89 +733,69 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 	context.ContextFlags = CONTEXT_FULL;
 
 	if (GetThreadContext(hThread, &context)) {
+		
 		/* verbose
 		cout << "RIP : " << hex << context.Rip << endl;
 		*/
+
 		int i = 0;
 		DWORD64 previousRip = context.Rip;
+
+		//std::mutex m;
+		//std::chrono::milliseconds duration(1);
+
 		while (active) {
+
 			if (hThread) {
 				if (GetThreadContext(hThread, &context)) {
 
-					if (previousRip != context.Rip) {
+					if ((previousRip ^ context.Rip) != 0) {
 
-						// for future use ...
-						
-						/*
-						if (!modUtils->isAddressInModulesMemPools(context.Rip)) {
-							cout << "\x1B[48;5;4m" << "\n[!] Out-of-modules-pools return address, analysis..." << "\x1B[0m" << "\n" << endl;
-							SuspendThread(hThread);
-							if (!analyseProcessThreadsStackTrace(targetProcess)) {
-								cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
-								ResumeThread(hThread);
-							}
-						}
-						*/
-						
+						SYMBOL_INFO symbolInfo;
+						DWORD64 displacement;
 
-						/* verbose */
-						if (_v_) {
-							cout << "[INFO] " << dec << "[" << dec << threadEntry32.th32ThreadID << "]" << " RIP : " << hex << context.Rip << "\n";
-						}
-						
+						memset(&symbolInfo, 0, sizeof(SYMBOL_INFO));
+						symbolInfo.SizeOfStruct = sizeof(SYMBOL_INFO);
+						symbolInfo.MaxNameLen = MAX_SYM_NAME;
 
-						IMAGEHLP_SYMBOL64* symbol = (IMAGEHLP_SYMBOL64*)malloc(sizeof(IMAGEHLP_SYMBOL64) + 1024);
-						symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-						symbol->MaxNameLength = 1024;
 
-						char* nameFromVaRaw = NULL;
 						char* retainedName = NULL;
+						
+						BOOL _saved_backed_ = _backed_;
 
-						if (SymGetSymFromAddr64(targetProcess, context.Rip, NULL, symbol)) {
-							/* verbose */
-							if (_v_) {
-								cout << " [INFO] RIP @ " << symbol->Name << endl;
-							}
-						} 
-						else {
-
-							// +0x0 --> Raw VA
-							// +0x1 --> Skeeping mov r10,rcx (4c) & heading to --> (8bd1) mov edx,ecx
-							// +0x14 --> ?
-							/// TODO : Check the validity of that thing (refactored)
-
-
-							for (int i = -0x15; i <= +0x15; ++i) {
-								nameFromVaRaw = getFunctionNameFromVA((DWORD_PTR)context.Rip + i);
-
-								if (nameFromVaRaw != NULL) {
-									retainedName = nameFromVaRaw;
-									if (_debug_) {
-										cout << "[DEBUG] RIP @:" << (char*)retainedName << endl;
+						if (modUtils->isAddressInProcessMemory((LPVOID)(DWORD_PTR)context.Rip)) {
+							if (SymFromAddr(targetProcess, (DWORD_PTR&)context.Rip, &displacement, &symbolInfo)) {
+								if (symbolInfo.Name != NULL) {
+									if (_v_) {
+										std::cout << hex << "[" << (DWORD_PTR)context.Rip << "] " << symbolInfo.Name << "+0x" << displacement << std::endl;
 									}
-									break;
+									retainedName = symbolInfo.Name;
+
+									// Bad idea to get that thing there
+									//GetDetailedStackTraceWithReturnAddresses(targetProcess, hThread);
+					
 								}
 							}
 						}
-
+						_backed_ = _saved_backed_;
 						
-
-						//unique_lock<mutex> lock(mapMutex);
-
 						if (retainedName != NULL) {
-
-							/// TODO
-							/// Look in list of callstack-hooked functions
 							auto it = stackLevelMonitoredFunctions.find(retainedName);
 							if (it != stackLevelMonitoredFunctions.end()) {
-								cout << "\x1B[48;5;4m" << "\n[!] " << retainedName << " triggered, analysis..." << "\x1B[0m" << "\n" << endl;
+
+								//printf("%s", (char*)symbolInfo.Name);
+
+								std::string msg = (retainedName != NULL) ? std::string(symbolInfo.Name) + " triggered, analysis..." : "No symbol triggered, analysis...";
+								printBlueAlert(msg);
+								
 								if (_debug_) {
-									cout << "\033[1;37;40m";
-									cout << "\t\t " << "-------------------------- STACK TRACE --------------------------\n" << " \t\t\t" << endl;
+									/// TODO : Les couleurs marchent pas
+									cout << "\t\t " << ANSI_COLOR_BG_WHITE << ANSI_COLOR_BLUE << "--------------------------   STACK TRACE    --------------------------\n" << " \t\t\t" << endl;
 								}
 								active = FALSE;
 								SuspendThread(hThread);
 								BOOL problemFound = analyseProcessThreadsStackTrace(targetProcess);
+								cout << "\033[0m";
 								if (!problemFound) {
 									ResumeThread(hThread);
 									cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
@@ -727,7 +810,41 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 					}
 
 					previousRip = context.Rip;
-					Sleep(5);
+					
+					//this_thread::sleep_for(chrono::microseconds(20));
+					
+					/*
+					std::unique_lock<std::mutex> lock(mtx);
+					cv.wait_for(lock, std::chrono::microseconds(20), [&] { return !active; });
+					lock.unlock();
+					*/
+
+					/*
+					if (!m.try_lock())
+					{
+						std::this_thread::yield();
+						continue;
+					}*/
+
+					_boost_ ? std::this_thread::yield() : Sleep(2);
+
+					/*
+					if (_boost_) {
+						std::this_thread::yield();
+					} else {
+						std::chrono::microseconds sleepDuration(1001);
+						std::this_thread::sleep_for(sleepDuration);
+						}
+					}*/
+
+					/*
+					
+						if (!m.try_lock()) {
+							std::this_thread::yield();
+							continue;
+						
+					*/
+
 				}
 				else {
 					cout << "[*] Thread " << threadEntry32.th32ThreadID << " destroyed." << endl;
@@ -751,13 +868,103 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 				break;
 			}
 		}
-	} else {
+
+		
+		
+		} else {
 		cout << "[X] Failed to retrieve thread context" << endl;
 		deleteCallStackMonitoringThreads();
 		startup();
 	}
 }
 
+std::mutex myMutex;
+
+DWORD64 GetDetailedStackTraceWithReturnAddresses(HANDLE hProcess, HANDLE hThread) {
+	DWORD64 returnAddress = NULL;
+
+	if (hThread != NULL) {
+
+		SYMBOL_INFO symbolInfo;
+		DWORD64 displacement;
+
+		memset(&symbolInfo, 0, sizeof(SYMBOL_INFO));
+		symbolInfo.SizeOfStruct = sizeof(SYMBOL_INFO);
+		symbolInfo.MaxNameLen = MAX_SYM_NAME;
+
+		STACKFRAME64 stackFrame64;
+		CONTEXT context;
+
+		memset(&stackFrame64, 0, sizeof(STACKFRAME64));
+		context.ContextFlags = CONTEXT_CONTROL;
+
+		if (GetThreadContext(hThread, &context)) {
+			
+			stackFrame64.AddrPC.Offset = context.Rip;
+			stackFrame64.AddrPC.Mode = AddrModeFlat;
+			stackFrame64.AddrFrame.Offset = context.Rbp;
+			stackFrame64.AddrFrame.Mode = AddrModeFlat;
+			stackFrame64.AddrStack.Offset = context.Rsp;
+			stackFrame64.AddrStack.Mode = AddrModeFlat;
+
+			while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
+				hProcess,
+				hThread,
+				&stackFrame64,
+				&context,
+				NULL,
+				SymFunctionTableAccess64,
+				SymGetModuleBase64,
+				NULL)) {
+
+				std::unique_lock<std::mutex> lock(myMutex);
+
+				DWORD64 savedRBP;
+				if (ReadProcessMemory(hProcess,
+					reinterpret_cast<LPCVOID>(stackFrame64.AddrFrame.Offset),
+					&savedRBP,
+					sizeof(savedRBP),
+					NULL)) {
+					//std::cout << "Saved RBP: 0x" << std::hex << savedRBP << std::endl;
+
+					DWORD64 returnAddress;
+					if (ReadProcessMemory(hProcess,
+						reinterpret_cast<LPCVOID>(stackFrame64.AddrFrame.Offset + sizeof(savedRBP)),
+						&returnAddress,
+						sizeof(returnAddress),
+						NULL)) {
+						std::cout << "[ 0x" << std::hex << returnAddress << "] ";
+
+						//by SymFromAddr (unsafe function) that was overriding the value of _saved_backed_.
+						BOOL _saved_backed_ = _backed_;
+						if (_pe64Utils->isAddressInProcessMemory((LPVOID)(DWORD_PTR)context.Rip)) {
+							if (SymFromAddr(targetProcess, (DWORD_PTR&)returnAddress, &displacement, &symbolInfo)) {
+								if (symbolInfo.Name != NULL) {
+
+									std::cout << "\t\t" << symbolInfo.Name << "+0x" << displacement << std::endl;
+								}
+							}
+						}
+					}
+				}
+
+				lock.unlock();
+			}
+
+			cout << "\n\n\n" << endl;
+
+		}
+	}
+
+	return returnAddress;
+}
+
+
+///TODO ------> SymCleanup
+/*
+	Analyse the call stack of a given process, looking for flagged patterns
+	HANDLE hProcess : Target process handle
+*/
 BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 	vector<HANDLE> threadsHandles;
@@ -796,11 +1003,6 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 							stackFrame64.AddrStack.Offset = context.Rsp;
 							stackFrame64.AddrStack.Mode = AddrModeFlat;
 
-							/* verbose */
-							if (_v_) {
-								cout << "[INFO] " << "[" << GetThreadId(hThread) << "] " << "Thread current instruction start addr : " << hex << context.Rip << endl;
-							}
-
 							while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
 								hProcess,
 								hThread,
@@ -811,6 +1013,12 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 								SymGetModuleBase64,
 								NULL
 							)) {
+
+								/*
+								DWORD64 returnAddress = stackFrame64.AddrReturn.Offset;
+								std::cout << "Return Address: 0x" << std::hex << returnAddress << std::endl;
+								*/
+
 								// https://learn.microsoft.com/en-us/windows/win32/api/dbghelp/ns-dbghelp-stackframe64
 
 								/* verbose
@@ -860,7 +1068,9 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 													TerminateProcess(hProcess, -1);
 
-													cout << "\x1B[41m" << "[!] Malicious injection detected ! Malicious process killed !\x1B[0m\n" << endl;
+													printRedAlert("Malicious injection detected ! Malicious process killed !");
+
+													//cout << "\x1B[41m" << "[!] Malicious injection detected ! Malicious process killed !\x1B[0m\n" << endl;
 
 													CloseHandle(hProcess);
 
@@ -882,6 +1092,9 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 
 										delete[] paramValue;
 									}
+
+									
+									
 
 									/* verbose */
 									/*
@@ -955,7 +1168,8 @@ boolean monitorHeapForProc(HeapUtils heapUtils) {
 
 					TerminateProcess(targetProcess, -1);
 					MessageBoxA(nullptr, "Wooo injection detected (heap) !!", "Best EDR Of The Market", MB_ICONWARNING);
-					cout << "\x1B[41m" << "[!] Malicious injection detected ! Malicious process killed !\x1B[0m\n" << endl;
+
+					printRedAlert("Malicious injection detected ! Malicious process killed !");
 
 					CloseHandle(targetProcess);
 					deleteCallStackMonitoringThreads();

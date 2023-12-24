@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #define ANSI_COLOR_BLACK "\033[0;30m"
 #define ANSI_COLOR_RED "\033[0;31m"
 #define ANSI_COLOR_GREEN "\033[0;32m"
@@ -20,3 +22,19 @@
 #define ANSI_COLOR_BG_VIOLET "\033[48;5;93m"
 
 #define ANSI_COLOR_RESET "\033[0m"
+
+void printRedAlert(std::string msg) {
+	std::cout << "\x1B[41m" << "[!] " << msg << "\x1B[0m" << std::endl;
+}
+
+void printGreenAlert(std::string msg) {
+	std::cout << "\x1B[42m" << "[!] " << msg << "\033[0m" << std::endl;
+}
+
+void printYellowAlert(std::string msg) {
+	std::cout << "\x1B[43m" << "[!] " << msg << "\033[0m" << std::endl;
+}
+
+void printBlueAlert(std::string msg) {
+	std::cout << "\x1B[48;5;4m" << "[!] " << msg << "\x1B[0m" << std::endl;
+}

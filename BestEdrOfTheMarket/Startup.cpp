@@ -27,6 +27,7 @@ void printHelp() {
 		<< "\n\t\t /v Verbosity \n"
 		<< "\n\t\t /iat IAT hooking "
 		<< "\n\t\t /stack Threads call stack monitoring"
+		<< "\n\t\t /boost Boosting RIP refresh rate (increase load on CPU !)"
 		<< "\n\t\t /heap Heap monitoring"
 		<< "\n\t\t /nt Inline Nt-level hooking"
 		<< "\n\t\t /k32 Inline Kernel32/Kernelbase hooking"

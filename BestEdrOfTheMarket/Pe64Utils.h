@@ -145,6 +145,20 @@ public:
 		}
 	}
 
+	BOOL isAddressInProcessMemory(LPVOID address)
+	{
+		MEMORY_BASIC_INFORMATION memInfo;
+		SIZE_T queryResult = VirtualQueryEx(target, address, &memInfo, sizeof(memInfo));
+
+		if (queryResult == 0) {
+			return FALSE;
+		}
+
+		return (memInfo.State != MEM_FREE) && (address >= memInfo.BaseAddress) &&
+			((BYTE*)address < ((BYTE*)memInfo.BaseAddress + memInfo.RegionSize));
+	}
+
+
 	BOOL isAddressInModulesMemPools(DWORD64 addr) {
 
 		for (int i = 0; i < moduleCount; i++) {
