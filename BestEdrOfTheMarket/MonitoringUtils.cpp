@@ -39,6 +39,7 @@
 #include "IATHookingUtils.h"
 #include "ColorsUtils.h"
 #include "SymbolsUtils.h"
+#include "BytesSequencesUtils.h"
 
 #include "IPCUtils.h"
 
@@ -73,7 +74,7 @@ bool searchForOccurenceInByteArray(BYTE*, int, BYTE*, int);
 void MonitorThreadCallStack(HANDLE, THREADENTRY32);
 DWORD_PTR printFunctionsMappingKeys(const char*);
 BOOL analyseProcessThreadsStackTrace(HANDLE);
-void deleteCallStackMonitoringThreads();
+void deleteMonitoringWorkerThreads();
 boolean monitorHeapForProc(HeapUtils);
 char* getFunctionNameFromVA(DWORD_PTR);
 PPEB getHandledProcessPeb(HANDLE);
@@ -125,15 +126,25 @@ HANDLE targetProcess;
 // Global pointer on a Pe64Utils instance 
 Pe64Utils* _pe64Utils;
 
-// Flagged Pattern from YaroRules.json for stack monitoring 
+// Flagged Patterns from YaroRules.json for stack monitoring 
 // int : pattern id
 // BYTE* : pattern converted to bytes (see hexStringToByteArray) 
 std::unordered_map<int, BYTE*> stackPatterns;
 
-// Flagged Pattern from YaroRules.json for heap monitoring 
+// Flagged Patterns from YaroRules.json for heap monitoring 
 // BYTE* : pattern converted to bytes (see hexStringToByteArray) 
 // SIZE_T : pattern size
 std::unordered_map<BYTE*, SIZE_T> heapPatterns;
+
+// Flagged Patterns from YaroRules.json for dll hooking (a)
+// BYTE* : pattern converted to bytes (see hexStringToByteArray) 
+// SIZE_T : pattern size
+std::unordered_map<BYTE*, SIZE_T> dllPatterns;
+
+// General flagged Patterns from YaroRules.json 
+// BYTE* : pattern converted to bytes (see hexStringToByteArray) 
+// SIZE_T : pattern size
+std::unordered_map<BYTE*, SIZE_T> generalPatterns;
 
 // Handled threads on target processes
 unordered_map<DWORD, HANDLE> ThreadsState;
@@ -149,7 +160,7 @@ BOOL CtrlHandler(DWORD fdwCtrlType) {
 	case CTRL_C_EVENT:
 
 		cout << "Terminating..." << endl;
-		deleteCallStackMonitoringThreads();
+		deleteMonitoringWorkerThreads();
 		exit(0);
 	}
 
@@ -169,8 +180,8 @@ BOOL _etw_ = FALSE;
 BOOL _backed_ = FALSE;
 BOOL _rop_ = FALSE;
 BOOL _debug_ = FALSE;
-
 BOOL _boost_ = FALSE;
+BOOL _stack_spoof_ = FALSE;
 
 int main(int argc, char* argv[]) {
 
@@ -216,9 +227,11 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[arg], "/debug")) {
 			_debug_ = TRUE;
 		}
-
 		if (!strcmp(argv[arg], "/boost")) {
 			_boost_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/stack-spoof")) {
+			_stack_spoof_ = TRUE;
 		}
 
 	}
@@ -261,10 +274,16 @@ unordered_map<DWORD, HANDLE> checkProcThreads(DWORD pid) {
 										threads.push_back(stackMonitoringThread);
 									}
 
+									if (_stack_spoof_) {
+										thread* stackSpoofingMonitoringThread = new thread(GetDetailedStackTraceWithReturnAddresses, targetProcess, hThread);
+										threads.push_back(stackSpoofingMonitoringThread);
+									}
+
 									if (_backed_) {
 										thread* unbackedAddressesMonitoringThread = new thread(MonitorPointersToUnbackedAddresses, hThread, threadEntry);
 										threads.push_back(unbackedAddressesMonitoringThread);
 									}
+
 								} else {
 
 									active = TRUE;
@@ -273,6 +292,11 @@ unordered_map<DWORD, HANDLE> checkProcThreads(DWORD pid) {
 									if (_stack_) {
 										thread* stackMonitoringThread = new thread(MonitorThreadCallStack, hThread, threadEntry);
 										threads.push_back(stackMonitoringThread);
+									}
+
+									if (_stack_spoof_) {
+										thread* stackSpoofingMonitoringThread = new thread(GetDetailedStackTraceWithReturnAddresses, targetProcess, hThread);
+										threads.push_back(stackSpoofingMonitoringThread);
 									}
 
 									if (_backed_) {
@@ -363,14 +387,7 @@ void pidFilling() {
 
 void startup() {
 
-	/*
-	HANDLE ntdllPipe = initPipe(L"\\\\.\\pipe\\beotm");
-	TCHAR ntdllPipeBuffer[PIPE_BUFFER_SIZE];
-	DWORD dwBytesRead = 0;
-	waitForReponseOnPipe(ntdllPipe, ntdllPipeBuffer, &dwBytesRead); 
-	*/
-
-	deleteCallStackMonitoringThreads();
+	deleteMonitoringWorkerThreads();
 	printStartupAsciiTitle();
 
 	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
@@ -445,6 +462,8 @@ void startup() {
 
 		cout << endl;
 
+		/// TODO : Refactor those things in one function !
+
 		if (root["StackPatterns"].size() > 0) {
 			for (int i = 0; i < root["StackPatterns"].size(); i++) {
 
@@ -482,6 +501,44 @@ void startup() {
 				}
 			}
 		}
+
+		if (root["DllHookingPatterns"].size() > 0) {
+			for (int i = 0; i < root["DllHookingPatterns"].size(); i++) {
+
+				string str_pattern = root["DllHookingPatterns"][i].asString();
+				size_t length;
+
+				BYTE* pattern = hexStringToByteArray(str_pattern, length);
+				dllPatterns.insert({ pattern , length });
+
+				if (_debug_) {
+					cout << "[DEBUG] Loaded Dll Hooking Pattern : \n\t" << endl;
+					for (size_t i = 0; i < length; ++i) {
+						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
+					}
+					cout << "\n" << endl;
+				}
+			}
+		}
+
+		if (root["GeneralPatterns"].size() > 0) {
+			for (int i = 0; i < root["GeneralPatterns"].size(); i++) {
+
+				string str_pattern = root["GeneralPatterns"][i].asString();
+				size_t length;
+
+				BYTE* pattern = hexStringToByteArray(str_pattern, length);
+				generalPatterns.insert({ pattern , length });
+
+				if (_debug_) {
+					cout << "[DEBUG] Loaded General Pattern : \n\t" << endl;
+					for (size_t i = 0; i < length; ++i) {
+						std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(pattern[i]) << " ";
+					}
+					cout << "\n" << endl;
+				}
+			}
+		}
 	}
 
 	maliciousPatterns.close();
@@ -494,7 +551,7 @@ void startup() {
 
 	//cout << " [DEBUG] Working threads table size : " << threads.size() << endl;
 
-	// Opening el famoso Handle on target process by its PID
+	// Opening el famoso Handle on target process identfied by its PID
 	targetProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)targetProcId);
 	if (!targetProcess) {
 		cout << "[X] Can't find that PID ! Give me a valid one please ! .\n" << endl;
@@ -508,7 +565,6 @@ void startup() {
 		exit(-222);
 	}
 
-
 	// Heap Monitoring 
 	if (_heap_) {
 		HeapUtils memUtils(targetProcess);
@@ -518,6 +574,16 @@ void startup() {
 
 	Pe64Utils modUtils(targetProcess);
 	_pe64Utils = &modUtils;
+
+	IpcUtils ipcUtils(L"\\\\.\\pipe\\beotm", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup);
+	
+	auto t_initPipeAndWaitForConnection = [&ipcUtils]() {
+		ipcUtils.initPipeAndWaitForConnection();
+	};
+	
+	thread* ipcThread = new thread(t_initPipeAndWaitForConnection);
+	threads.push_back(ipcThread);
+
 	DllLoader dllLoader(targetProcess);
 
 	LPVOID addressOfDll;
@@ -564,6 +630,8 @@ void startup() {
 			injected_nt_dll = dllLoader.InjectDll(GetProcessId(targetProcess), ntDllAbsolutePathBuf, addressOfDll);
 		}
 
+		//initPipeAndWaitForConnection(L"\\\\.\\pipe\\beotm_test");
+
 	}
 
 	if (_k32_) {
@@ -585,12 +653,16 @@ void startup() {
 	}
 
 	modUtils.enumerateProcessModulesAndTheirPools();
-	modUtils.getFirstModuleIAT();
+	
+	if (_iat_) {
+		modUtils.getFirstModuleIAT();
 
-	cout << "[*] " << modUtils.getIATFunctionsMapping()->size() << " imported functions" << endl;
+		cout << "[*] " << modUtils.getIATFunctionsMapping()->size() << " imported functions" << endl;
 
-	functionsNamesImportsMapping = modUtils.getIATFunctionsMapping();
-	functionsAddressesOfAddresses = modUtils.getIATFunctionsAddressesMapping();
+		functionsNamesImportsMapping = modUtils.getIATFunctionsMapping();
+		functionsAddressesOfAddresses = modUtils.getIATFunctionsAddressesMapping();
+	}
+
 	ThreadsState.clear();
 
 	modUtils.clearFunctionsNamesMapping();
@@ -648,7 +720,7 @@ void startup() {
 
 	}
 
-	if (_stack_ || _backed_) {
+	if (_stack_ || _backed_ || _stack_spoof_) {
 		
 		cout << endl;
 		while (true) {
@@ -671,7 +743,7 @@ void startup() {
 /*
 Proper deletion of call stack monitoring threads, invoked when hitting Ctrl+C or when the process is terminated
 */
-void deleteCallStackMonitoringThreads() {
+void deleteMonitoringWorkerThreads() {
 	if (_debug_) {
 		cout << "[DEBUG] Killing " << threads.size() << " working threads..." << endl;
 	}
@@ -826,31 +898,21 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 						continue;
 					}*/
 
-					_boost_ ? std::this_thread::yield() : Sleep(2);
+					//_boost_ ? std::this_thread::yield() : Sleep(2);
 
-					/*
+					
 					if (_boost_) {
 						std::this_thread::yield();
 					} else {
-						std::chrono::microseconds sleepDuration(1001);
-						std::this_thread::sleep_for(sleepDuration);
-						}
-					}*/
-
-					/*
+						Sleep(2);
+					}
 					
-						if (!m.try_lock()) {
-							std::this_thread::yield();
-							continue;
-						
-					*/
-
 				}
 				else {
 					cout << "[*] Thread " << threadEntry32.th32ThreadID << " destroyed." << endl;
 					ThreadsState.erase((DWORD)threadEntry32.th32ThreadID);
 					if (ThreadsState.size() == 0) {
-						deleteCallStackMonitoringThreads();
+						deleteMonitoringWorkerThreads();
 						startup();
 					}
 					//terminate();
@@ -861,7 +923,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 				cout << "[*] Thread " << threadEntry32.th32ThreadID << " destroyed." << endl;
 				ThreadsState.erase((DWORD)threadEntry32.th32ThreadID);
 				if (ThreadsState.size() == 0) {
-					deleteCallStackMonitoringThreads();
+					deleteMonitoringWorkerThreads();
 					startup();
 				}
 				//terminate();
@@ -873,86 +935,105 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 		
 		} else {
 		cout << "[X] Failed to retrieve thread context" << endl;
-		deleteCallStackMonitoringThreads();
+		deleteMonitoringWorkerThreads();
 		startup();
 	}
 }
 
-std::mutex myMutex;
-
+std::mutex coutMutex;
 DWORD64 GetDetailedStackTraceWithReturnAddresses(HANDLE hProcess, HANDLE hThread) {
+	
 	DWORD64 returnAddress = NULL;
+	CONTEXT context;
 
 	if (hThread != NULL) {
 
-		SYMBOL_INFO symbolInfo;
-		DWORD64 displacement;
-
-		memset(&symbolInfo, 0, sizeof(SYMBOL_INFO));
-		symbolInfo.SizeOfStruct = sizeof(SYMBOL_INFO);
-		symbolInfo.MaxNameLen = MAX_SYM_NAME;
-
-		STACKFRAME64 stackFrame64;
-		CONTEXT context;
-
-		memset(&stackFrame64, 0, sizeof(STACKFRAME64));
-		context.ContextFlags = CONTEXT_CONTROL;
-
+		// init
 		if (GetThreadContext(hThread, &context)) {
-			
-			stackFrame64.AddrPC.Offset = context.Rip;
-			stackFrame64.AddrPC.Mode = AddrModeFlat;
-			stackFrame64.AddrFrame.Offset = context.Rbp;
-			stackFrame64.AddrFrame.Mode = AddrModeFlat;
-			stackFrame64.AddrStack.Offset = context.Rsp;
-			stackFrame64.AddrStack.Mode = AddrModeFlat;
 
-			while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
-				hProcess,
-				hThread,
-				&stackFrame64,
-				&context,
-				NULL,
-				SymFunctionTableAccess64,
-				SymGetModuleBase64,
-				NULL)) {
+			DWORD64 previousRsp = context.Rsp;
+			DWORD64 previousRbp = context.Rbp;
 
-				std::unique_lock<std::mutex> lock(myMutex);
+			while (true) {
 
-				DWORD64 savedRBP;
-				if (ReadProcessMemory(hProcess,
-					reinterpret_cast<LPCVOID>(stackFrame64.AddrFrame.Offset),
-					&savedRBP,
-					sizeof(savedRBP),
-					NULL)) {
-					//std::cout << "Saved RBP: 0x" << std::hex << savedRBP << std::endl;
+					SYMBOL_INFO symbolInfo;
+					DWORD64 displacement;
 
-					DWORD64 returnAddress;
-					if (ReadProcessMemory(hProcess,
-						reinterpret_cast<LPCVOID>(stackFrame64.AddrFrame.Offset + sizeof(savedRBP)),
-						&returnAddress,
-						sizeof(returnAddress),
-						NULL)) {
-						std::cout << "[ 0x" << std::hex << returnAddress << "] ";
+					memset(&symbolInfo, 0, sizeof(SYMBOL_INFO));
+					symbolInfo.SizeOfStruct = sizeof(SYMBOL_INFO);
+					symbolInfo.MaxNameLen = MAX_SYM_NAME;
 
-						//by SymFromAddr (unsafe function) that was overriding the value of _saved_backed_.
-						BOOL _saved_backed_ = _backed_;
-						if (_pe64Utils->isAddressInProcessMemory((LPVOID)(DWORD_PTR)context.Rip)) {
-							if (SymFromAddr(targetProcess, (DWORD_PTR&)returnAddress, &displacement, &symbolInfo)) {
-								if (symbolInfo.Name != NULL) {
+					STACKFRAME64 stackFrame64;
 
-									std::cout << "\t\t" << symbolInfo.Name << "+0x" << displacement << std::endl;
+					memset(&stackFrame64, 0, sizeof(STACKFRAME64));
+					context.ContextFlags = CONTEXT_CONTROL;
+
+					if (GetThreadContext(hThread, &context)) {
+
+						if ((previousRsp != context.Rsp) || (previousRbp != context.Rbp)) {
+
+							stackFrame64.AddrPC.Offset = context.Rip;
+							stackFrame64.AddrPC.Mode = AddrModeFlat;
+							stackFrame64.AddrFrame.Offset = context.Rbp;
+							stackFrame64.AddrFrame.Mode = AddrModeFlat;
+							stackFrame64.AddrStack.Offset = context.Rsp;
+							stackFrame64.AddrStack.Mode = AddrModeFlat;
+
+							while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
+								hProcess,
+								hThread,
+								&stackFrame64,
+								&context,
+								NULL,
+								SymFunctionTableAccess64,
+								SymGetModuleBase64,
+								NULL)) {
+
+								DWORD64 savedRBP;
+								if (ReadProcessMemory(hProcess,
+									reinterpret_cast<LPCVOID>(stackFrame64.AddrFrame.Offset),
+									&savedRBP,
+									sizeof(savedRBP),
+									NULL)) {
+
+									std::lock_guard<std::mutex> lock(coutMutex);
+									std::cout << "Saved RBP: 0x" << std::hex << savedRBP << std::endl;
+
+									DWORD64 returnAddress;
+									if (ReadProcessMemory(hProcess,
+										reinterpret_cast<LPCVOID>(stackFrame64.AddrFrame.Offset + sizeof(savedRBP)),
+										&returnAddress,
+										sizeof(returnAddress),
+										NULL)) {
+
+										//by SymFromAddr (unsafe function) that was overriding the value of _saved_backed_.
+										BOOL _saved_backed_ = _backed_;
+										
+										if (_pe64Utils->isAddressInProcessMemory((LPVOID)(DWORD_PTR)context.Rip)) {
+											if (SymFromAddr(targetProcess, (DWORD_PTR&)returnAddress, &displacement, &symbolInfo)) {
+												if (symbolInfo.Name != NULL) {
+
+													//std::lock_guard<std::mutex> lock(coutMutex);
+													std::cout << "[ 0x" << std::hex << returnAddress << "] ";
+													std::cout << "\t\t\t" << symbolInfo.Name << "+0x" << displacement << std::endl;
+												
+												}
+											}
+										}
+
+									}
 								}
 							}
-						}
+
+							cout << "\n\n\n" << endl;
+
+							previousRbp = context.Rbp;
+							previousRsp = context.Rsp;
 					}
 				}
 
-				lock.unlock();
+				Sleep(1500);
 			}
-
-			cout << "\n\n\n" << endl;
-
 		}
 	}
 
@@ -1078,11 +1159,11 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 														CloseHandle(h);
 													}
 
-													//deleteCallStackMonitoringThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
+													//deleteMonitoringWorkerThreads(); /// ----> Exception lev�e ici ! + probleme bouclage apres detection
 
 													delete[] paramValue;
 
-													deleteCallStackMonitoringThreads();
+													deleteMonitoringWorkerThreads();
 
 													return TRUE;
 
@@ -1172,7 +1253,7 @@ boolean monitorHeapForProc(HeapUtils heapUtils) {
 					printRedAlert("Malicious injection detected ! Malicious process killed !");
 
 					CloseHandle(targetProcess);
-					deleteCallStackMonitoringThreads();
+					deleteMonitoringWorkerThreads();
 
 					startup();
 
@@ -1184,7 +1265,7 @@ boolean monitorHeapForProc(HeapUtils heapUtils) {
 			}
 			free(data);
 		}
-		Sleep(1000);
+		Sleep(2000);
 	}
 	return FALSE;
 }
@@ -1206,12 +1287,3 @@ bool searchForOccurenceInByteArray(BYTE* tab, int tailleTab, BYTE* chaineHex, in
 	return false;
 }
 
-// new one 
-bool containsSequence(const BYTE* haystack, size_t haystackSize, const BYTE* needle, size_t needleSize) {
-	for (size_t i = 0; i <= haystackSize - needleSize; ++i) {
-		if (memcmp(haystack + i, needle, needleSize) == 0) {
-			return true;
-		}
-	}
-	return false;
-}

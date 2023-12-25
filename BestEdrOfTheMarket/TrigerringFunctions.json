@@ -19,10 +19,14 @@
   "StackBasedHooking": {
     "Functions": [
       "NtCreateUserProcess",
+      "ZwCreateUserProcess",
       "NtSetInformationThread",
+      "ZwSetInformationThread",
+      "NtProtectVirtualMemory",
       "ZwProtectVirtualMemory",
-      "ZwOpenFile",
       "NtOpenFile",
+      "ZwOpenFile",
+      "NtCreateThreadEx",
       "ZwCreateThreadEx"
     ]
   },

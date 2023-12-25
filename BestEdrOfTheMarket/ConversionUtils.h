@@ -16,7 +16,7 @@ std::string removeBOM(const std::string& input) {
         return input;
     }
 }
-
+    
 LPCWSTR ConvertCharToLPCWSTR(const char* charArray)
 {
     int length = strlen(charArray) + 1;
@@ -94,6 +94,47 @@ void printByteArrayWithoutZerosAndBreaks(const BYTE* byteArray, size_t size) {
         }
     }      
     std::cout << std::dec << std::endl;
+}
+
+BYTE* charToByte(const char* input) {
+
+    size_t length = strlen(input);
+    BYTE* result = new BYTE[length];
+    for (size_t i = 0; i < length; ++i) {
+        result[i] = static_cast<BYTE>(input[i]);
+    }
+
+    return result;
+
+}
+
+BYTE* charToHexDump(const char* input) {
+
+    size_t len = strlen(input);
+    size_t hexDumpSize = len * 2;
+    BYTE* hexDump = new BYTE[hexDumpSize + 1];
+    hexDump[hexDumpSize] = '\0';
+    return hexDump;
+
+}
+
+
+BYTE* hexStringToBytes(const std::string& hexString, size_t& size) {
+    size_t length = hexString.length();
+    if (length % 2 != 0) {
+        std::cerr << "Hex string length must be even." << std::endl;
+        return nullptr;
+    }
+
+    size = length / 2;
+    BYTE* byteArray = new BYTE[size];
+
+    for (size_t i = 0; i < length; i += 2) {
+        std::string byteString = hexString.substr(i, 2);
+        byteArray[i / 2] = static_cast<BYTE>(std::stoi(byteString, nullptr, 16));
+    }
+
+    return byteArray;
 }
 
 

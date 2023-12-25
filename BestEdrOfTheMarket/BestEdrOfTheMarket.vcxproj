@@ -30,6 +30,7 @@
     <None Include="YaroRules.json" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BytesSequencesUtils.h" />
     <ClInclude Include="ColorsUtils.h" />
     <ClInclude Include="ConversionUtils.h" />
     <ClInclude Include="ErrorsReportingUtils.h" />
