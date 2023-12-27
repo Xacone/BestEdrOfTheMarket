@@ -138,6 +138,13 @@ BYTE* hexStringToBytes(const std::string& hexString, size_t& size) {
 }
 
 
+void reverseBytesOrder(BYTE* bytes, size_t size) {
+    // Implement the logic to reverse the order of bytes
+    for (size_t i = 0; i < size / 2; ++i) {
+        std::swap(bytes[i], bytes[size - i - 1]);
+    }
+}
+
 //void printAsciiDumpWithoutZeros(const BYTE* byteArray, size_t size, size_t bytesPerLine = 16) {
 //    
 //    for (size_t i = 0; i < size; i += bytesPerLine) {
