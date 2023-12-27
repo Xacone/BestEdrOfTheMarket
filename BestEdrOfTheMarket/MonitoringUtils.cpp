@@ -346,24 +346,38 @@ void MonitorPointersToUnbackedAddresses(HANDLE hThread, THREADENTRY32 threadEntr
 
 					if (context.Rip != previousRip) {
 
-						cout << "changed : " << hex << (DWORD_PTR)context.Rip << endl;
-
+						
 						if (!modUtils->isAddressInModulesMemPools(context.Rip)) {
 
-							printRedAlert("Unbacked return address, analysis...");
-							//SuspendThread(hThread);
+							printBlueAlert("Unbacked return address, analysis...");
+
+							cout << "\t RIP points to an unbacked address @ " << hex << (DWORD_PTR)context.Rip << endl;
 
 							BYTE paramValue[2048];
 							size_t bytesRead;
 
 							if (ReadProcessMemory(targetProcess, (LPVOID)context.Rip, paramValue, sizeof(paramValue), &bytesRead)) {
 
-								cout << (string)"got that on " << hex << (DWORD_PTR)context.Rip << endl;
+								//cout << (string)"got that on " << hex << (DWORD_PTR)context.Rip << endl;
 
-								printByteArray(paramValue, bytesRead);
-							}
-							else {
-								cout << "eh bah non chef" << endl;
+								active = FALSE;
+								SuspendThread(hThread);
+								BOOL problemFound = analyseProcessThreadsStackTrace(targetProcess);
+								cout << "\033[0m";
+								if (!problemFound) {
+									ResumeThread(hThread);
+									cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
+									active = TRUE;
+								}
+								else {
+									cout << "\033[0m";
+									startup();
+								}
+								cout << "\033[0m";
+
+								if (_debug_) {
+									printByteArray(paramValue, bytesRead);
+								}
 							}
 						}
 
@@ -371,7 +385,7 @@ void MonitorPointersToUnbackedAddresses(HANDLE hThread, THREADENTRY32 threadEntr
 					}
 				}
 
-				Sleep(1);
+				_boost_ ? std::this_thread::yield() : Sleep(2);
 			}
 		}
 	}
@@ -843,27 +857,45 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 									}
 									retainedName = symbolInfo.Name;
 
-									// Bad idea to get that thing there
-									//GetDetailedStackTraceWithReturnAddresses(targetProcess, hThread);
+									if (retainedName != NULL) {
+										auto it = stackLevelMonitoredFunctions.find(retainedName);
+										if (it != stackLevelMonitoredFunctions.end()) {
+
+											//printf("%s", (char*)symbolInfo.Name);
+
+											std::string msg = (retainedName != NULL) ? std::string(symbolInfo.Name) + " triggered, analysis..." : "No symbol triggered, analysis...";
+											printBlueAlert(msg);
+
+											if (_debug_) {
+												/// TODO : Les couleurs marchent pas
+												cout << "\t\t " << ANSI_COLOR_BG_WHITE << ANSI_COLOR_BLUE << "--------------------------   STACK TRACE    --------------------------\n" << " \t\t\t" << endl;
+											}
+
+											active = FALSE;
+											SuspendThread(hThread);
+											BOOL problemFound = analyseProcessThreadsStackTrace(targetProcess);
+											cout << "\033[0m";
+											if (!problemFound) {
+												ResumeThread(hThread);
+												cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
+												active = TRUE;
+											}
+											else {
+												cout << "\033[0m";
+												startup();
+											}
+											cout << "\033[0m";
+										}
+									}
 					
 								}
 							}
-						}
-						_backed_ = _saved_backed_;
+						} 
 						
-						if (retainedName != NULL) {
-							auto it = stackLevelMonitoredFunctions.find(retainedName);
-							if (it != stackLevelMonitoredFunctions.end()) {
+						/*
+						else {
+							if (_backed_) {
 
-								//printf("%s", (char*)symbolInfo.Name);
-
-								std::string msg = (retainedName != NULL) ? std::string(symbolInfo.Name) + " triggered, analysis..." : "No symbol triggered, analysis...";
-								printBlueAlert(msg);
-								
-								if (_debug_) {
-									/// TODO : Les couleurs marchent pas
-									cout << "\t\t " << ANSI_COLOR_BG_WHITE << ANSI_COLOR_BLUE << "--------------------------   STACK TRACE    --------------------------\n" << " \t\t\t" << endl;
-								}
 								active = FALSE;
 								SuspendThread(hThread);
 								BOOL problemFound = analyseProcessThreadsStackTrace(targetProcess);
@@ -872,13 +904,17 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 									ResumeThread(hThread);
 									cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
 									active = TRUE;
-								} else {
+								}
+								else {
 									cout << "\033[0m";
 									startup();
 								}
 								cout << "\033[0m";
 							}
 						}
+
+						_backed_ = _saved_backed_;
+						*/
 					}
 
 					previousRip = context.Rip;
@@ -898,14 +934,15 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 						continue;
 					}*/
 
-					//_boost_ ? std::this_thread::yield() : Sleep(2);
+					_boost_ ? std::this_thread::yield() : Sleep(2);
 
-					
+					/*
 					if (_boost_) {
 						std::this_thread::yield();
 					} else {
 						Sleep(2);
 					}
+					*/
 					
 				}
 				else {
@@ -1234,7 +1271,7 @@ boolean monitorHeapForProc(HeapUtils heapUtils) {
 	//memUtils.printAllHeapRegionsContent();
 
 	while (true) {
-		
+
 		try { heapUtils.getHeapRegions(); }
 		catch (exception& e) { continue; }
 
@@ -1268,22 +1305,5 @@ boolean monitorHeapForProc(HeapUtils heapUtils) {
 		Sleep(2000);
 	}
 	return FALSE;
-}
-
-
-bool searchForOccurenceInByteArray(BYTE* tab, int tailleTab, BYTE* chaineHex, int tailleChaineHex) {
-	for (int i = 0; i <= tailleTab - tailleChaineHex; i++) {
-		bool correspondance = true;
-		for (int j = 0; j < tailleChaineHex; j++) {
-			if (tab[i + j] != chaineHex[j]) {
-				correspondance = false;
-				break;
-			}
-		}
-		if (correspondance) {
-			return true;
-		}
-	}
-	return false;
 }
 
