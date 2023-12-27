@@ -6,7 +6,11 @@
 
 #include "ErrorsReportingUtils.h"
 
+class HeapUtils;
+
+
 // https://stackoverflow.com/questions/3313581/runtime-process-memory-patching-for-restoring-state/3313700#3313700
+
 
 class HeapUtils {
 

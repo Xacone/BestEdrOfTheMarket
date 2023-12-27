@@ -1,10 +1,11 @@
 ﻿cl : ligne de commande  warning D9025: substitution de '/sdl' par '/GS-'
   MonitoringUtils.cpp
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\ConversionUtils.h(22,16): warning C4267: 'initialisation' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\ConversionUtils.h(32,16): warning C4267: 'initialisation' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\ConversionUtils.h(196,30): warning C4996: 'localtime': This function or variable may be unsafe. Consider using localtime_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\Pe64Utils.h(300,15): warning C4101: 'bytesRead' : variable locale non référencée
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\Pe64Utils.h(375,15): warning C4101: 'bytesRead' : variable locale non référencée
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\HeapUtils.h(1,13): warning C4081: attendu 'newline' ; rencontré '*'
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\HeapUtils.h(99,36): warning C4101: 'e' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\HeapUtils.h(103,36): warning C4101: 'e' : variable locale non référencée
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\ntstatus.h(66,1): warning C4005: 'STATUS_WAIT_0' : redéfinition de macro
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\winnt.h(2549,1): message : voir la définition précédente de 'STATUS_WAIT_0'
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\ntstatus.h(223,1): warning C4005: 'STATUS_ABANDONED_WAIT_0' : redéfinition de macro
@@ -133,24 +134,25 @@ C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\ntstatus.h(14
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\winnt.h(2612,1): message : voir la définition précédente de 'STATUS_SXS_EARLY_DEACTIVATION'
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\ntstatus.h(14985,1): warning C4005: 'STATUS_SXS_INVALID_DEACTIVATION' : redéfinition de macro
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um\winnt.h(2613,1): message : voir la définition précédente de 'STATUS_SXS_INVALID_DEACTIVATION'
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(420,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(428,21): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(432,21): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(468,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(487,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(506,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(525,22): warning C4018: '<' : incompatibilité signed/unsigned
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1146,79): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1146,59): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1056,9): warning C4101: 'thCount' : variable locale non référencée
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1061,18): warning C4101: 'pwow64_context' : variable locale non référencée
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1055,9): warning C4101: 'thIDs' : variable locale non référencée
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1242,48): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1248,54): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
-C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1239,21): warning C4101: 'e' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\IPCUtils.h(114,7): warning C4996: 'memccpy': The POSIX name for this item is deprecated. Instead, use the ISO C and C++ conformant name: _memccpy. See online help for details.
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(434,22): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(442,21): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(446,21): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(482,22): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(501,22): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(520,22): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(539,22): warning C4018: '<' : incompatibilité signed/unsigned
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1134,79): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1134,59): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1044,9): warning C4101: 'thCount' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1049,18): warning C4101: 'pwow64_context' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1043,9): warning C4101: 'thIDs' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1207,48): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1213,54): warning C4267: 'argument' : conversion de 'size_t' en 'int', perte possible de données
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\MonitoringUtils.cpp(1204,21): warning C4101: 'e' : variable locale non référencée
   Génération de code en cours
-  3 of 1654 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    5 functions had inline decision re-evaluated but remain unchanged
+  53 of 1676 functions ( 3.2%) were compiled, the rest were copied from previous compilation.
+    4 functions were new in current compilation
+    38 functions had inline decision re-evaluated but remain unchanged
   Fin de la génération du code
   BestEdrOfTheMarket.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarket.exe

@@ -7,6 +7,16 @@
 #include <iostream>
 #include <algorithm>
 
+std::string bytesToHexString(const BYTE* bytes, size_t size) {
+
+	std::stringstream ss;
+	ss << std::hex << std::setfill('0');
+    for (size_t i = 0; i < size; ++i) {
+		ss << std::setw(2) << static_cast<int>(bytes[i]);
+	}
+	return ss.str();
+}
+
 std::string removeBOM(const std::string& input) {
 
     if (input.size() >= 3 && input[0] == '\xEF' && input[1] == '\xBB' && input[2] == '\xBF') {
@@ -177,3 +187,15 @@ void reverseBytesOrder(BYTE* bytes, size_t size) {
 //        std::cout << std::endl;
 //    }
 //}
+
+
+std::string getCurrentDateTime() {
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+    std::tm* timeInfo = std::localtime(&currentTime);
+    std::ostringstream oss;
+    oss << std::put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
+    return oss.str();
+
+}

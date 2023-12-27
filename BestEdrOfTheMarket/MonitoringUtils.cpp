@@ -557,7 +557,7 @@ void startup() {
 
 	maliciousPatterns.close();
 
-	// Console Conctrol Handling
+	// Console Control Handling
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 
 	// Demanding PID
@@ -643,9 +643,6 @@ void startup() {
 		while (!injected_nt_dll) {
 			injected_nt_dll = dllLoader.InjectDll(GetProcessId(targetProcess), ntDllAbsolutePathBuf, addressOfDll);
 		}
-
-		//initPipeAndWaitForConnection(L"\\\\.\\pipe\\beotm_test");
-
 	}
 
 	if (_k32_) {
@@ -890,60 +887,14 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 					
 								}
 							}
-						} 
-						
-						/*
-						else {
-							if (_backed_) {
-
-								active = FALSE;
-								SuspendThread(hThread);
-								BOOL problemFound = analyseProcessThreadsStackTrace(targetProcess);
-								cout << "\033[0m";
-								if (!problemFound) {
-									ResumeThread(hThread);
-									cout << "\x1B[48;5;22m" << "[OK] No threat detected :)" << "\x1B[0m" << endl;
-									active = TRUE;
-								}
-								else {
-									cout << "\033[0m";
-									startup();
-								}
-								cout << "\033[0m";
-							}
 						}
-
-						_backed_ = _saved_backed_;
-						*/
 					}
 
 					previousRip = context.Rip;
-					
-					//this_thread::sleep_for(chrono::microseconds(20));
-					
-					/*
-					std::unique_lock<std::mutex> lock(mtx);
-					cv.wait_for(lock, std::chrono::microseconds(20), [&] { return !active; });
-					lock.unlock();
-					*/
-
-					/*
-					if (!m.try_lock())
-					{
-						std::this_thread::yield();
-						continue;
-					}*/
-
+				
 					_boost_ ? std::this_thread::yield() : Sleep(2);
 
-					/*
-					if (_boost_) {
-						std::this_thread::yield();
-					} else {
-						Sleep(2);
-					}
-					*/
-					
+
 				}
 				else {
 					cout << "[*] Thread " << threadEntry32.th32ThreadID << " destroyed." << endl;
@@ -1209,30 +1160,7 @@ BOOL analyseProcessThreadsStackTrace(HANDLE hProcess) {
 										}
 
 										delete[] paramValue;
-									}
-
-									
-									
-
-									/* verbose */
-									/*
-									if (_debug_) {
-										cout << "\n ------------------------------------------------- " << endl;
-										cout << "\t" << "[DEBUG] " << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
-										cout << "\t\tRAX : " << hex << context.Rax << endl
-											<< "\t\tRBX : " << hex << context.Rbx << endl
-											<< "\t\tRCX : " << hex << context.Rcx << endl
-											<< "\t\tRDX : " << hex << context.Rdx << endl
-											<< "\t\tRSI : " << hex << context.Rsi << endl
-											<< "\t\tRBP : " << hex << context.Rbp << endl
-											<< "\t\tRSP : " << hex << context.Rsp << endl
-											<< "\t\tRIP : " << hex << context.Rip << endl
-											<< "\t\tR10 : " << hex << context.R10 << endl;
-										cout << "\n" << endl;
-									}
-									*/
-
-									
+									}									
 								}
 								else {
 									/* verbose
@@ -1297,6 +1225,7 @@ boolean monitorHeapForProc(HeapUtils heapUtils) {
 					/// TODO: verbose ?
 					//printByteArray(data, memUtils.getHeapSize(i));
 					//printByteArray(pair.first, strlen((const char*)pair.second));
+
 					return TRUE;
 				}
 			}

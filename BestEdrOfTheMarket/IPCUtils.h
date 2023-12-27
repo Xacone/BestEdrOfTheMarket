@@ -6,10 +6,12 @@
 #include <iostream>
 #include <vector>
 #include <json/json.h> 
+#include <string>
 
 #include "ErrorsReportingUtils.h"
 #include "ColorsUtils.h"
 #include "BytesSequencesUtils.h"
+#include "ReportingUtils.h"
 
 #define PIPE_BUFFER_SIZE 512
 
@@ -106,7 +108,6 @@ public:
 						size_t capturedDataSize = (size_t)strlen(root["Data"].asCString());
 						BYTE* addr = hexStringToBytes(root["Data"].asCString(), capturedDataSize);
 
-						//BYTE sAddr[8] = { addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7] };
 						BYTE rAddr[8] = { addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0] };
 
 						LPCVOID addrPointer;
@@ -130,65 +131,46 @@ public:
 							for (const auto& pair : dllPatterns) {
 								if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
 									alertAndKillThatProcess(targetProcess);
+									
+									std::string report = createReportingJson(
+										GetProcessId(targetProcess),
+										std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+										std::string("DLL Hooking on ") + std::string(routineName),
+										(std::string)"0x" + bytesToHexString(addr, 8),
+										(std::string)bytesToHexString(pair.first, pair.second),
+										"DLL Patterns",
+										(std::string)bytesToHexString(dump, dumpBytesRead)
+									);
+
+									std::cout << "\n" << report << "\n" << std::endl;
+									
 									deleteMonitoringFunc();
 									startupFunc();
 								}
 							}
 
-							/*
+							
 							for (const auto& pair : generalPatterns) {
 								if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
 									alertAndKillThatProcess(targetProcess);
+
+									std::string report = createReportingJson(
+										GetProcessId(targetProcess),
+										std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+										std::string("DLL Hooking on ") + std::string(routineName),
+										(std::string)"0x" + bytesToHexString(addr, 8),
+										(std::string)"0x" + bytesToHexString(pair.first, pair.second),
+										"General Patterns",
+										(std::string)"0x" + bytesToHexString(dump, dumpBytesRead)
+									);
+
+									std::cout << "\n" << report << "\n" << std::endl;
+
 									deleteMonitoringFunc();
 									startupFunc();
 								}
-							}*/
-							
-						}
-
-						
-
-
-						//DWORD_PTR dwordPtrValue = *reinterpret_cast<DWORD_PTR*>(rAddr);
-						//LPVOID lpvoidValue = reinterpret_cast<LPVOID>(dwor dPtrValue);
-
-						//std::cout << std::hex << (DWORD_PTR)dwordPtrValue << std::endl;
-						//std::cout << std::hex << (LPVOID)dwordPtrValue << std::endl;
-
-						/*
-						BYTE dump[2048];
-						size_t dumpBytesRead;
-
-						reverseBytesOrder(addr, capturedDataSize);
-
-						if (ReadProcessMemory(targetProcess, pVoidPointer, dump, sizeof(dump), &dumpBytesRead)) {
-							printByteArray(dump, dumpBytesRead);
-						} else {
-							std::cout << "bah non chef " << std::endl;
-						}
-						*/
-
-
-						
-
-						/*
-						for (const auto& pair : dllPatterns) {
-							if (containsSequence(hexDump, bytesRead, pair.first, pair.second)) {
-								alertAndKillThatProcess(targetProcess);
-									deleteMonitoringFunc();
-									startupFunc();
 							}
 						}
-
-						for (const auto& pair : generalPatterns) {
-							if (containsSequence(hexDump, bytesRead, pair.first, pair.second)) {
-								alertAndKillThatProcess(targetProcess);
-								deleteMonitoringFunc();
-								startupFunc();
-							}
-						}
-						*/
-						
 					}
 				}
 			}

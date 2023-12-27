@@ -40,6 +40,7 @@
     <ClInclude Include="ModuleLoadingUtils.h" />
     <ClInclude Include="Pe64Utils.h" />
     <ClInclude Include="ProcessStructUtils.h" />
+    <ClInclude Include="ReportingUtils.h" />
     <ClInclude Include="SSNHookingUtils.h" />
     <ClInclude Include="Startup.h" />
     <ClInclude Include="SymbolsUtils.h" />
