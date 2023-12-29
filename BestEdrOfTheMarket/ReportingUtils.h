@@ -13,20 +13,22 @@ std::string GetProcessPathByPID(DWORD pid, HANDLE& hProc) {
     return processPath;
 }
 
-std::string createReportingJson(
+std::string dllHookingReportingJson(
     DWORD pid,
     const std::string& processName,
     const std::string& defenseMechanism,
     const std::string& address,
     const std::string& detectedPattern,
     const std::string& patternList,
-    const std::string& foundIn) {
+    const std::string& foundIn
+    ) {
+
     std::stringstream json;
 
     json << "{\n"
         << "  \"Version\" : \"" << "Best EDR Of The Market 1.1.0" << "\",\n"
         << "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
-        << "  \"ProcessPath\" : \"" << processName << "\",\n"
+        << "  \"MalicousProcessPath\" : \"" << processName << "\",\n"
         << "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
         << "  \"DateTime\" : \"" << std::string(__DATE__) + " " + std::string(__TIME__) << "\",\n"
         << "  \"Address\" : \"" << address << "\",\n"
@@ -36,5 +38,29 @@ std::string createReportingJson(
         << "}";
 
     return json.str();
+}
+
+std::string directSyscallReportingJson(
+    DWORD pid, 
+    const std::string& processName,
+    const std::string& defenseMechanism,
+    const std::string& address
+    ) {
+
+    std::stringstream json;
+
+    json << "{\n"
+        << "  \"Version\" : \"" << "1.1.0" << "\",\n"
+        << "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
+        << "  \"MaliciousProcessPath\" : \"" << processName << "\",\n"
+        << "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
+        << "  \"DateTime\" : \"" << std::string(__DATE__) + " " + std::string(__TIME__) << "\",\n"
+        << "  \"StubAddress\" : \"" << address << "\",\n"
+        << "}";
+
+    return json.str();
+
+
+
 }
 

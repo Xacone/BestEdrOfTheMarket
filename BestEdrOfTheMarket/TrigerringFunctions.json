@@ -18,6 +18,7 @@
   },
   "StackBasedHooking": {
     "Functions": [
+
       "NtCreateUserProcess",
       "ZwCreateUserProcess",
       "NtSetInformationThread",
@@ -27,7 +28,17 @@
       "NtOpenFile",
       "ZwOpenFile",
       "NtCreateThreadEx",
-      "ZwCreateThreadEx"
+      "ZwCreateThreadEx",
+      "NtCreateProcess",
+      "NtCreateProcess",
+      "NtResumeThread",
+      "ZwResumeThread",
+      "NtCreateThread",
+      "ZwCreateThread",
+      "RtlAllocateHeap",
+      "NtWriteVirtualMemory",
+      "ZwWriteVirtualMemory"
+
     ]
   },
   "SSNCrushingRoutines": {

@@ -182,6 +182,7 @@ BOOL _rop_ = FALSE;
 BOOL _debug_ = FALSE;
 BOOL _boost_ = FALSE;
 BOOL _stack_spoof_ = FALSE;
+BOOL _syscalls_ = FALSE;
 
 int main(int argc, char* argv[]) {
 
@@ -232,6 +233,9 @@ int main(int argc, char* argv[]) {
 		}
 		if (!strcmp(argv[arg], "/stack-spoof")) {
 			_stack_spoof_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/syscalls")) {
+			_syscalls_ = TRUE;
 		}
 
 	}
@@ -330,6 +334,9 @@ void MonitorPointersToUnbackedAddresses(HANDLE hThread, THREADENTRY32 threadEntr
 	
 	Pe64Utils* modUtils = _pe64Utils;
 
+	SYMBOL_INFO symbolInfo;
+	DWORD64 displacement;
+
 	CONTEXT context;
 	memset(&context, 0, sizeof(CONTEXT));
 	context.ContextFlags = CONTEXT_FULL;
@@ -340,18 +347,33 @@ void MonitorPointersToUnbackedAddresses(HANDLE hThread, THREADENTRY32 threadEntr
 			// Fetching first RIP
 			DWORD64 previousRip = context.Rip;
 
+			memset(&symbolInfo, 0, sizeof(SYMBOL_INFO));
+			symbolInfo.SizeOfStruct = sizeof(SYMBOL_INFO);
+			symbolInfo.MaxNameLen = MAX_SYM_NAME;
+
 			while (_backed_) {
 
 				if (GetThreadContext(hThread, &context)) {
 
 					if (context.Rip != previousRip) {
 
+						if (SymFromAddr(targetProcess, (DWORD_PTR&)context.Rip, &displacement, &symbolInfo)) {
+							if (symbolInfo.Name != NULL) {
+
+								std::cout << "\t" << symbolInfo.Name << "+0x" << displacement << std::endl;
+
+							}
+						}
+						else {
+							std::cout << "\tNo symbol found for " << std::hex << (DWORD_PTR)context.Rip << std::endl;
+						}
+
 						
 						if (!modUtils->isAddressInModulesMemPools(context.Rip)) {
 
 							printBlueAlert("Unbacked return address, analysis...");
 
-							cout << "\t RIP points to an unbacked address @ " << hex << (DWORD_PTR)context.Rip << endl;
+							//cout << "\t RIP points to an unbacked address @ " << hex << (DWORD_PTR)context.Rip << endl;
 
 							BYTE paramValue[2048];
 							size_t bytesRead;
@@ -589,15 +611,7 @@ void startup() {
 	Pe64Utils modUtils(targetProcess);
 	_pe64Utils = &modUtils;
 
-	IpcUtils ipcUtils(L"\\\\.\\pipe\\beotm", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup);
 	
-	auto t_initPipeAndWaitForConnection = [&ipcUtils]() {
-		ipcUtils.initPipeAndWaitForConnection();
-	};
-	
-	thread* ipcThread = new thread(t_initPipeAndWaitForConnection);
-	threads.push_back(ipcThread);
-
 	DllLoader dllLoader(targetProcess);
 
 	LPVOID addressOfDll;
@@ -605,22 +619,37 @@ void startup() {
 	BOOL injected_iat_dll = false;
 	BOOL injected_nt_dll = false;
 	BOOL injected_k32_dll = false;
+	BOOL injected_callbacks_dll = false;
 
 	char* iat_hooking_dll = (char*)"DLLs\\iat.dll";
 	char* nt_hooking_dll = (char*)"DLLs\\ntdII.dll";
 	char* k32_hooking_dll = (char*)"DLLs\\KerneI32.dll";
-	
+	char* callbacks_hooking_dll = (char*)"DLLs\\callbacks.dll";
+
 	DWORD iatDllBufferSize = GetFullPathNameA(iat_hooking_dll, 0, nullptr, nullptr);
 	DWORD ntDllBufferSize = GetFullPathNameA(nt_hooking_dll, 0, nullptr, nullptr);
 	DWORD k32DllBufferSize = GetFullPathNameA(k32_hooking_dll, 0, nullptr, nullptr);
+	DWORD callbacksDllBufferSize = GetFullPathNameA(callbacks_hooking_dll, 0, nullptr, nullptr);
 
 	char* iatDllAbsolutePathBuf = new char[iatDllBufferSize];
 	char* ntDllAbsolutePathBuf = new char[ntDllBufferSize];
 	char* k32DllAbsolutePathBuf = new char[k32DllBufferSize];
+	char* callbacksDllAbsolutePathBuf = new char[callbacksDllBufferSize];
+
+	/// TODO: Print abs paths in verbose
 
 	DWORD absoluteDllPath;
 
-	/// TODO: Print abs paths in verbose
+	if (_syscalls_) {
+	
+		absoluteDllPath = GetFullPathNameA(callbacks_hooking_dll, callbacksDllBufferSize, callbacksDllAbsolutePathBuf, nullptr);
+		while (!injected_callbacks_dll) {
+			if (_v_) {
+				cout << "[INFO] Injected callbacks.dll" << endl;
+			}
+			injected_callbacks_dll = dllLoader.InjectDll(GetProcessId(targetProcess), callbacksDllAbsolutePathBuf, addressOfDll);
+		}
+	}
 
 	if (_iat_) {
 		
@@ -683,11 +712,23 @@ void startup() {
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "kernel32.dll");
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "KERNELBASE.dll");
 
-	// Powershell
+	// Powershell test
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "win32u.dll");
 
+	// needs functions mapping to be filled
+	if (_nt_ || _k32_ || _iat_ || _syscalls_) {
+
+		IpcUtils ipcUtils(L"\\\\.\\pipe\\beotm", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
+
+		auto t_initPipeAndWaitForConnection = [&ipcUtils]() {
+			ipcUtils.initPipeAndWaitForConnection();
+			};
+
+		thread* ipcThread = new thread(t_initPipeAndWaitForConnection);
+		threads.push_back(ipcThread);
+	}
+
 	LPVOID IatHookableDllStartAddr = NULL;
-	
 	if (_iat_) {
 		IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)iatDllAbsolutePathBuf));
 		if (_v_) {
@@ -783,7 +824,7 @@ char* getFunctionNameFromVA(DWORD_PTR targetAddr) {
 }
 
 /*
-	Prints the address of an export	
+	Prints the address of an export
 	const char* target : Export name
 */
 DWORD_PTR printFunctionsMappingKeys(const char* target) {
@@ -816,7 +857,7 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 	context.ContextFlags = CONTEXT_FULL;
 
 	if (GetThreadContext(hThread, &context)) {
-		
+
 		/* verbose
 		cout << "RIP : " << hex << context.Rip << endl;
 		*/
@@ -841,9 +882,8 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 						symbolInfo.SizeOfStruct = sizeof(SYMBOL_INFO);
 						symbolInfo.MaxNameLen = MAX_SYM_NAME;
 
-
 						char* retainedName = NULL;
-						
+
 						BOOL _saved_backed_ = _backed_;
 
 						if (modUtils->isAddressInProcessMemory((LPVOID)(DWORD_PTR)context.Rip)) {
@@ -869,7 +909,9 @@ void MonitorThreadCallStack(HANDLE hThread, THREADENTRY32 threadEntry32) {
 											}
 
 											active = FALSE;
-											SuspendThread(hThread);
+											//if (!IsThreadSuspended(hThread)){
+												SuspendThread(hThread);
+											//}
 											BOOL problemFound = analyseProcessThreadsStackTrace(targetProcess);
 											cout << "\033[0m";
 											if (!problemFound) {

@@ -18,3 +18,15 @@ PPEB getHandledProcessPeb(HANDLE hProcess) {
     }
     return peb;
 }
+
+bool IsThreadSuspended(HANDLE hThread) {
+    CONTEXT context;
+    memset(&context, 0, sizeof(CONTEXT));
+    context.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+    if (GetThreadContext(hThread, &context)) {
+        return (context.ContextFlags & CONTEXT_DEBUG_REGISTERS) != 0;
+    }
+
+    return false;
+}

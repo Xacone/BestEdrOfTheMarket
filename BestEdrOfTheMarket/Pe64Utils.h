@@ -34,6 +34,8 @@ private:
 	char moduleFileName[MAX_PATH];
 	int moduleCount;
 
+	std::vector<HANDLE> hThreads;
+
 public:
 
 	LPVOID getModStartAddr(int order) {
@@ -42,6 +44,10 @@ public:
 
 	LPVOID getModEndAddr(int order) {
 		return modEndAddrs[order];
+	}
+
+	std::vector<HANDLE>* getThreads() {
+		return &hThreads;
 	}
 
     std::unordered_map<std::string, LPVOID>* getIATFunctionsAddressesMapping() {
@@ -59,6 +65,7 @@ public:
 	Pe64Utils(HANDLE hProcess) {
 		target = hProcess;
 		peb = getHandledProcessPeb(target);
+		enumerateProcessThreads();
 	}	
 
 	void clearFunctionsNamesMapping() {
@@ -355,6 +362,7 @@ public:
 		return TRUE;
 	}
 
+	// TODO : no need for hProcess param
 
 	BOOL RetrieveExportsForGivenModuleAndFillMap(HANDLE hProcess, char* moduleName, LPVOID moduleAddress) {
 
@@ -428,6 +436,28 @@ public:
 			}
 		}
 		return TRUE;
+	}
+
+	void enumerateProcessThreads() {
+		
+		HANDLE hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+		
+		if(hThreadSnap != hThreadSnap){
+			THREADENTRY32 te32;
+			te32.dwSize = sizeof(THREADENTRY32);
+			if (Thread32First(hThreadSnap, &te32)) {
+				do {
+					if (te32.th32OwnerProcessID == GetProcessId(target)) {
+						HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, te32.th32ThreadID);
+						if (hThread != NULL) {
+							hThreads.push_back(hThread);
+						}
+					}
+				} while (Thread32Next(hThreadSnap, &te32));
+			}
+		}
+
+		CloseHandle(hThreadSnap);
 	}
 
 };
