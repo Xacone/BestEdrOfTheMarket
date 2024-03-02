@@ -124,6 +124,34 @@ public:
 
 					if (Json::parseFromStream(reader, jsonStream, &root, nullptr)) {
 						
+						if (root.isMember("RSP")) {
+
+							std::string rspPointer = root["RSP"].asString();
+							
+							DWORD_PTR targetAddress = std::stoull(rspPointer, nullptr, 16);
+
+							if (!pe64Utils->doExportAddressExistInRetrievedExports(targetAddress)) {
+								
+								std::cout << "\n";
+								std::string alertText = "Indirect Syscall Detected !";
+								printRedAlert(alertText);
+
+								std::string report = directSyscallReportingJson(
+									GetProcessId(targetProcess),
+									std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+									std::string("Direct Syscall detection through callbacks interceptions"),
+									rspPointer
+								);
+
+								std::cout << "\n" << report << "\n" << std::endl;
+
+								alertAndKillThatProcess(targetProcess);
+								deleteMonitoringFunc();
+								startupFunc();
+							}
+
+						}
+						
 						if (root.isMember("RIP")) {
 							
 							std::string ripPointer = root["RIP"].asString();
@@ -143,11 +171,6 @@ public:
 								}
 							} else {
 
-								/*
-								for(HANDLE hThread : *hThreads) {
-									SuspendThread(hThread);
-								}
-								*/
 
 								std::cout << "\n";
 								std::string alertText= "Direct Syscall stub at " + ripPointer ;

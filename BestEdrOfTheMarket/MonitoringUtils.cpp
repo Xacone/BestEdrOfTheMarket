@@ -714,18 +714,48 @@ void startup() {
 
 	// Powershell test
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "win32u.dll");
+	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "user32.dll");
+
 
 	// needs functions mapping to be filled
 	if (_nt_ || _k32_ || _iat_ || _syscalls_) {
 
-		IpcUtils ipcUtils(L"\\\\.\\pipe\\beotm", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
 
-		auto t_initPipeAndWaitForConnection = [&ipcUtils]() {
-			ipcUtils.initPipeAndWaitForConnection();
+		// Channel 1 : Indirect Syscalls - RSP 
+
+		IpcUtils ipcUtils_ch1(L"\\\\.\\pipe\\beotm_ch1", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
+
+		auto t1 = [&ipcUtils_ch1]() {
+			ipcUtils_ch1.initPipeAndWaitForConnection();
 			};
 
-		thread* ipcThread = new thread(t_initPipeAndWaitForConnection);
-		threads.push_back(ipcThread);
+		thread* ipc_th1 = new thread(t1);
+		threads.push_back(ipc_th1);
+
+
+		// Channel 2 : Direct Syscalls - RIP
+
+		IpcUtils ipcUtils_ch2(L"\\\\.\\pipe\\beotm_ch2", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
+
+		auto t2 = [&ipcUtils_ch2]() {
+			ipcUtils_ch2.initPipeAndWaitForConnection();
+			};
+
+		thread* ipc_th2 = new thread(t2);
+		threads.push_back(ipc_th2);
+
+		
+		// Channel 3 - Hooking - Addrs / Func names / args...
+		
+		IpcUtils ipcUtils_ch3(L"\\\\.\\pipe\\beotm_ch3", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
+
+		auto t3 = [&ipcUtils_ch3]() {
+			ipcUtils_ch3.initPipeAndWaitForConnection();
+			};
+
+		thread* ipc_th3 = new thread(t3);
+		threads.push_back(ipc_th3);
+
 	}
 
 	LPVOID IatHookableDllStartAddr = NULL;

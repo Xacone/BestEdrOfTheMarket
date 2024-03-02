@@ -38,6 +38,7 @@
     <ClInclude Include="IPCUtils.h" />
     <ClInclude Include="HeapUtils.h" />
     <ClInclude Include="ModuleLoadingUtils.h" />
+    <ClInclude Include="ParchingMitigUtils.h" />
     <ClInclude Include="Pe64Utils.h" />
     <ClInclude Include="ProcessStructUtils.h" />
     <ClInclude Include="ReportingUtils.h" />

@@ -31,6 +31,7 @@ public:
 
         if (procID == 0) {
             return FALSE;
+            return FALSE;
         }
 
         HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, procID);

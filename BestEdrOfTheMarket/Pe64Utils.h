@@ -76,6 +76,48 @@ public:
 		return &functionsNamesMapping;
 	}
 
+	bool doExportAddressExistInRetrievedExports(DWORD_PTR value) {
+
+		for (const auto& pair : functionsNamesMapping) {
+			if (pair.second == value) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+
+	BOOL isAddressInProcessMemory(LPVOID address)
+	{
+		MEMORY_BASIC_INFORMATION memInfo;
+		SIZE_T queryResult = VirtualQueryEx(target, address, &memInfo, sizeof(memInfo));
+
+		if (queryResult == 0) {
+			return FALSE;
+		}
+
+		return (memInfo.State != MEM_FREE) && (address >= memInfo.BaseAddress) &&
+			((BYTE*)address < ((BYTE*)memInfo.BaseAddress + memInfo.RegionSize));
+	}
+
+
+	BOOL isAddressInModulesMemPools(DWORD64 addr) {
+
+		for (int i = 0; i < moduleCount; i++) {
+			if (addr >= (DWORD64)modStartAddrs[i] && addr <= (DWORD64)modEndAddrs[i]) {
+				return TRUE;
+			}
+		}
+
+		return FALSE;
+	}
+
+	HMODULE* getLoadedModules() {
+		return hModules;
+	}
+
+	/* ---------------------------------------------------------------------------- */
+
 	void enumerateProcessModulesAndTheirPools() {
 		HANDLE targetProc = target;
 		DWORD cbNeeded; // Variable pour stocker la taille nécessaire
@@ -150,35 +192,6 @@ public:
 				}
 			}
 		}
-	}
-
-	BOOL isAddressInProcessMemory(LPVOID address)
-	{
-		MEMORY_BASIC_INFORMATION memInfo;
-		SIZE_T queryResult = VirtualQueryEx(target, address, &memInfo, sizeof(memInfo));
-
-		if (queryResult == 0) {
-			return FALSE;
-		}
-
-		return (memInfo.State != MEM_FREE) && (address >= memInfo.BaseAddress) &&
-			((BYTE*)address < ((BYTE*)memInfo.BaseAddress + memInfo.RegionSize));
-	}
-
-
-	BOOL isAddressInModulesMemPools(DWORD64 addr) {
-
-		for (int i = 0; i < moduleCount; i++) {
-			if (addr >= (DWORD64)modStartAddrs[i] && addr <= (DWORD64)modEndAddrs[i]) {
-				return TRUE;
-			}
-		}
-
-		return FALSE;
-	}
-
-	HMODULE* getLoadedModules() {
-		return hModules;
 	}
 
 
