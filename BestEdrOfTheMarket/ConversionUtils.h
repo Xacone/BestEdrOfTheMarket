@@ -7,6 +7,28 @@
 #include <iostream>
 #include <algorithm>
 
+BYTE* LPVOIDToBYTE(LPVOID lpVoid) {
+    return reinterpret_cast<BYTE*>(lpVoid);
+}
+
+LPCVOID hexStringToLPCVOID(const std::string& hexString) {
+
+    std::string hexStringWithoutSpaces;
+    for (char c : hexString) {
+        if (c != ' ')
+            hexStringWithoutSpaces += c;
+    }
+
+    unsigned long long intPtr;
+    std::stringstream ss;
+    ss << std::hex << hexStringWithoutSpaces;
+    ss >> intPtr;
+
+    LPCVOID lpVoid = reinterpret_cast<LPCVOID>(intPtr);
+
+    return lpVoid;
+}
+
 std::string bytesToHexString(const BYTE* bytes, size_t size) {
 
 	std::stringstream ss;
@@ -132,7 +154,7 @@ BYTE* charToHexDump(const char* input) {
 BYTE* hexStringToBytes(const std::string& hexString, size_t& size) {
     size_t length = hexString.length();
     if (length % 2 != 0) {
-        std::cerr << "Hex string length must be even." << std::endl;
+        std::cerr << "[!] Hex string length must be even." << std::endl;
         return nullptr;
     }
 

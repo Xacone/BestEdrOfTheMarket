@@ -124,13 +124,17 @@ public:
 
 					if (Json::parseFromStream(reader, jsonStream, &root, nullptr)) {
 						
+						if (_v_) {
+							std::cout << "[JSON]\n" << root.toStyledString() << std::endl;
+						}
+						
 						if (root.isMember("RSP")) {
 
 							std::string rspPointer = root["RSP"].asString();
 							
 							DWORD_PTR targetAddress = std::stoull(rspPointer, nullptr, 16);
 
-							if (!pe64Utils->doExportAddressExistInRetrievedExports(targetAddress)) {
+							if (!pe64Utils->isAddressInModulesMemPools(targetAddress)) {
 								
 								std::cout << "\n";
 								std::string alertText = "Indirect Syscall Detected !";
@@ -173,7 +177,7 @@ public:
 
 
 								std::cout << "\n";
-								std::string alertText= "Direct Syscall stub at " + ripPointer ;
+								std::string alertText = "Direct Syscall stub at " + ripPointer ;
 								printRedAlert(alertText);
 								
 								std::string report = directSyscallReportingJson(
@@ -193,78 +197,103 @@ public:
 						}
 
 						if (root.isMember("Function")) {
-							std::string routineName = root["Function"].asString();
+							
+									std::string routineName = root["Function"].asString();
 
-							printBlueAlert("Intercepted " + routineName);
+									printBlueAlert("Intercepted " + routineName);
 
-							size_t capturedDataSize = (size_t)strlen(root["Data"].asCString());
-							if (capturedDataSize > 0) {
-								BYTE* addr = hexStringToBytes(root["Data"].asCString(), capturedDataSize);
+									if (root.isMember("Size")) {
+											std::string size = root["Size"].asString();
+					
+									}
 
-								BYTE rAddr[8] = { addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0] };
+									LPCVOID addrPointer;
+									BYTE* addr;
+									std::string concernedAddress; 
+							
+									if (root.isMember("RawData")) {
+										
+										concernedAddress = root["RawData"].asCString();
 
-								LPCVOID addrPointer;
-								memccpy(&addrPointer, addr, 8, 8);
+										size_t capturedDataSize = (size_t)strlen(root["RawData"].asCString());
 
-								BYTE dump[1024];
-								size_t dumpBytesRead;
-
-								///TODO : debug
-								if (_v_) {
-									std::string jsonDump(jsonString);
-									std::cout << jsonDump << "\n" << std::endl;
-									printf("Received address: 0x%02X%02X%02X%02X%02X%02X%02X%02X\n",
-										rAddr[0], rAddr[1], rAddr[2], rAddr[3], rAddr[4], rAddr[5], rAddr[6], rAddr[7]);
-								}
-
-								if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
-
-									for (const auto& pair : dllPatterns) {
-										if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
-											alertAndKillThatProcess(targetProcess);
-
-											std::string report = dllHookingReportingJson(
-												GetProcessId(targetProcess),
-												std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
-												std::string("Hooked ") + std::string(routineName),
-												(std::string)"0x" + bytesToHexString(addr, 8),
-												(std::string)bytesToHexString(pair.first, pair.second),
-												"DLL Patterns",
-												(std::string)bytesToHexString(dump, dumpBytesRead)
-											);
-
-											std::cout << "\n" << report << "\n" << std::endl;
-
-											deleteMonitoringFunc();
-											startupFunc();
+										if (capturedDataSize > 0) {
+											addr = hexStringToBytes(concernedAddress, capturedDataSize);
+											memccpy(&addrPointer, addr, 8, 8);
+											//BYTE rAddr[8] = { addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0] };
 										}
 									}
 
+									if (root.isMember("StringData")) {	
 
-									for (const auto& pair : generalPatterns) {
-										if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
-											alertAndKillThatProcess(targetProcess);
+										concernedAddress = root["StringData"].asCString();
 
-											std::string report = dllHookingReportingJson(
-												GetProcessId(targetProcess),
-												std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
-												std::string("DLL Hooking on ") + std::string(routineName),
-												(std::string)"0x" + bytesToHexString(addr, 8),
-												(std::string)"0x" + bytesToHexString(pair.first, pair.second),
-												"General Patterns",
-												(std::string)"0x" + bytesToHexString(dump, dumpBytesRead)
-											);
+										size_t capturedDataSize = (size_t)strlen(root["StringData"].asCString());
 
-											std::cout << "\n" << report << "\n" << std::endl;
+										if (capturedDataSize > 0) {
+											addrPointer = hexStringToLPCVOID(root["StringData"].asCString());
+											//addr = LPVOIDToBYTE((LPVOID)addrPointer);
+										}
+									}
 
-											deleteMonitoringFunc();
-											startupFunc();
+									///TODO : debug
+									if (_v_) {
+										std::string jsonDump(jsonString);
+										std::cout << jsonDump << "\n" << std::endl;
+									/*	printf("Received address: 0x%02X%02X%02X%02X%02X%02X%02X%02X\n",
+											rAddr[0], rAddr[1], rAddr[2], rAddr[3], rAddr[4], rAddr[5], rAddr[6], rAddr[7]);*/
+									}
+
+									BYTE dump[1024];
+									size_t dumpBytesRead;
+
+									if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
+
+										for (const auto& pair : dllPatterns) {
+											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
+												alertAndKillThatProcess(targetProcess);
+
+
+												std::string report = dllHookingReportingJson(
+													GetProcessId(targetProcess),
+													std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+													std::string("Hooked ") + std::string(routineName),
+													(std::string)"0x" + concernedAddress,
+													(std::string)bytesToHexString(pair.first, pair.second),
+													"DLL Patterns",
+													(std::string)bytesToHexString(dump, dumpBytesRead)
+												);
+
+												std::cout << "\n" << report << "\n" << std::endl;
+
+												deleteMonitoringFunc();
+												startupFunc();
+											}
+										}
+
+
+										for (const auto& pair : generalPatterns) {
+											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
+												alertAndKillThatProcess(targetProcess);
+
+												std::string report = dllHookingReportingJson(
+													GetProcessId(targetProcess),
+													std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+													std::string("DLL Hooking on ") + std::string(routineName),
+													(std::string)"0x" + concernedAddress,
+													(std::string)bytesToHexString(pair.first, pair.second),
+													"General Patterns",
+													(std::string)bytesToHexString(dump, dumpBytesRead)
+												);
+
+												std::cout << "\n" << report << "\n" << std::endl;
+
+												deleteMonitoringFunc();
+												startupFunc();
+											}
 										}
 									}
 								}
-							}
-						}
-
 						
 					}
 				}
