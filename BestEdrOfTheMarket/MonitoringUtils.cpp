@@ -182,7 +182,9 @@ BOOL _rop_ = FALSE;
 BOOL _debug_ = FALSE;
 BOOL _boost_ = FALSE;
 BOOL _stack_spoof_ = FALSE;
-BOOL _syscalls_ = FALSE;
+BOOL _d_syscalls_ = FALSE;
+BOOL _i_syscalls_ = FALSE;
+BOOL _yara_ = FALSE;
 
 int main(int argc, char* argv[]) {
 
@@ -219,23 +221,29 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[arg], "/etw")) {
 			_etw_ = TRUE;
 		}
-		if (!strcmp(argv[arg], "/backed")) {
+		if (!strcmp(argv[arg], "/backed")) { // a degager
 			_backed_ = TRUE;
 		}
 		if (!strcmp(argv[arg], "/rop")) {
 			_rop_ = TRUE;
 		}	
-		if (!strcmp(argv[arg], "/debug")) {
+		if (!strcmp(argv[arg], "/debug")) { 
 			_debug_ = TRUE;
 		}
-		if (!strcmp(argv[arg], "/boost")) {
+		if (!strcmp(argv[arg], "/boost")) { // a degager
 			_boost_ = TRUE;
 		}
-		if (!strcmp(argv[arg], "/stack-spoof")) {
+		if (!strcmp(argv[arg], "/stack-spoof")) { // a degager pour l'instant
 			_stack_spoof_ = TRUE;
 		}
-		if (!strcmp(argv[arg], "/syscalls")) {
-			_syscalls_ = TRUE;
+		if (!strcmp(argv[arg], "/direct")) {
+			_d_syscalls_ = TRUE;
+		}
+		if (!strcmp(argv[arg], "/indirect")) {
+			_i_syscalls_ = TRUE;
+		}
+		if(!strcmp(argv[arg], "/yara")) {
+			_yara_ = TRUE;
 		}
 
 	}
@@ -640,7 +648,7 @@ void startup() {
 
 	DWORD absoluteDllPath;
 
-	if (_syscalls_) {
+	if (_d_syscalls_) {
 	
 		absoluteDllPath = GetFullPathNameA(callbacks_hooking_dll, callbacksDllBufferSize, callbacksDllAbsolutePathBuf, nullptr);
 		while (!injected_callbacks_dll) {
@@ -717,13 +725,25 @@ void startup() {
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "user32.dll");
 
 
-	// needs functions mapping to be filled
-	if (_nt_ || _k32_ || _iat_ || _syscalls_) {
+	// Yara
+	//YaraUtils yaraUtils(targetProcess); pas ici
 
+
+	// needs functions mapping to be filled
+	if (_nt_ || _k32_ || _iat_ || _d_syscalls_) {
 
 		// Channel 1 : Indirect Syscalls - RSP 
 
-		IpcUtils ipcUtils_ch1(L"\\\\.\\pipe\\beotm_ch1", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
+		IpcUtils ipcUtils_ch1(L"\\\\.\\pipe\\beotm_ch1", 
+			targetProcess, 
+			_v_, 
+			dllPatterns, 
+			generalPatterns, 
+			deleteMonitoringWorkerThreads, 
+			startup, 
+			_pe64Utils, 
+			_yara_
+		);
 
 		auto t1 = [&ipcUtils_ch1]() {
 			ipcUtils_ch1.initPipeAndWaitForConnection();
@@ -735,7 +755,16 @@ void startup() {
 
 		// Channel 2 : Direct Syscalls - RIP
 
-		IpcUtils ipcUtils_ch2(L"\\\\.\\pipe\\beotm_ch2", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
+		IpcUtils ipcUtils_ch2(L"\\\\.\\pipe\\beotm_ch2", 
+			targetProcess, 
+			_v_, 
+			dllPatterns, 
+			generalPatterns, 
+			deleteMonitoringWorkerThreads, 
+			startup, 
+			_pe64Utils, 
+			_yara_
+		);
 
 		auto t2 = [&ipcUtils_ch2]() {
 			ipcUtils_ch2.initPipeAndWaitForConnection();
@@ -747,7 +776,16 @@ void startup() {
 		
 		// Channel 3 - Hooking - Addrs / Func names / args...
 		
-		IpcUtils ipcUtils_ch3(L"\\\\.\\pipe\\beotm_ch3", targetProcess, _v_, dllPatterns, generalPatterns, deleteMonitoringWorkerThreads, startup, _pe64Utils);
+		IpcUtils ipcUtils_ch3(L"\\\\.\\pipe\\beotm_ch3", 
+			targetProcess, 
+			_v_, 
+			dllPatterns, 
+			generalPatterns, 
+			deleteMonitoringWorkerThreads, 
+			startup, 
+			_pe64Utils,
+			_yara_
+		);
 
 		auto t3 = [&ipcUtils_ch3]() {
 			ipcUtils_ch3.initPipeAndWaitForConnection();

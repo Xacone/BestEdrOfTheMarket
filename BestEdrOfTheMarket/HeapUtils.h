@@ -97,7 +97,7 @@ public:
                     //std::cout << "[*] Heap @ : " << std::hex << (DWORD_PTR)info.BaseAddress << std::endl;
                     heapAddresses[h] = (DWORD_PTR)info.BaseAddress;
                     heapSizes[h] = info.RegionSize;
-                    h++;
+                    h++;    
                 }
             }
             catch (std::exception& e) {

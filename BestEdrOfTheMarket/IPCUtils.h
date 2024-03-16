@@ -7,6 +7,7 @@
 #include <vector>
 #include <json/json.h> 
 #include <string>
+#include <yara.h>
 
 #include "ErrorsReportingUtils.h"
 #include "ColorsUtils.h"
@@ -17,6 +18,75 @@
 
 typedef void (*DeleteMonitoringWorkerThreads)();
 typedef void (*Startup)();
+
+int callback_function(
+	YR_SCAN_CONTEXT* context,
+	int message,
+	void* message_data,
+	void* user_data) {
+
+	if (message == CALLBACK_MSG_RULE_MATCHING) {
+		
+		std::stringstream alertText;
+		alertText << "Malicious Pattern Detected \n";
+		alertText << "\tRule: " << ((YR_RULE*)message_data)->identifier << std::endl;
+		alertText << "\tNamespace: " << ((YR_RULE*)message_data)->ns->name << std::endl;
+		alertText << "\tMeta: " << ((YR_RULE*)message_data)->metas->identifier << std::endl;
+		alertText << "\tString: " << ((YR_RULE*)message_data)->strings->identifier << std::endl;
+		printRedAlert(alertText.str());
+
+		std::string msgBoxText = "Detected : \n" + (std::string)((YR_RULE*)message_data)->identifier;
+		
+		MessageBoxA(NULL, (LPCSTR)msgBoxText.c_str(), "Best Edr Of The Market", MB_ICONEXCLAMATION);
+
+		return CALLBACK_ERROR;
+	}
+
+	return CALLBACK_CONTINUE;
+}
+
+YR_COMPILER* compiler;
+YR_SCANNER* scanner = nullptr;
+FILE* file;
+YR_RULES* rules;
+
+
+// Temporary 
+int initYaraUtils() {
+
+	yr_initialize();
+	yr_compiler_create(&compiler);
+
+	const char* rule_file_path = "MsfvenomWho.yara";
+
+	fopen_s(&file, rule_file_path, "r");
+
+	int result = yr_compiler_add_file(compiler, file, NULL, rule_file_path);
+	if (result != 0) {
+		std::cerr << "Error compiling YARA rule file" << std::endl;
+		yr_compiler_destroy(compiler);
+		yr_finalize();
+		return 1;
+	}
+
+	result = yr_compiler_get_rules(compiler, &rules);
+	if (result != 0) {
+		std::cerr << "Error retrieving compiled rules" << std::endl;
+		yr_compiler_destroy(compiler);
+		yr_finalize();
+		return 1;
+	}
+
+	int scan_res = yr_scanner_create(rules, &scanner);
+
+	yr_scanner_set_callback(scanner, (YR_CALLBACK_FUNC)callback_function, NULL);
+
+	if (scan_res != 0 || scanner == nullptr) {
+		std::cerr << "Error while creating a scanner" << std::endl;
+	}
+
+	return 0;
+}
 
 class IpcUtils {
 
@@ -44,6 +114,8 @@ private:
 
 	std::vector<HANDLE>* hThreads;
 
+	BOOL yaraEnabled;
+
 public:
 
 	IpcUtils(LPCWSTR pipeName,
@@ -53,7 +125,8 @@ public:
 		std::unordered_map<BYTE*, SIZE_T>& generalPatterns,
 		DeleteMonitoringWorkerThreads f1,
 		Startup f2,
-		Pe64Utils* pe64utils) :
+		Pe64Utils* pe64utils,
+		BOOL yara) :
 
 		pipeName(pipeName),
 		targetProcess(tProcess),
@@ -62,10 +135,18 @@ public:
 		generalPatterns(generalPatterns),
 		deleteMonitoringFunc(f1),
 		startupFunc(f2),
-		pe64Utils(pe64utils)
+		pe64Utils(pe64utils),
+		yaraEnabled(yara)
+
 	{
+		initYaraUtils();
 		functionsNamesMapping = pe64Utils->getFunctionsNamesMapping();
-		//hThreads = pe64Utils->getThreads();
+
+	}
+
+	~IpcUtils() {
+		/*yaraUtils->destroyCompilerAndFinalize();
+		delete yaraUtils;*/
 	}
 
 	void alertAndKillThatProcess(HANDLE hProc) {
@@ -74,13 +155,15 @@ public:
 
 		TerminateProcess(hProc, -1);
 		CloseHandle(hPipe);
-		int msgbox = MessageBoxA(NULL, "Malicious process detected (DLL) !", "BestEdrOfTheMarket", MB_ICONEXCLAMATION);
+		int msgbox = MessageBoxA(NULL, "Malicious process detected (DLL) !", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 		if (msgbox == IDOK) {
 			SetForegroundWindow(hWndParent);
 		}
 		printRedAlert("Malicious process was terminated !");
 		
 	}
+
+
 
 	HANDLE initPipeAndWaitForConnection() {
 
@@ -161,7 +244,7 @@ public:
 							std::string ripPointer = root["RIP"].asString();
 							
 							if (_v_) {
-								std::cout << "RIP @ " << ripPointer << std::endl;
+								std::cout << "[*] RIP @ 0x" << ripPointer << std::endl;
 							}
 
 							DWORD_PTR targetAddress = std::stoull(ripPointer, nullptr, 16);
@@ -248,6 +331,18 @@ public:
 									size_t dumpBytesRead;
 
 									if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
+
+										if (yaraEnabled) {
+											if(yr_scanner_scan_mem(scanner, dump, dumpBytesRead) == CALLBACK_ERROR) {
+												alertAndKillThatProcess(targetProcess);
+												deleteMonitoringFunc();
+												startupFunc();
+											}
+										}
+
+										/*if (yaraEnabled) {
+											yaraUtils->scanBuffer(dump, dumpBytesRead);
+										}*/
 
 										for (const auto& pair : dllPatterns) {
 											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
