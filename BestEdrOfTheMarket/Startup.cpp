@@ -41,3 +41,12 @@ void printHelp() {
 
 		<< std::endl;
 }
+
+std::string caramelle() {
+	return R"(
+	  __      _
+	o'')}____//
+	 `_/      )
+	 (_(_/-(_/
+	)";
+}

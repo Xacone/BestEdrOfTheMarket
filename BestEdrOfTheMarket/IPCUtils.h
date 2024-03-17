@@ -1,4 +1,6 @@
-#pragma once
+﻿#pragma once
+
+/// TODO : 00007FF83EE4ACF4
 
 #include <Windows.h>
 #include <tchar.h>
@@ -19,6 +21,12 @@
 typedef void (*DeleteMonitoringWorkerThreads)();
 typedef void (*Startup)();
 
+HANDLE tProcess_global;
+DeleteMonitoringWorkerThreads dmwt_global;
+Startup startup_global;
+
+BOOL _stack_val_global_ = FALSE;
+
 int callback_function(
 	YR_SCAN_CONTEXT* context,
 	int message,
@@ -28,7 +36,7 @@ int callback_function(
 	if (message == CALLBACK_MSG_RULE_MATCHING) {
 		
 		std::stringstream alertText;
-		alertText << "Malicious Pattern Detected \n";
+		alertText << "Malicious Pattern Detected (Yara) : \n";
 		alertText << "\tRule: " << ((YR_RULE*)message_data)->identifier << std::endl;
 		alertText << "\tNamespace: " << ((YR_RULE*)message_data)->ns->name << std::endl;
 		alertText << "\tMeta: " << ((YR_RULE*)message_data)->metas->identifier << std::endl;
@@ -36,8 +44,15 @@ int callback_function(
 		printRedAlert(alertText.str());
 
 		std::string msgBoxText = "Detected : \n" + (std::string)((YR_RULE*)message_data)->identifier;
-		
+
+		TerminateProcess(tProcess_global, -1);
+
 		MessageBoxA(NULL, (LPCSTR)msgBoxText.c_str(), "Best Edr Of The Market", MB_ICONEXCLAMATION);
+
+		printRedAlert("Malicious process terminated !");
+
+		dmwt_global();
+		startup_global();
 
 		return CALLBACK_ERROR;
 	}
@@ -50,13 +65,13 @@ YR_SCANNER* scanner = nullptr;
 FILE* file;
 YR_RULES* rules;
 
-
 // Temporary 
 int initYaraUtils() {
 
 	yr_initialize();
 	yr_compiler_create(&compiler);
 
+	/// TODO : retrieve all the files that ends with .yara
 	const char* rule_file_path = "MsfvenomWho.yara";
 
 	fopen_s(&file, rule_file_path, "r");
@@ -100,8 +115,12 @@ private:
 	DWORD bytesRead;
 	LPCWSTR pipeName;
 	BOOL _v_;
+
+	// Legacy patterns
 	std::unordered_map<BYTE*, SIZE_T> &dllPatterns;
 	std::unordered_map<BYTE*, SIZE_T> &generalPatterns;
+	std::unordered_map<std::string, std::string> stackLevelMonitoredFunctions;
+	std::unordered_map<int, BYTE*> stackPatterns;
 
 	DeleteMonitoringWorkerThreads deleteMonitoringFunc;
 	Startup startupFunc;
@@ -114,7 +133,10 @@ private:
 
 	std::vector<HANDLE>* hThreads;
 
+	// Legacy params
 	BOOL yaraEnabled;
+	BOOL stackEnabled ;
+	BOOL directSyscallEnabled;
 
 public:
 
@@ -123,25 +145,39 @@ public:
 		BOOL& verbose,
 		std::unordered_map<BYTE*, SIZE_T>& dllPatterns,
 		std::unordered_map<BYTE*, SIZE_T>& generalPatterns,
+		std::unordered_map<std::string, std::string> & stackLevelMonitoredFunctions,
+		std::unordered_map<int, BYTE*> & stackPatterns,
 		DeleteMonitoringWorkerThreads f1,
 		Startup f2,
 		Pe64Utils* pe64utils,
-		BOOL yara) :
+		BOOL& yara,
+		BOOL& stack,
+		BOOL& dsyscalls) :
 
 		pipeName(pipeName),
 		targetProcess(tProcess),
 		_v_(verbose),
 		dllPatterns(dllPatterns),
 		generalPatterns(generalPatterns),
+		stackLevelMonitoredFunctions(stackLevelMonitoredFunctions),
+		stackPatterns(stackPatterns),
 		deleteMonitoringFunc(f1),
 		startupFunc(f2),
 		pe64Utils(pe64utils),
-		yaraEnabled(yara)
+		yaraEnabled(yara),
+		stackEnabled(stack),
+		directSyscallEnabled(dsyscalls) {
 
-	{
 		initYaraUtils();
 		functionsNamesMapping = pe64Utils->getFunctionsNamesMapping();
+		hThreads = pe64Utils->getThreads();
+	
+		// globals for yara
+		tProcess_global = tProcess;
+		dmwt_global = f1;
+		startup_global = f2;
 
+		_stack_val_global_ = stack;
 	}
 
 	~IpcUtils() {
@@ -151,18 +187,19 @@ public:
 
 	void alertAndKillThatProcess(HANDLE hProc) {
 
+		TerminateProcess(hProc, -1);
+		CloseHandle(hProc);
+		CloseHandle(hPipe);
+
 		HWND hWndParent = NULL;
 
-		TerminateProcess(hProc, -1);
-		CloseHandle(hPipe);
 		int msgbox = MessageBoxA(NULL, "Malicious process detected (DLL) !", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 		if (msgbox == IDOK) {
 			SetForegroundWindow(hWndParent);
 		}
-		printRedAlert("Malicious process was terminated !");
-		
-	}
 
+		printRedAlert("Malicious process was terminated !");
+	}
 
 
 	HANDLE initPipeAndWaitForConnection() {
@@ -207,10 +244,10 @@ public:
 
 					if (Json::parseFromStream(reader, jsonStream, &root, nullptr)) {
 						
-						if (_v_) {
-							std::cout << "[JSON]\n" << root.toStyledString() << std::endl;
-						}
-						
+						//if (_v_) { // [JSON] ?
+						//	std::cout << "\n" << root.toStyledString() << std::endl;
+						//}
+						//
 						if (root.isMember("RSP")) {
 
 							std::string rspPointer = root["RSP"].asString();
@@ -226,7 +263,7 @@ public:
 								std::string report = directSyscallReportingJson(
 									GetProcessId(targetProcess),
 									std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
-									std::string("Direct Syscall detection through callbacks interceptions"),
+									std::string("Indirect Syscalls detection through stack pointers health Check."),
 									rspPointer
 								);
 
@@ -239,12 +276,21 @@ public:
 
 						}
 						
-						if (root.isMember("RIP")) {
+						if (root.isMember("RIP") 
+							&& root["RIP"].asString() != "00007FF83EE4ACF4"
+							&& root["RIP"].asString() != "00007FF83EE4C5F4"
+							&& root["RIP"].asString() != "00007FF83EE4A034") {
 							
 							std::string ripPointer = root["RIP"].asString();
-							
+						
+							stackEnabled = _stack_val_global_;
+
+							if (stackEnabled == 1) {
+								analyzeCompleteProcessThreadsStackTrace(targetProcess);
+							}
+
 							if (_v_) {
-								std::cout << "[*] RIP @ 0x" << ripPointer << std::endl;
+								std::cout << "\n[*] RIP is at 0x" << ripPointer;
 							}
 
 							DWORD_PTR targetAddress = std::stoull(ripPointer, nullptr, 16);
@@ -254,32 +300,47 @@ public:
 
 							if (SymFromAddr(targetProcess, (DWORD_PTR&)targetAddress, &displacement, &symbolInfo)) {
 								if (symbolInfo.Name != NULL) {
-									if (_v_) { std::cout << "\t[*]" << symbolInfo.Name << std::endl;  }
+
+
+									if (_v_) { std::cout << "\t -> " << symbolInfo.Name << std::endl;  }
+
 								}
 							} else {
 
+								if (directSyscallEnabled) {
 
-								std::cout << "\n";
-								std::string alertText = "Direct Syscall stub at " + ripPointer ;
-								printRedAlert(alertText);
-								
-								std::string report = directSyscallReportingJson(
-									GetProcessId(targetProcess),
-									std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
-									std::string("Direct Syscall detection through callbacks interceptions"),
-									ripPointer
-								);
+									std::cout << "\n";
+									std::string alertText = "Direct Syscall stub at " + ripPointer;
+									printRedAlert(alertText);
 
-								std::cout << "\n" << report << "\n" << std::endl;
+									std::string report = directSyscallReportingJson(
+										GetProcessId(targetProcess),
+										std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+										std::string("Direct Syscall detection through callbacks interceptions."),
+										ripPointer
+									);
 
-								alertAndKillThatProcess(targetProcess);
-								deleteMonitoringFunc();
-								startupFunc();
+									std::cout << "\n" << report << "\n" << std::endl;
+
+									alertAndKillThatProcess(targetProcess);
+									deleteMonitoringFunc();
+									startupFunc();
+								}
+
+							
 							
 							}
 						}
 
+						if (root.isMember("Thread")) {
+							std::cout << "Thread Created" << std::endl;
+						}
+
 						if (root.isMember("Function")) {
+
+									for (auto& thread : *hThreads) {
+										SuspendThread(thread);
+									}
 							
 									std::string routineName = root["Function"].asString();
 
@@ -319,13 +380,13 @@ public:
 										}
 									}
 
-									///TODO : debug
-									if (_v_) {
-										std::string jsonDump(jsonString);
-										std::cout << jsonDump << "\n" << std::endl;
-									/*	printf("Received address: 0x%02X%02X%02X%02X%02X%02X%02X%02X\n",
-											rAddr[0], rAddr[1], rAddr[2], rAddr[3], rAddr[4], rAddr[5], rAddr[6], rAddr[7]);*/
-									}
+									/////TODO : debug
+									//if (_v_) {
+									//	std::string jsonDump(jsonString);
+									//	std::cout << jsonDump << "\n" << std::endl;
+									///*	printf("Received address: 0x%02X%02X%02X%02X%02X%02X%02X%02X\n",
+									//		rAddr[0], rAddr[1], rAddr[2], rAddr[3], rAddr[4], rAddr[5], rAddr[6], rAddr[7]);*/
+									//}
 
 									BYTE dump[1024];
 									size_t dumpBytesRead;
@@ -334,20 +395,17 @@ public:
 
 										if (yaraEnabled) {
 											if(yr_scanner_scan_mem(scanner, dump, dumpBytesRead) == CALLBACK_ERROR) {
+
 												alertAndKillThatProcess(targetProcess);
 												deleteMonitoringFunc();
 												startupFunc();
 											}
 										}
 
-										/*if (yaraEnabled) {
-											yaraUtils->scanBuffer(dump, dumpBytesRead);
-										}*/
-
 										for (const auto& pair : dllPatterns) {
 											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
+												
 												alertAndKillThatProcess(targetProcess);
-
 
 												std::string report = dllHookingReportingJson(
 													GetProcessId(targetProcess),
@@ -388,6 +446,10 @@ public:
 											}
 										}
 									}
+
+									for (auto& thread : *hThreads) {
+										ResumeThread(thread);
+									}
 								}
 						
 					}
@@ -405,6 +467,166 @@ public:
 			exit(-28);
 		}
 	}
+
+
+
+	BOOL analyzeCompleteProcessThreadsStackTrace(HANDLE hProcess) {
+
+		std::vector<HANDLE> threadsHandles;
+
+		if (hProcess != NULL) {
+
+			DWORD thIDs[1024];
+			DWORD thCount;
+			STACKFRAME64 stackFrame64;
+			THREADENTRY32 threadEntry;
+			threadEntry.dwSize = sizeof(THREADENTRY32);
+			HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+			PWOW64_CONTEXT pwow64_context;
+
+			memset(&stackFrame64, 0, sizeof(STACKFRAME64));
+
+			if (snapshot == INVALID_HANDLE_VALUE) {
+				std::cout << "[ERROR] INVALID_HANDLE_VALUE returned by CreateToolhelp32Snapshot." << std::endl;
+				exit(-1);
+			}
+
+			if (Thread32First(snapshot, &threadEntry)) {
+				do {
+					if (threadEntry.th32OwnerProcessID == GetProcessId(hProcess)) {
+						HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, threadEntry.th32ThreadID);
+						if (hThread != NULL) {
+
+							CONTEXT context;
+							context.ContextFlags = CONTEXT_CONTROL;
+							if (GetThreadContext(hThread, &context)) {
+
+								stackFrame64.AddrPC.Offset = context.Rip;
+								stackFrame64.AddrPC.Mode = AddrModeFlat;
+								stackFrame64.AddrFrame.Offset = context.Rbp;
+								stackFrame64.AddrFrame.Mode = AddrModeFlat;
+								stackFrame64.AddrStack.Offset = context.Rsp;
+								stackFrame64.AddrStack.Mode = AddrModeFlat;
+
+								while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
+									hProcess,
+									hThread,
+									&stackFrame64,
+									&context,
+									NULL,
+									SymFunctionTableAccess64,
+									SymGetModuleBase64,
+									NULL
+								)) {
+
+									DWORD64 returnAddress = stackFrame64.AddrReturn.Offset;
+									std::cout << "Return Address: 0x" << std::hex << returnAddress << std::endl;
+
+									/*
+									DWORD64 returnAddress = stackFrame64.AddrReturn.Offset;
+									std::cout << "Return Address: 0x" << std::hex << returnAddress << std::endl;
+									*/
+
+									// https://learn.microsoft.com/en-us/windows/win32/api/dbghelp/ns-dbghelp-stackframe64
+
+									/* verbose
+									cout << "\t" << "Return Address : " << hex << stackFrame64.AddrReturn.Offset << endl;
+									*/
+									// Debug Symbols Init
+
+									SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+									SymInitialize(hProcess, NULL, TRUE);
+
+									// Function Name Retrieving
+
+									IMAGEHLP_SYMBOL64* symbol = (IMAGEHLP_SYMBOL64*)malloc(sizeof(IMAGEHLP_SYMBOL64) + 1024);
+									symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
+									symbol->MaxNameLength = 1024;
+
+									if (SymGetSymFromAddr64(hProcess, stackFrame64.AddrPC.Offset, NULL, symbol)) {
+
+										std::cout << "\t\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << std::endl;
+
+										///* verbose */
+										//if (_debug_) {
+										//	cout << "\t\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
+										//}
+
+										for (int i = 0; i < 5; i++) {
+
+											BYTE* paramValue = new BYTE[1024];
+											size_t bytesRead;
+
+											if (ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead)) {
+
+												if (yaraEnabled) {
+													yr_scanner_scan_mem(scanner, paramValue, bytesRead);									
+												}
+											};
+
+									/*		for (const auto& pair : stackPatterns) {
+
+												int id = pair.first;
+												BYTE* pattern = pair.second;
+
+												size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
+
+												if (bytesRead >= patternSize) {
+
+													if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, patternSize)) {
+
+														MessageBoxA(NULL, "Wooo injection detected (stack) !!", "Best EDR Of The Market", MB_ICONEXCLAMATION);
+														TerminateProcess(hProcess, -1);
+														printRedAlert("Malicious injection detected ! Malicious process killed !");
+														CloseHandle(hProcess);
+
+														for (HANDLE& h : threadsHandles) {
+															CloseHandle(h);
+														}
+
+														delete[] paramValue;
+
+														return TRUE;
+
+													}
+												}
+											}*/
+
+											delete[] paramValue;
+
+										}
+
+
+										free(symbol);
+
+									}
+									else {
+
+										std::cout << "\t\t" << "AAAh :::  " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << std::endl;
+										TerminateProcess(hProcess, -1);
+										MessageBoxA(NULL, "Code injection detected !! (Stack)", "Best EDR Of The Market", MB_ICONEXCLAMATION);
+										printRedAlert("Code injection detected ! Malicious process killed !");
+										deleteMonitoringFunc();
+										startupFunc();
+									}
+								}
+							}
+						}
+					}
+				} while (Thread32Next(snapshot, &threadEntry));
+
+				for (HANDLE& h : threadsHandles) {
+					CloseHandle(h);
+				}
+
+				return FALSE;
+
+			}
+
+		}
+	}
+
+
 };
 
 

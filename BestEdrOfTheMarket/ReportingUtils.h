@@ -59,8 +59,26 @@ std::string directSyscallReportingJson(
         << "}";
 
     return json.str();
+}
 
+std::string stackFrameReportingJson(
+    DWORD pid,
+    const std::string& processName,
+    const std::string& defenseMechanism,
+    const std::string& functionName,
+    const std::string& FrameAddress
+) {
 
+    std::stringstream json;
 
+    json << "{\n"
+		<< "  \"Version\" : \"" << "1.1.0" << "\",\n"
+		<< "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
+		<< "  \"MaliciousProcessPath\" : \"" << processName << "\",\n"
+		<< "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
+		<< "  \"DateTime\" : \"" << std::string(__DATE__) + " " + std::string(__TIME__) << "\",\n"
+		<< "  \"Function :\"" << functionName << "\",\n"
+        << "  \"Stack Frame Offset : \" : \"" << FrameAddress << "\",\n"
+		<< "}";
 }
 
