@@ -10,11 +10,14 @@
 #include <json/json.h> 
 #include <string>
 #include <yara.h>
+#include <filesystem>
 
 #include "ErrorsReportingUtils.h"
 #include "ColorsUtils.h"
 #include "BytesSequencesUtils.h"
 #include "ReportingUtils.h"
+
+namespace fs = std::filesystem;
 
 #define PIPE_BUFFER_SIZE 512
 
@@ -30,6 +33,7 @@ Startup startup_global;
 
 BOOL _stack_val_global_ = FALSE;
 BOOL _yara_enabled_global_ = FALSE;
+
 
 int callback_function(
 	YR_SCAN_CONTEXT* context,
@@ -78,6 +82,8 @@ YR_SCANNER* scanner = nullptr;
 FILE* file;
 YR_RULES* rules;
 
+int result;
+
 // Temporary 
 int initYaraUtils() {
 
@@ -85,19 +91,37 @@ int initYaraUtils() {
 	yr_compiler_create(&compiler);
 
 	/// TODO : retrieve all the files that ends with .yara
-	const char* rule_file_path = "MsfvenomWho.yara";
 
-	fopen_s(&file, rule_file_path, "r");
+	std::string path = ".\\YARA\\";
+	std::cout << "\n" << std::endl;
+	for (const auto& entry : fs::directory_iterator(path)) {
 
-	int result = yr_compiler_add_file(compiler, file, NULL, rule_file_path);
-	if (result != 0) {
-		std::cerr << "Error compiling YARA rule file" << std::endl;
-		yr_compiler_destroy(compiler);
-		yr_finalize();
-		return 1;
+		if (entry.path().extension() == ".yara" || entry.path().extension() == ".yar") {
+
+			const char* rule_file_path = entry.path().string().c_str(); 
+
+			//std::cout << "[YARA] Added rule file : " << rule_file_path << "\n";
+
+			FILE* file;
+			fopen_s(&file, rule_file_path, "r");
+
+			result = yr_compiler_add_file(compiler, file, NULL, rule_file_path);
+
+			if (result != 0) {
+				std::cerr << "Error compiling YARA rule file" << std::endl;
+				yr_compiler_destroy(compiler);
+				yr_finalize();
+				return 1;
+
+				fclose(file);
+			}
+		}
 	}
+		
+
 
 	result = yr_compiler_get_rules(compiler, &rules);
+	
 	if (result != 0) {
 		std::cerr << "Error retrieving compiled rules" << std::endl;
 		yr_compiler_destroy(compiler);
@@ -130,8 +154,6 @@ private:
 	BOOL _v_;
 
 	// Legacy patterns
-
-	
 	//std::unordered_map<std::string, std::string> stackLevelMonitoredFunctions; --> To remove
 	
 	std::unordered_map<BYTE*, SIZE_T>& dllPatterns;
@@ -173,8 +195,6 @@ public:
 		this->generalPatterns = general_p;
 		this->stackPatterns = stack_p;
 		this->heapPatterns = heapPatterns;
-
-		std::cout << "[DEBUG] stackPatterns : " << stackPatterns->size() << std::endl;
 	}
 
 	IpcUtils(LPCWSTR pipeName,
@@ -391,10 +411,16 @@ public:
 											else {
 												for (const auto& pair : *heapPatterns) {
 													if (containsSequence(data, heapUtils.getHeapRegionSize(i), pair.first, pair.second)) {
-
 														printRedAlert("Malicious process detected !!! (Heap). Killing it...");
+														std::string report = heapReportingJson(
+															GetProcessId(targetProcess),
+															std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+															std::string("Heap Regions Analysis"),
+															(DWORD_PTR)heapUtils.getHeapAddress(i),
+															std::string(bytesToHexString(pair.first, pair.second))
+														);
 
-														// report ?
+														std::cout << report << std::endl;
 
 														MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Heap)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
@@ -446,17 +472,8 @@ public:
 
 										if (capturedDataSize > 0) {
 											addrPointer = hexStringToLPCVOID(root["StringData"].asCString());
-											//addr = LPVOIDToBYTE((LPVOID)addrPointer);
 										}
 									}
-
-									/////TODO : debug
-									//if (_v_) {
-									//	std::string jsonDump(jsonString);
-									//	std::cout << jsonDump << "\n" << std::endl;
-									///*	printf("Received address: 0x%02X%02X%02X%02X%02X%02X%02X%02X\n",
-									//		rAddr[0], rAddr[1], rAddr[2], rAddr[3], rAddr[4], rAddr[5], rAddr[6], rAddr[7]);*/
-									//}
 
 									BYTE dump[1024];
 									size_t dumpBytesRead;

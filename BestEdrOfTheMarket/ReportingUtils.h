@@ -63,6 +63,30 @@ std::string directSyscallReportingJson(
     return json.str();
 }
 
+std::string heapReportingJson(
+    DWORD pid,
+	const std::string& processName,
+	const std::string& defenseMechanism,
+	const DWORD_PTR& address,
+	const std::string& detectedPattern
+	) {
+
+	std::stringstream json;
+
+	json << "{\n"
+		<< "  \"Version\" : \"" << BEOTM_VERSION << "\",\n"
+		<< "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
+		<< "  \"MaliciousProcessPath\" : \"" << processName << "\",\n"
+		<< "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
+		<< "  \"DateTime\" : \"" << std::string(__DATE__) + " " + std::string(__TIME__) << "\",\n"
+		<< "  \"Heap Region Address\" : \"" << std::hex << address << "\",\n"
+		<< "  \"DetectedPattern\" : \"" << detectedPattern << "\",\n"
+		<< "}";
+
+	return json.str();
+}
+
+
 std::string stackFrameReportingJson(
     DWORD pid,
     const std::string& processName,
