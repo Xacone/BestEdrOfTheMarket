@@ -68,7 +68,9 @@ std::string stackFrameReportingJson(
     const std::string& processName,
     const std::string& defenseMechanism,
     const std::string& functionName,
-    const DWORD_PTR& FrameAddress
+    const DWORD_PTR& FrameAddress,
+    const std::string& patternList,
+    const std::string& foundIn
 ) {
 
     std::stringstream json;
@@ -81,7 +83,9 @@ std::string stackFrameReportingJson(
 		<< "  \"DateTime\" : \"" << std::string(__DATE__) + " " + std::string(__TIME__) << "\",\n"
 		<< "  \"Function :\"" << functionName << "\",\n"
         << "  \"Stack Frame Offset : \" : \"" << std::hex << FrameAddress << "\",\n"
-		<< "}";
+		<< "  \"PatternList\" : \"" << patternList << "\",\n"
+        << "  \"FoundIn\" : \"" << foundIn << "\"\n" <<
+"}";
 
     return json.str();
 }

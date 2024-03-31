@@ -136,8 +136,8 @@ private:
 	
 	std::unordered_map<BYTE*, SIZE_T>& dllPatterns;
 	std::unordered_map<BYTE*, SIZE_T>& generalPatterns;
-	std::unordered_map<int, BYTE*> *stackPatterns;
-	std::unordered_map<BYTE*, SIZE_T> heapPatterns;
+	std::unordered_map<int, BYTE*>* stackPatterns;
+	std::unordered_map<BYTE*, SIZE_T>* heapPatterns;
 
 
 	DeleteMonitoringWorkerThreads deleteMonitoringFunc;
@@ -167,7 +167,7 @@ public:
 		std::unordered_map<BYTE*, SIZE_T>& dll_p,
 		std::unordered_map<BYTE*, SIZE_T>& general_p,
 		std::unordered_map<int, BYTE*> *stack_p,
-		std::unordered_map<BYTE*, SIZE_T> heapPatterns
+		std::unordered_map<BYTE*, SIZE_T>* heapPatterns
 	) {
 		this->dllPatterns = dll_p;
 		this->generalPatterns = general_p;
@@ -380,14 +380,33 @@ public:
 
 									pfnNtSuspendProcess(targetProcess);
 
-									//if (heapEnabled) {
-									heapUtils.retrieveHeapRegions();
-										//heapUtils.printAllHeapRegionsContent();
+									if (heapEnabled) {
+	
+										heapUtils.retrieveHeapRegions();
 										for (int i = 0; i < heapUtils.getHeapCount(); i++) {
 											BYTE* data = heapUtils.getHeapRegionContent(i);
-											yr_scanner_scan_mem(scanner, data, heapUtils.getHeapRegionSize(i));
+											if (yaraEnabled) {
+												yr_scanner_scan_mem(scanner, data, heapUtils.getHeapRegionSize(i));
+											}
+											else {
+												for (const auto& pair : *heapPatterns) {
+													if (containsSequence(data, heapUtils.getHeapRegionSize(i), pair.first, pair.second)) {
+
+														printRedAlert("Malicious process detected !!! (Heap). Killing it...");
+
+														// report ?
+
+														MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Heap)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+
+														TerminateProcess(targetProcess, -1);
+														deleteMonitoringFunc();
+														startupFunc();
+													}
+												}
+											}
 										}
-									//}
+	
+									}
 									
 								/*	for (auto& thread : *hThreads) {
 										SuspendThread(thread);
@@ -641,7 +660,6 @@ public:
 															if (containsSequence(paramValue, bytesRead, pair.second, patternSize)) {
 																
 																printRedAlert("Malicious Process Detected ! (Stacked Functions Arguments Analysis). Killing it...");
-
 																std::string symbolName;
 																if (symbolInfo.Name != NULL) {
 																	symbolName = symbolInfo.Name;
@@ -655,7 +673,9 @@ public:
 																	std::string(GetProcessPathByPID(GetProcessId(hProcess), hProcess)),
 																	std::string("Stacked Functions Arguments Analysis (Normal patterns)"),
 																	std::string(symbolName),
-																	(DWORD_PTR)stackFrame64.AddrPC.Offset	
+																	(DWORD_PTR)stackFrame64.AddrPC.Offset,
+																	(std::string)bytesToHexString(pattern, patternSize),
+																	(std::string)bytesToHexString(paramValue, bytesRead)	
 																);
 
 																MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Stack)", "Best Edr Of The Market", MB_ICONEXCLAMATION);

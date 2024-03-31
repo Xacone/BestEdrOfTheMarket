@@ -598,7 +598,7 @@ void startup() {
 			dllPatterns,
 			generalPatterns,
 			&stackPatterns,
-			heapPatterns
+			&heapPatterns
 		);
 
 		auto t1 = [&ipcUtils_ch1]() {
@@ -630,7 +630,7 @@ void startup() {
 			dllPatterns,
 			generalPatterns,
 			&stackPatterns,
-			heapPatterns
+			&heapPatterns
 		);
 
 		auto t2 = [&ipcUtils_ch2]() {
@@ -661,7 +661,7 @@ void startup() {
 			dllPatterns,
 			generalPatterns,
 			&stackPatterns,
-			heapPatterns
+			&heapPatterns
 		);
 
 		auto t3 = [&ipcUtils_ch3]() {
