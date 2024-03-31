@@ -177,39 +177,91 @@ void reverseBytesOrder(BYTE* bytes, size_t size) {
     }
 }
 
-//void printAsciiDumpWithoutZeros(const BYTE* byteArray, size_t size, size_t bytesPerLine = 16) {
-//    
-//    for (size_t i = 0; i < size; i += bytesPerLine) {
-//        for (size_t j = 0; j < bytesPerLine; ++j) {
-//            size_t index = i + j;
-//            if (byteArray[index] != 0x00) {
-//                 if (index < size) {
-//                    std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)(byteArray[index]) << " ";
-//                }
-//            }
-//            else {
-//                std::cout << "   "; // Padding for incomplete lines
-//            }
-//        }
-//
-//        // Print ASCII representation
-//        std::cout << "   ";
-//        for (size_t j = 0; j < bytesPerLine; ++j) {
-//            size_t index = i + j;
-//            if (byteArray[index] != 0x00) {
-//                if (index < size) {
-//                        char c = (byteArray[index] >= 32 && byteArray[index] <= 126) ? byteArray[index] : '.';
-//                        std::cout << c;
-//                    }
-//                } else {
-//                    std::cout << " ";
-//                }
-//        }
-//
-//        std::cout << std::endl;
-//    }
-//}
 
+void printAsciiDump(const uint8_t* buffer, size_t size) {
+    const int width = 16; // Number of bytes per line
+    std::cout << std::hex << std::setfill('0');
+
+    for (size_t i = 0; i < size; i += width) {
+        std::cout << "0x" << std::setw(8) << i << ": ";
+
+        for (size_t j = 0; j < width; ++j) {
+            if (i + j < size) {
+                std::cout << std::setw(2) << static_cast<int>(buffer[i + j]) << " ";
+            }
+            else {
+                std::cout << "   "; // Extra spaces for alignment
+            }
+        }
+
+        std::cout << " ";
+        for (size_t j = 0; j < width && i + j < size; ++j) {
+            char c = buffer[i + j];
+            if (c >= 32 && c <= 126) {
+                std::cout << c;
+            }
+            else {
+                std::cout << "."; // Non-printable characters shown as '.'
+            }
+        }
+
+        std::cout << std::endl;
+    }
+}
+
+void printAsciiDumpWithoutZeros(const BYTE* byteArray, size_t size, size_t bytesPerLine = 16) {
+    
+    for (size_t i = 0; i < size; i += bytesPerLine) {
+        for (size_t j = 0; j < bytesPerLine; ++j) {
+            size_t index = i + j;
+            if (byteArray[index] != 0x00) {
+                 if (index < size) {
+                    std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)(byteArray[index]) << " ";
+                }
+            }
+            else {
+                std::cout << "   "; // Padding for incomplete lines
+            }
+        }
+
+        // Print ASCII representation
+        std::cout << "   ";
+        for (size_t j = 0; j < bytesPerLine; ++j) {
+            size_t index = i + j;
+            if (byteArray[index] != 0x00) {
+                if (index < size) {
+                        char c = (byteArray[index] >= 32 && byteArray[index] <= 126) ? byteArray[index] : '.';
+                        std::cout << c;
+                    }
+                } else {
+                    std::cout << " ";
+                }
+        }
+
+        std::cout << std::endl;
+    }
+}
+
+
+void printNullTerminatedHexDump(const uint8_t* buffer) {
+    const int width = 16; // Number of bytes per line
+    std::cout << std::hex << std::setfill('0');
+
+    size_t i = 0;
+
+    std::cout << "0x" << std::setw(8) << i << ": ";
+
+    while (buffer[i] != '\0') {
+        std::cout << std::setw(2) << static_cast<int>(buffer[i]) << " ";
+
+        if (++i % width == 0) {
+            std::cout << std::endl;
+            std::cout << "0x" << std::setw(8) << i << ": ";
+        }
+    }
+
+    std::cout << std::endl;
+}
 
 std::string getCurrentDateTime() {
 

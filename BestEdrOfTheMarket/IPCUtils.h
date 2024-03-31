@@ -18,6 +18,9 @@
 
 #define PIPE_BUFFER_SIZE 512
 
+typedef LONG(NTAPI* NtSuspendProcess)(IN HANDLE ProcessHandle);
+typedef LONG(NTAPI* NtResumeProcess)(HANDLE ProcessHandle);
+
 typedef void (*DeleteMonitoringWorkerThreads)();
 typedef void (*Startup)();
 
@@ -26,6 +29,7 @@ DeleteMonitoringWorkerThreads dmwt_global;
 Startup startup_global;
 
 BOOL _stack_val_global_ = FALSE;
+BOOL _yara_enabled_global_ = FALSE;
 
 int callback_function(
 	YR_SCAN_CONTEXT* context,
@@ -35,19 +39,28 @@ int callback_function(
 
 	if (message == CALLBACK_MSG_RULE_MATCHING) {
 		
-		std::stringstream alertText;
-		alertText << "Malicious Pattern Detected (Yara) : \n";
-		alertText << "\tRule: " << ((YR_RULE*)message_data)->identifier << std::endl;
-		alertText << "\tNamespace: " << ((YR_RULE*)message_data)->ns->name << std::endl;
-		alertText << "\tMeta: " << ((YR_RULE*)message_data)->metas->identifier << std::endl;
-		alertText << "\tString: " << ((YR_RULE*)message_data)->strings->identifier << std::endl;
-		printRedAlert(alertText.str());
+		printRedAlert("Malicious process detected ! Killing it .... ");
 
-		std::string msgBoxText = "Detected : \n" + (std::string)((YR_RULE*)message_data)->identifier;
+		YR_RULE* rule = (YR_RULE*)message_data;
+
+		std::string jsonReport = yaraRulesReportingJson(
+			GetProcessId(tProcess_global),
+			GetProcessPathByPID(GetProcessId(tProcess_global), tProcess_global),
+			std::string("Yara rule matching detected."),
+			std::string(context->rules->rules_table->identifier),
+			std::string(context->rules->rules_table->metas->string)
+		);
+
+		std::cout << jsonReport << std::endl;
+
+		printAsciiDump(
+			(BYTE*)context->rules->rules_table->strings[0].string, 
+			context->rules->rules_table->strings[0].length
+		);
 
 		TerminateProcess(tProcess_global, -1);
 
-		MessageBoxA(NULL, (LPCSTR)msgBoxText.c_str(), "Best Edr Of The Market", MB_ICONEXCLAMATION);
+		MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Yara)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
 		printRedAlert("Malicious process terminated !");
 
@@ -117,56 +130,83 @@ private:
 	BOOL _v_;
 
 	// Legacy patterns
-	std::unordered_map<BYTE*, SIZE_T> &dllPatterns;
-	std::unordered_map<BYTE*, SIZE_T> &generalPatterns;
-	std::unordered_map<std::string, std::string> stackLevelMonitoredFunctions;
-	std::unordered_map<int, BYTE*> stackPatterns;
+
+	
+	//std::unordered_map<std::string, std::string> stackLevelMonitoredFunctions; --> To remove
+	
+	std::unordered_map<BYTE*, SIZE_T>& dllPatterns;
+	std::unordered_map<BYTE*, SIZE_T>& generalPatterns;
+	std::unordered_map<int, BYTE*> *stackPatterns;
+	std::unordered_map<BYTE*, SIZE_T> heapPatterns;
+
 
 	DeleteMonitoringWorkerThreads deleteMonitoringFunc;
 	Startup startupFunc;
 
 	Pe64Utils *pe64Utils;
+	HeapUtils heapUtils;
 	std::unordered_map<std::string, DWORD_PTR>* functionsNamesMapping; // useless ?
 
 	SYMBOL_INFO symbolInfo;
-	DWORD64 displacement;
+	DWORD64 displacement = 0;
 
 	std::vector<HANDLE>* hThreads;
 
 	// Legacy params
+	BOOL heapEnabled;
 	BOOL yaraEnabled;
 	BOOL stackEnabled ;
 	BOOL directSyscallEnabled;
 
+	NtSuspendProcess pfnNtSuspendProcess;
+	NtResumeProcess pfnNtResumeProcess;
+
 public:
+
+	void setPatterns(
+		std::unordered_map<BYTE*, SIZE_T>& dll_p,
+		std::unordered_map<BYTE*, SIZE_T>& general_p,
+		std::unordered_map<int, BYTE*> *stack_p,
+		std::unordered_map<BYTE*, SIZE_T> heapPatterns
+	) {
+		this->dllPatterns = dll_p;
+		this->generalPatterns = general_p;
+		this->stackPatterns = stack_p;
+		this->heapPatterns = heapPatterns;
+
+		std::cout << "[DEBUG] stackPatterns : " << stackPatterns->size() << std::endl;
+	}
 
 	IpcUtils(LPCWSTR pipeName,
 		HANDLE& tProcess,
 		BOOL& verbose,
 		std::unordered_map<BYTE*, SIZE_T>& dllPatterns,
 		std::unordered_map<BYTE*, SIZE_T>& generalPatterns,
-		std::unordered_map<std::string, std::string> & stackLevelMonitoredFunctions,
-		std::unordered_map<int, BYTE*> & stackPatterns,
 		DeleteMonitoringWorkerThreads f1,
 		Startup f2,
 		Pe64Utils* pe64utils,
+		HeapUtils& heapUtils,
+		BOOL& heap,
 		BOOL& yara,
 		BOOL& stack,
-		BOOL& dsyscalls) :
-
+		BOOL& dsyscalls
+	) :
 		pipeName(pipeName),
 		targetProcess(tProcess),
 		_v_(verbose),
 		dllPatterns(dllPatterns),
 		generalPatterns(generalPatterns),
-		stackLevelMonitoredFunctions(stackLevelMonitoredFunctions),
-		stackPatterns(stackPatterns),
 		deleteMonitoringFunc(f1),
 		startupFunc(f2),
 		pe64Utils(pe64utils),
+		heapUtils(heapUtils),
+		heapEnabled(heap),
 		yaraEnabled(yara),
 		stackEnabled(stack),
 		directSyscallEnabled(dsyscalls) {
+
+		pfnNtSuspendProcess = (NtSuspendProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtSuspendProcess");
+		pfnNtResumeProcess = (NtResumeProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtResumeProcess");
 
 		initYaraUtils();
 		functionsNamesMapping = pe64Utils->getFunctionsNamesMapping();
@@ -178,6 +218,7 @@ public:
 		startup_global = f2;
 
 		_stack_val_global_ = stack;
+		_yara_enabled_global_ = yara;
 	}
 
 	~IpcUtils() {
@@ -248,6 +289,7 @@ public:
 						//	std::cout << "\n" << root.toStyledString() << std::endl;
 						//}
 						//
+
 						if (root.isMember("RSP")) {
 
 							std::string rspPointer = root["RSP"].asString();
@@ -277,6 +319,8 @@ public:
 						}
 						
 						if (root.isMember("RIP") 
+							&& root["RIP"].asString() != "00007FFA71EEC5F4"
+							&& root["RIP"].asString() != "00007FFA71EEACF4"	
 							&& root["RIP"].asString() != "00007FF83EE4ACF4"
 							&& root["RIP"].asString() != "00007FF83EE4C5F4"
 							&& root["RIP"].asString() != "00007FF83EE4A034") {
@@ -285,7 +329,7 @@ public:
 						
 							stackEnabled = _stack_val_global_;
 
-							if (stackEnabled == 1) {
+							if (stackEnabled) {
 								analyzeCompleteProcessThreadsStackTrace(targetProcess);
 							}
 
@@ -300,7 +344,6 @@ public:
 
 							if (SymFromAddr(targetProcess, (DWORD_PTR&)targetAddress, &displacement, &symbolInfo)) {
 								if (symbolInfo.Name != NULL) {
-
 
 									if (_v_) { std::cout << "\t -> " << symbolInfo.Name << std::endl;  }
 
@@ -326,9 +369,6 @@ public:
 									deleteMonitoringFunc();
 									startupFunc();
 								}
-
-							
-							
 							}
 						}
 
@@ -338,9 +378,20 @@ public:
 
 						if (root.isMember("Function")) {
 
-									for (auto& thread : *hThreads) {
+									pfnNtSuspendProcess(targetProcess);
+
+									//if (heapEnabled) {
+									heapUtils.retrieveHeapRegions();
+										//heapUtils.printAllHeapRegionsContent();
+										for (int i = 0; i < heapUtils.getHeapCount(); i++) {
+											BYTE* data = heapUtils.getHeapRegionContent(i);
+											yr_scanner_scan_mem(scanner, data, heapUtils.getHeapRegionSize(i));
+										}
+									//}
+									
+								/*	for (auto& thread : *hThreads) {
 										SuspendThread(thread);
-									}
+									}*/
 							
 									std::string routineName = root["Function"].asString();
 
@@ -395,11 +446,13 @@ public:
 
 										if (yaraEnabled) {
 											if(yr_scanner_scan_mem(scanner, dump, dumpBytesRead) == CALLBACK_ERROR) {
-
 												alertAndKillThatProcess(targetProcess);
 												deleteMonitoringFunc();
 												startupFunc();
 											}
+										}
+										else {
+
 										}
 
 										for (const auto& pair : dllPatterns) {
@@ -446,10 +499,11 @@ public:
 											}
 										}
 									}
-
-									for (auto& thread : *hThreads) {
+	
+									pfnNtResumeProcess(targetProcess);
+									/*for (auto& thread : *hThreads) {
 										ResumeThread(thread);
-									}
+									}*/
 								}
 						
 					}
@@ -467,7 +521,6 @@ public:
 			exit(-28);
 		}
 	}
-
 
 
 	BOOL analyzeCompleteProcessThreadsStackTrace(HANDLE hProcess) {
@@ -508,6 +561,15 @@ public:
 								stackFrame64.AddrStack.Offset = context.Rsp;
 								stackFrame64.AddrStack.Mode = AddrModeFlat;
 
+								CHAR* lastResolvedSymbol = NULL;
+								int set = 0;
+
+								int i = 0;
+
+								if (_v_) {
+									std::cout << "\n\n[*] Captured Stack Frame : " << std::endl;
+								}
+
 								while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
 									hProcess,
 									hThread,
@@ -519,8 +581,11 @@ public:
 									NULL
 								)) {
 
+					
+									i += 1;
+
 									DWORD64 returnAddress = stackFrame64.AddrReturn.Offset;
-									std::cout << "Return Address: 0x" << std::hex << returnAddress << std::endl;
+									//std::cout << (int)i << " - Return Address: 0x" << std::hex << returnAddress << std::endl;
 
 									/*
 									DWORD64 returnAddress = stackFrame64.AddrReturn.Offset;
@@ -532,8 +597,9 @@ public:
 									/* verbose
 									cout << "\t" << "Return Address : " << hex << stackFrame64.AddrReturn.Offset << endl;
 									*/
-									// Debug Symbols Init
 
+									// Debug Symbols Init
+									
 									SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
 									SymInitialize(hProcess, NULL, TRUE);
 
@@ -543,71 +609,85 @@ public:
 									symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
 									symbol->MaxNameLength = 1024;
 
-									if (SymGetSymFromAddr64(hProcess, stackFrame64.AddrPC.Offset, NULL, symbol)) {
+									yaraEnabled = _yara_enabled_global_;
 
-										std::cout << "\t\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << std::endl;
+									if (SymFromAddr(targetProcess, (DWORD_PTR&)stackFrame64.AddrPC.Offset, &displacement, &symbolInfo)) {
+										if (symbolInfo.Name != NULL) {
+											 
+											yaraEnabled = _yara_enabled_global_;
 
-										///* verbose */
-										//if (_debug_) {
-										//	cout << "\t\t" << "at " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << endl;
-										//}
+											if (_v_) { 
+												std::cout << "\t\t " << stackFrame64.AddrPC.Offset << " -> " << symbolInfo.Name << std::endl;
+											}
 
-										for (int i = 0; i < 5; i++) {
+											for (int i = 0; i < 5; i++) {
 
-											BYTE* paramValue = new BYTE[1024];
-											size_t bytesRead;
+												BYTE* paramValue = new BYTE[1024];
+												size_t bytesRead;
 
-											if (ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead)) {
+												if (ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead)) {
+													// TODO --> écrasement de la valeur de yaraEnabled !!
+													if (yaraEnabled) {
+														yr_scanner_scan_mem(scanner, paramValue, bytesRead);
+													} else {
+														for (const auto& pair : *stackPatterns) {
 
-												if (yaraEnabled) {
-													yr_scanner_scan_mem(scanner, paramValue, bytesRead);									
-												}
-											};
+															
+															int id = pair.first;
+															BYTE* pattern = pair.second;
+															size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
 
-									/*		for (const auto& pair : stackPatterns) {
+															
+															if (containsSequence(paramValue, bytesRead, pair.second, patternSize)) {
+																
+																printRedAlert("Malicious Process Detected ! (Stacked Functions Arguments Analysis). Killing it...");
 
-												int id = pair.first;
-												BYTE* pattern = pair.second;
+																std::string symbolName;
+																if (symbolInfo.Name != NULL) {
+																	symbolName = symbolInfo.Name;
+																}
+																else {
+																	symbolName = "Unknown Symbol";
+																}
 
-												size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
+																std::string report = stackFrameReportingJson(
+																	GetProcessId(hProcess),
+																	std::string(GetProcessPathByPID(GetProcessId(hProcess), hProcess)),
+																	std::string("Stacked Functions Arguments Analysis (Normal patterns)"),
+																	std::string(symbolName),
+																	(DWORD_PTR)stackFrame64.AddrPC.Offset	
+																);
 
-												if (bytesRead >= patternSize) {
+																MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Stack)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
-													if (searchForOccurenceInByteArray(paramValue, bytesRead, pattern, patternSize)) {
+																std::cout << report << std::endl;
 
-														MessageBoxA(NULL, "Wooo injection detected (stack) !!", "Best EDR Of The Market", MB_ICONEXCLAMATION);
-														TerminateProcess(hProcess, -1);
-														printRedAlert("Malicious injection detected ! Malicious process killed !");
-														CloseHandle(hProcess);
-
-														for (HANDLE& h : threadsHandles) {
-															CloseHandle(h);
+																TerminateProcess(hProcess, -1);
+																//alertAndKillThatProcess(hProcess);
+																deleteMonitoringFunc();
+																startupFunc();
+															}
 														}
-
-														delete[] paramValue;
-
-														return TRUE;
-
 													}
 												}
-											}*/
-
-											delete[] paramValue;
-
+											}
 										}
-
-
-										free(symbol);
-
 									}
 									else {
 
-										std::cout << "\t\t" << "AAAh :::  " << stackFrame64.AddrPC.Offset << " : " << symbol->Name << std::endl;
-										TerminateProcess(hProcess, -1);
-										MessageBoxA(NULL, "Code injection detected !! (Stack)", "Best EDR Of The Market", MB_ICONEXCLAMATION);
-										printRedAlert("Code injection detected ! Malicious process killed !");
-										deleteMonitoringFunc();
-										startupFunc();
+										if (_v_) {
+											std::cout << "\t\t " << std::hex << (DWORD_PTR)stackFrame64.AddrPC.Offset << std::endl;
+										}
+
+										if(pe64Utils->isAddressInModulesMemPools(stackFrame64.AddrPC.Offset)) {
+											printGreenAlert("Non resolved address in modules memory pools.");
+										} else {
+											printOrangeAlert("Code injection may be occuring !");
+											if (yaraEnabled) {
+												printOrangeAlert("Scanning the process (Yara)...");
+												yr_scanner_scan_proc(scanner, GetProcessId(hProcess));
+											}
+										}
 									}
 								}
 							}

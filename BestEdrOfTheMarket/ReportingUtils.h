@@ -5,6 +5,8 @@
 #include <iostream>
 #include <sstream>
 
+#define BEOTM_VERSION "1.1.0"
+
 std::string GetProcessPathByPID(DWORD pid, HANDLE& hProc) {
     char processPath[MAX_PATH];
     if (GetModuleFileNameExA(hProc, NULL, processPath, MAX_PATH) == 0) {
@@ -26,7 +28,7 @@ std::string dllHookingReportingJson(
     std::stringstream json;
 
     json << "{\n"
-        << "  \"Version\" : \"" << "Best EDR Of The Market 1.1.0" << "\",\n"
+        << "  \"Version\" : \"" << BEOTM_VERSION << "\",\n"
         << "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
         << "  \"MalicousProcessPath\" : \"" << processName << "\",\n"
         << "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
@@ -50,7 +52,7 @@ std::string directSyscallReportingJson(
     std::stringstream json;
 
     json << "{\n"
-        << "  \"Version\" : \"" << "1.1.0" << "\",\n"
+        << "  \"Version\" : \"" << BEOTM_VERSION << "\",\n"
         << "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
         << "  \"MaliciousProcessPath\" : \"" << processName << "\",\n"
         << "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
@@ -66,19 +68,42 @@ std::string stackFrameReportingJson(
     const std::string& processName,
     const std::string& defenseMechanism,
     const std::string& functionName,
-    const std::string& FrameAddress
+    const DWORD_PTR& FrameAddress
 ) {
 
     std::stringstream json;
 
     json << "{\n"
-		<< "  \"Version\" : \"" << "1.1.0" << "\",\n"
+		<< "  \"Version\" : \"" << BEOTM_VERSION << "\",\n"
 		<< "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
 		<< "  \"MaliciousProcessPath\" : \"" << processName << "\",\n"
 		<< "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
 		<< "  \"DateTime\" : \"" << std::string(__DATE__) + " " + std::string(__TIME__) << "\",\n"
 		<< "  \"Function :\"" << functionName << "\",\n"
-        << "  \"Stack Frame Offset : \" : \"" << FrameAddress << "\",\n"
+        << "  \"Stack Frame Offset : \" : \"" << std::hex << FrameAddress << "\",\n"
 		<< "}";
+
+    return json.str();
 }
 
+std::string yaraRulesReportingJson(
+    DWORD pid,
+    const std::string& processName,
+    const std::string& defenseMechanism,
+    const std::string& yaraRuleName,
+    const std::string& yaraRuleNamespace
+) {
+std::stringstream json;
+
+	json << "{\n"
+		<< "  \"Version\" : \"" << BEOTM_VERSION << "\",\n"
+		<< "  \"MaliciousPID\" : \"" << std::to_string(pid) << "\",\n"
+		<< "  \"MaliciousProcessPath\" : \"" << processName << "\",\n"
+		<< "  \"DefenseMechanism\" : \"" << defenseMechanism << "\",\n"
+		<< "  \"DateTime\" : \"" << std::string(__DATE__) + " " + std::string(__TIME__) << "\",\n"
+		<< "  \"YaraRuleName :\"" << yaraRuleName << "\",\n"
+		<< "  \"YaraRuleNamespace : \" : \"" << yaraRuleNamespace << "\",\n"
+		<< "}";
+
+    return json.str();
+}

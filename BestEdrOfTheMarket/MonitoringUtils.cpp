@@ -440,17 +440,9 @@ void startup() {
 		exit(-222);
 	}
 
-	// Heap Monitoring 
-	if (_heap_) {
-		HeapUtils memUtils(targetProcess);
-		thread* heapMonThread = new thread(monitorHeapForProc, memUtils);
-		threads.push_back(heapMonThread);
-	}
-
 	Pe64Utils modUtils(targetProcess);
 	_pe64Utils = &modUtils;
 
-	
 	DllLoader dllLoader(targetProcess);
 
 	LPVOID addressOfDll;
@@ -574,6 +566,14 @@ void startup() {
 	//YaraUtils yaraUtils(targetProcess); pas ici
 
 
+	HeapUtils heapUtils(targetProcess);
+
+	// Heap Monitoring 
+	/*if (_heap_) {
+		thread* heapMonThread = new thread(monitorHeapForProc, heapUtils);
+		threads.push_back(heapMonThread);
+	}*/
+
 	// needs functions mapping to be filled
 	if (_nt_ || _k32_ || _iat_ || _stack_ || _d_syscalls_ || _i_syscalls_) {
 
@@ -584,14 +584,21 @@ void startup() {
 			_v_, 
 			dllPatterns, 
 			generalPatterns,
-			stackLevelMonitoredFunctions,
-			stackPatterns,
 			deleteMonitoringWorkerThreads, 
-			startup, 
-			_pe64Utils, 
+			startup,
+			_pe64Utils,
+			heapUtils,
+			_heap_,
 			_yara_,
 			_stack_,
 			_d_syscalls_
+		);
+
+		ipcUtils_ch1.setPatterns(
+			dllPatterns,
+			generalPatterns,
+			&stackPatterns,
+			heapPatterns
 		);
 
 		auto t1 = [&ipcUtils_ch1]() {
@@ -609,14 +616,21 @@ void startup() {
 			_v_, 
 			dllPatterns, 
 			generalPatterns, 
-			stackLevelMonitoredFunctions,
-			stackPatterns,
 			deleteMonitoringWorkerThreads, 
 			startup, 
-			_pe64Utils, 
+			_pe64Utils,
+			heapUtils,
+			_heap_,
 			_yara_,
 			_stack_,
 			_d_syscalls_
+		);
+
+		ipcUtils_ch2.setPatterns(
+			dllPatterns,
+			generalPatterns,
+			&stackPatterns,
+			heapPatterns
 		);
 
 		auto t2 = [&ipcUtils_ch2]() {
@@ -626,7 +640,6 @@ void startup() {
 		thread* ipc_th2 = new thread(t2);
 		threads.push_back(ipc_th2);
 
-		
 		// Channel 3 - Hooking - Addrs / Func names / args...
 		
 		IpcUtils ipcUtils_ch3(L"\\\\.\\pipe\\beotm_ch3",
@@ -634,14 +647,21 @@ void startup() {
 			_v_,
 			dllPatterns,
 			generalPatterns,
-			stackLevelMonitoredFunctions,
-			stackPatterns,
 			deleteMonitoringWorkerThreads, 
 			startup, 
 			_pe64Utils,
+			heapUtils,
+			_heap_,
 			_yara_,
 			_stack_,
 			_d_syscalls_
+		);
+
+		ipcUtils_ch3.setPatterns(
+			dllPatterns,
+			generalPatterns,
+			&stackPatterns,
+			heapPatterns
 		);
 
 		auto t3 = [&ipcUtils_ch3]() {
@@ -774,45 +794,45 @@ DWORD_PTR printFunctionsMappingKeys(const char* target) {
 /// </summary>
 /// <param name="heapUtils"></param>
 /// <returns></returns>
-boolean monitorHeapForProc(HeapUtils heapUtils) {
-
-	//memUtils.printAllHeapRegionsContent();
-
-	while (true) {
-
-		try { heapUtils.getHeapRegions(); }
-		catch (exception& e) { continue; }
-
-		for (size_t i = 0; i < heapUtils.getHeapCount(); i++) {
-			BYTE* data = heapUtils.getHeapRegionContent(i);
-
-			//printByteArrayWithoutZerosAndBreaks(data, heapUtils.getHeapSize(i));
-
-			for (const auto& pair : heapPatterns) {
-
-				if (containsSequence(data, heapUtils.getHeapSize(i), pair.first, pair.second)) {
-
-					TerminateProcess(targetProcess, -1);
-					MessageBoxA(nullptr, "Wooo injection detected (heap) !!", "Best EDR Of The Market", MB_ICONWARNING);
-
-					printRedAlert("Malicious injection detected ! Malicious process killed !");
-
-					CloseHandle(targetProcess);
-					deleteMonitoringWorkerThreads();
-
-					startup();
-
-					/// TODO: verbose ?
-					//printByteArray(data, memUtils.getHeapSize(i));
-					//printByteArray(pair.first, strlen((const char*)pair.second));
-
-					return TRUE;
-				}
-			}
-			free(data);
-		}
-		Sleep(2000);
-	}
-	return FALSE;
-}
-
+//boolean monitorHeapForProc(HeapUtils heapUtils) {
+//
+//	//memUtils.printAllHeapRegionsContent();
+//
+//	while (true) {
+//
+//		try { heapUtils.getHeapRegions(); }
+//		catch (exception& e) { continue; }
+//
+//		for (size_t i = 0; i < heapUtils.getHeapCount(); i++) {
+//			BYTE* data = heapUtils.getHeapRegionContent(i);
+//
+//			//printByteArrayWithoutZerosAndBreaks(data, heapUtils.getHeapSize(i));
+//
+//			for (const auto& pair : heapPatterns) {
+//
+//				if (containsSequence(data, heapUtils.getHeapSize(i), pair.first, pair.second)) {
+//
+//					TerminateProcess(targetProcess, -1);
+//					MessageBoxA(nullptr, "Wooo injection detected (heap) !!", "Best EDR Of The Market", MB_ICONWARNING);
+//
+//					printRedAlert("Malicious injection detected ! Malicious process killed !");
+//
+//					CloseHandle(targetProcess);
+//					deleteMonitoringWorkerThreads();
+//
+//					startup();
+//
+//					/// TODO: verbose ?
+//					//printByteArray(data, memUtils.getHeapSize(i));
+//					//printByteArray(pair.first, strlen((const char*)pair.second));
+//
+//					return TRUE;
+//				}
+//			}
+//			free(data);
+//		}
+//		Sleep(2000);
+//	}
+//	return FALSE;
+//}
+//

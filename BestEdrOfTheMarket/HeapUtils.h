@@ -4,6 +4,7 @@
 #include <iostream>
 #include <winternl.h>
 
+#include "ProcessStructUtils.h"
 #include "ErrorsReportingUtils.h"
 
 class HeapUtils;
@@ -18,30 +19,30 @@ private:
 
     PVOID heapAddress = NULL;
     unsigned long usage;
-    PEB* peb;
+    PPEB peb;
     HANDLE target = NULL;
     unsigned char* p = NULL;
     MEMORY_BASIC_INFORMATION info;
 
-    DWORD_PTR heapAddresses[1024];
+    PVOID heapAddresses[1024];
     SIZE_T heapSizes[1024];
     SIZE_T h = 0;
 
 public:
 
-    DWORD_PTR* getHeapAddresses() {
+    PVOID* getHeapAddresses() {
 		return heapAddresses;
 	}
 
-    SIZE_T* getHeapSizes() {
+    SIZE_T* getHeapRegionSizes() {
         return heapSizes;
     }
 
-    SIZE_T getHeapSize(int index) {
+    SIZE_T getHeapRegionSize(int index) {
 		return heapSizes[index];
 	}
 
-    DWORD_PTR getHeapAddress(int index) {
+    PVOID getHeapAddress(int index) {
         return heapAddresses[index];
     }
 
@@ -51,10 +52,11 @@ public:
 
     HeapUtils(HANDLE& target) {
         this->target = target;
+        peb = getHandledProcessPeb(target);
     }
 
     ~HeapUtils() {
-        delete peb;
+        //delete peb;
     }
 
     BYTE* getHeapRegionContent(int index) {
@@ -80,32 +82,68 @@ public:
     void printAllHeapRegionsContent() {
 
         for (int i = 0; i < h; i++) {
-            std::cout << "Heap " << std::dec << (int)i << ": " << std::hex << heapAddresses[i] << " - " << heapAddresses[i] + heapSizes[i] << std::endl;
+            std::cout << "Heap " << std::dec << (int)i << ": " << std::hex << heapAddresses[i] << " - " << (DWORD_PTR)heapAddresses[i] + heapSizes[i] << std::endl;
         }
     }
 
-    void getHeapRegions() {
+    // Old method
 
-        clearHeapRegions();
+    //void getHeapRegions() {
 
-        for (p = NULL;
-            VirtualQueryEx(target, p, &info, sizeof(info)) == sizeof(info);
-            p += info.RegionSize)
-        {
-            try {
-                if (info.State == MEM_COMMIT && info.Type == MEM_PRIVATE) {
-                    //std::cout << "[*] Heap @ : " << std::hex << (DWORD_PTR)info.BaseAddress << std::endl;
-                    heapAddresses[h] = (DWORD_PTR)info.BaseAddress;
-                    heapSizes[h] = info.RegionSize;
-                    h++;    
-                }
-            }
-            catch (std::exception& e) {
-                continue;
-            }
-           
-        }
-    }   
+    //    clearHeapRegions();
+
+    //    for (p = NULL;
+    //        VirtualQueryEx(target, p, &info, sizeof(info)) == sizeof(info);
+    //        p += info.RegionSize)
+    //    {
+    //        try {
+    //            if (info.State == MEM_COMMIT && info.Type == MEM_PRIVATE) {
+    //                //std::cout << "[*] Heap @ : " << std::hex << (DWORD_PTR)info.BaseAddress << std::endl;
+    //                heapAddresses[h] = (DWORD_PTR)info.BaseAddress;
+    //                heapSizes[h] = info.RegionSize;
+    //                h++;    
+    //            }
+    //        }
+    //        catch (std::exception& e) {
+    //            continue;
+    //        }
+    //       
+    //    }
+    //}   
+
+    // New method
+    // Heap regions + Size
+    void retrieveHeapRegions() {
+
+         PVOID processHeap;
+         ReadProcessMemory(target, (LPCVOID)((DWORD_PTR)peb + 0x30), &processHeap, sizeof(PVOID), NULL);
+
+         DWORD numberOfHeaps;
+         ReadProcessMemory(target, (LPCVOID)((DWORD_PTR)peb + 0xE8), &numberOfHeaps, sizeof(DWORD), NULL);
+
+         PVOID* ProcessHeaps;
+         ReadProcessMemory(target, (LPCVOID)((DWORD_PTR)peb + 0xF0), &ProcessHeaps, sizeof(PVOID*), NULL);
+         
+         h = (SIZE_T)numberOfHeaps;
+
+         for (int i = 0; i < numberOfHeaps; i++) {
+             PVOID heapAddress;
+             ReadProcessMemory(target, (LPCVOID)((DWORD_PTR)ProcessHeaps + i * sizeof(PVOID)), &heapAddress, sizeof(PVOID), NULL);
+
+             heapAddresses[i] = heapAddress;
+             if (VirtualQueryEx(target, heapAddress, &info, sizeof(info)) == sizeof(info)) {
+                 heapSizes[i] = info.RegionSize;
+             }
+         }
+
+         std::cout << "\n" << std::endl;
+
+         // print heaps and size
+        for (int i = 0; i < numberOfHeaps; i++) {
+			 std::cout << "[*] Heap " << (i+1) << " at " << std::hex << heapAddresses[i] << " size: " << std::dec << (int)(heapSizes[i])/1000 << " kb" << std::endl;
+		 }
+        std::cout << "\n" << std::endl;
+    }
 
     void clearHeapRegions() {
         for (int i = 0; i < h; i++) {
@@ -115,3 +153,5 @@ public:
 		h = 0;
 	}
 };
+
+		

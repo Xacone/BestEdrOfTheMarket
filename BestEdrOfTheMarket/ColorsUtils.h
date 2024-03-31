@@ -38,3 +38,7 @@ void printYellowAlert(std::string msg) {
 void printBlueAlert(std::string msg) {
 	std::cout << "\x1B[48;5;4m" << "[!] " << msg << "\x1B[0m" << std::endl;
 }
+
+void printOrangeAlert(std::string msg) {
+	std::cout << "\x1B[48;5;208m" << "[!] " << msg << "\x1B[0m" << std::endl;
+}
