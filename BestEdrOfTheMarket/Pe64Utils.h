@@ -36,7 +36,60 @@ private:
 
 	std::vector<HANDLE> hThreads;
 
+	LPVOID startOfMemoryRegion[512];
+	LPVOID endOfMemoryRegion[512];
+	SIZE_T sizeOfMemoryRegion[512];
+
 public:
+
+	SIZE_T getSizeOfMemoryRegionByItsIndex(int index) {
+		return sizeOfMemoryRegion[index];
+	}
+
+	BYTE* getContentOfMemoryRegionByItsIndex(int index) {
+		BYTE* buffer = new BYTE[(DWORD_PTR)endOfMemoryRegion[index] - (DWORD_PTR)startOfMemoryRegion[index]];
+		SIZE_T bytesRead;
+		ReadProcessMemory(target, startOfMemoryRegion[index], buffer, (DWORD_PTR)endOfMemoryRegion[index] - (DWORD_PTR)startOfMemoryRegion[index], &bytesRead);
+		return buffer;
+	}
+
+
+	BOOL memoryRegionsContainsIndex(int index) {
+		return startOfMemoryRegion[index] != NULL && endOfMemoryRegion[index] != NULL;
+	}
+
+	void enumerateMemoryRegionsOfProcess() {
+		
+		MEMORY_BASIC_INFORMATION memInfo;
+		SIZE_T queryResult;
+		LPVOID currentAddr = 0;
+		int i = 0;
+		while (VirtualQueryEx(target, currentAddr, &memInfo, sizeof(memInfo)) != 0) {
+			startOfMemoryRegion[i] = memInfo.BaseAddress;
+			endOfMemoryRegion[i] = (LPVOID)((DWORD_PTR)memInfo.BaseAddress + memInfo.RegionSize);
+			sizeOfMemoryRegion[i] = memInfo.RegionSize;
+			currentAddr = (LPVOID)((DWORD_PTR)memInfo.BaseAddress + memInfo.RegionSize);
+			i++;
+		}
+	}
+
+
+	int indexOfMemoryRegion(LPVOID addr) {
+		for (int i = 0; i < 512; i++) {
+			if (addr >= startOfMemoryRegion[i] && addr <= endOfMemoryRegion[i]) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	LPVOID getStartOfMemoryRegion(int order) {
+		return startOfMemoryRegion[order];
+	}
+
+	LPVOID getEndOfMemoryRegion(int order) {
+		return endOfMemoryRegion[order];
+	}
 
 	LPVOID getModStartAddr(int order) {
 		return modStartAddrs[order];

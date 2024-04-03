@@ -288,10 +288,11 @@ int main(int argc, char* argv[]) {
 
 				arg += 1;
 				
+				Sleep(200);
+
+
 				//targetProcess = processInfo.hProcess;
 				targetProcId = processInfo.dwProcessId;
-
-				Sleep(100);
 				
 				//WaitForSingleObject(targetProcess, INFINITE);
 
@@ -501,6 +502,7 @@ void startup() {
 
 	Pe64Utils modUtils(targetProcess);
 	_pe64Utils = &modUtils;
+	modUtils.enumerateMemoryRegionsOfProcess();
 
 	DllLoader dllLoader(targetProcess);
 

@@ -48,7 +48,29 @@ std::string removeBOM(const std::string& input) {
         return input;
     }
 }
-    
+
+BYTE hexToByte(char hex) {
+    if (hex >= '0' && hex <= '9')
+        return hex - '0';
+    else if (hex >= 'A' && hex <= 'F')
+        return hex - 'A' + 10;
+    else if (hex >= 'a' && hex <= 'f')
+        return hex - 'a' + 10;
+    else
+        return 0;
+}
+
+BYTE* convertHexToBytes(const char* hexString, size_t& length) {
+    length = strlen(hexString) / 2;
+    BYTE* bytes = new BYTE[length];
+
+    for (size_t i = 0; i < length; ++i) {
+        bytes[i] = (hexToByte(hexString[i * 2]) << 4) | hexToByte(hexString[i * 2 + 1]);
+    }
+
+    return bytes;
+}
+
 LPWSTR ConvertCharToLPWSTR(const char* charArray)
 {
 	int length = strlen(charArray) + 1;

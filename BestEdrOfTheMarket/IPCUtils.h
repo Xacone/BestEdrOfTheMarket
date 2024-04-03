@@ -51,6 +51,8 @@ PVOID NtTraceEventsPtr = NULL;
 
 BOOL _inherited_p_ = FALSE;
 
+int numberOfUnbackedFunctionAddresses = 0;
+
 int callback_function(
 	YR_SCAN_CONTEXT* context,
 	int message,
@@ -121,7 +123,7 @@ int initYaraUtils() {
 
 			const char* rule_file_path = entry.path().string().c_str(); 
 
-			std::cout << "[YARA] Added rule file : " << rule_file_path << "\n";
+			//std::cout << "[YARA] Added rule file : " << rule_file_path << "\n";
 
 			FILE* file;
 			fopen_s(&file, rule_file_path, "r");
@@ -369,7 +371,7 @@ public:
 					std::istringstream jsonStream(jsonString);
 
 					if (Json::parseFromStream(reader, jsonStream, &root, nullptr)) {
-						
+
 						//if (_v_) { // [JSON] ?
 						//	std::cout << "\n" << root.toStyledString() << std::endl;
 						//}
@@ -378,11 +380,11 @@ public:
 						if (root.isMember("RSP")) {
 
 							std::string rspPointer = root["RSP"].asString();
-							
+
 							DWORD_PTR targetAddress = std::stoull(rspPointer, nullptr, 16);
 
 							if (!pe64Utils->isAddressInModulesMemPools(targetAddress)) {
-								
+
 								std::cout << "\n";
 								std::string alertText = "Indirect Syscall Detected !";
 								printRedAlert(alertText);
@@ -402,16 +404,16 @@ public:
 							}
 
 						}
-						
-						if (root.isMember("RIP") 
+
+						if (root.isMember("RIP")
 							&& root["RIP"].asString() != "00007FFA71EEC5F4"
-							&& root["RIP"].asString() != "00007FFA71EEACF4"	
+							&& root["RIP"].asString() != "00007FFA71EEACF4"
 							&& root["RIP"].asString() != "00007FF83EE4ACF4"
 							&& root["RIP"].asString() != "00007FF83EE4C5F4"
 							&& root["RIP"].asString() != "00007FF83EE4A034") {
-							
+
 							std::string ripPointer = root["RIP"].asString();
-						
+
 							stackEnabled = _stack_val_global_;
 
 							if (stackEnabled) {
@@ -430,10 +432,11 @@ public:
 							if (SymFromAddr(targetProcess, (DWORD_PTR&)targetAddress, &displacement, &symbolInfo)) {
 								if (symbolInfo.Name != NULL) {
 
-									if (_v_) { std::cout << "\t -> " << symbolInfo.Name << std::endl;  }
+									if (_v_) { std::cout << "\t -> " << symbolInfo.Name << std::endl; }
 
 								}
-							} else {
+							}
+							else {
 
 								if (directSyscallEnabled) {
 
@@ -468,181 +471,196 @@ public:
 
 						if (root.isMember("Function")) {
 
+							pe64Utils->enumerateMemoryRegionsOfProcess();
 
-									PVOID AmsiOpenSessionAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiOpenSession");
-									PVOID AmsiScanBufferAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiScanBuffer");
+							if (!root.isMember("Hexdump")) {
 
-									if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
-									
-										patchResultAmsiOpenSession = patchUtils.checkAmsiOpenSession(AmsiOpenSessionAddr);
-										patchResultAmsiScanBuffer = patchUtils.checkAmsiScanBuffer(AmsiScanBufferAddr);
+								PVOID AmsiOpenSessionAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiOpenSession");
+								PVOID AmsiScanBufferAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiScanBuffer");
 
-										if (patchResultAmsiOpenSession == 0 || patchResultAmsiScanBuffer == 0) {
-											
-											printRedAlert("Malicious process detected ! (AMSI Patch). Killing it...");
-											MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (AMSI Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+								if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
 
-											TerminateProcess(targetProcess, -1);
-											deleteMonitoringFunc();
-											startupFunc();
-											
-										}
-									}
-									
-									/*NtTraceEventPatchResult = patchUtils.checkNtTraceEvents(GetProcAddress(LoadLibraryA("ntdll"), "NtTraceEvent"));
+									patchResultAmsiOpenSession = patchUtils.checkAmsiOpenSession(AmsiOpenSessionAddr);
+									patchResultAmsiScanBuffer = patchUtils.checkAmsiScanBuffer(AmsiScanBufferAddr);
 
-									EtwEventWritePatchResult = patchUtils.checkEtwEventWrite(GetProcAddress(LoadLibraryA("ntdll"), "EtwEventWrite"));
+									if (patchResultAmsiOpenSession == 0 || patchResultAmsiScanBuffer == 0) {
 
-									pfnNtSuspendProcess(targetProcess);
-*/
-
-									if (NtTraceEventPatchResult == 0 || EtwEventWritePatchResult == 0) {
-										printRedAlert("Malicious process detected ! (ETW Patch). Killing it...");
-										MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (ETW Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+										printRedAlert("Malicious process detected ! (AMSI Patch). Killing it...");
+										MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (AMSI Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
 										TerminateProcess(targetProcess, -1);
 										deleteMonitoringFunc();
 										startupFunc();
+
 									}
+								}
 
-									// Patching mitigation
-									if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
-										patchUtils.checkAmsiOpenSession(AmsiScanOpenSessionPtr);
-									}
+								/*NtTraceEventPatchResult = patchUtils.checkNtTraceEvents(GetProcAddress(LoadLibraryA("ntdll"), "NtTraceEvent"));
 
-									if (heapEnabled) {
-	
-										heapUtils.retrieveHeapRegions();
-										for (int i = 0; i < heapUtils.getHeapCount(); i++) {
-											BYTE* data = heapUtils.getHeapRegionContent(i);
-											if (yaraEnabled) {
-												yr_scanner_scan_mem(scanner, data, heapUtils.getHeapRegionSize(i));
-											}
-											else {
-												for (const auto& pair : *heapPatterns) {
-													if (containsSequence(data, heapUtils.getHeapRegionSize(i), pair.first, pair.second)) {
-														printRedAlert("Malicious process detected !!! (Heap). Killing it...");
-														std::string report = heapReportingJson(
-															GetProcessId(targetProcess),
-															std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
-															std::string("Heap Regions Analysis"),
-															(DWORD_PTR)heapUtils.getHeapAddress(i),
-															std::string(bytesToHexString(pair.first, pair.second))
-														);
+								EtwEventWritePatchResult = patchUtils.checkEtwEventWrite(GetProcAddress(LoadLibraryA("ntdll"), "EtwEventWrite"));
 
-														std::cout << report << std::endl;
+								pfnNtSuspendProcess(targetProcess);
+*/
 
-														MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Heap)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+								if (NtTraceEventPatchResult == 0 || EtwEventWritePatchResult == 0) {
+									printRedAlert("Malicious process detected ! (ETW Patch). Killing it...");
+									MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (ETW Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
-														TerminateProcess(targetProcess, -1);
-														deleteMonitoringFunc();
-														startupFunc();
-													}
+									TerminateProcess(targetProcess, -1);
+									deleteMonitoringFunc();
+									startupFunc();
+								}
+
+								// Patching mitigation
+								if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
+									patchUtils.checkAmsiOpenSession(AmsiScanOpenSessionPtr);
+								}
+
+								if (heapEnabled) {
+
+									heapUtils.retrieveHeapRegions();
+									for (int i = 0; i < heapUtils.getHeapCount(); i++) {
+										BYTE* data = heapUtils.getHeapRegionContent(i);
+										if (yaraEnabled) {
+											yr_scanner_scan_mem(scanner, data, heapUtils.getHeapRegionSize(i));
+										}
+										else {
+											for (const auto& pair : *heapPatterns) {
+												if (containsSequence(data, heapUtils.getHeapRegionSize(i), pair.first, pair.second)) {
+													printRedAlert("Malicious process detected !!! (Heap). Killing it...");
+													std::string report = heapReportingJson(
+														GetProcessId(targetProcess),
+														std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+														std::string("Heap Regions Analysis"),
+														(DWORD_PTR)heapUtils.getHeapAddress(i),
+														std::string(bytesToHexString(pair.first, pair.second))
+													);
+
+													std::cout << report << std::endl;
+
+													MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Heap)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+
+													TerminateProcess(targetProcess, -1);
+													deleteMonitoringFunc();
+													startupFunc();
 												}
 											}
 										}
-	
-									}
-								
-									std::string routineName = root["Function"].asString();
-
-									printBlueAlert("Intercepted " + routineName);
-
-									if (root.isMember("Size")) {
-											std::string size = root["Size"].asString();
-					
 									}
 
-									LPCVOID addrPointer;
-									BYTE* addr;
-									std::string concernedAddress; 
-							
-									if (root.isMember("RawData")) {
-										
-										concernedAddress = root["RawData"].asCString();
-
-										size_t capturedDataSize = (size_t)strlen(root["RawData"].asCString());
-
-										if (capturedDataSize > 0) {
-											addr = hexStringToBytes(concernedAddress, capturedDataSize);
-											memccpy(&addrPointer, addr, 8, 8);
-											//BYTE rAddr[8] = { addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0] };
-										}
-									}
-
-									if (root.isMember("StringData")) {	
-
-										concernedAddress = root["StringData"].asCString();
-
-										size_t capturedDataSize = (size_t)strlen(root["StringData"].asCString());
-
-										if (capturedDataSize > 0) {
-											addrPointer = hexStringToLPCVOID(root["StringData"].asCString());
-										}
-									}
-
-									BYTE dump[1024];
-									size_t dumpBytesRead;
-
-									if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
-
-										if (yaraEnabled) {
-
-											//amsitest((LPVOID)dump, dumpBytesRead);
-										
-											if(yr_scanner_scan_mem(scanner, dump, dumpBytesRead) == CALLBACK_ERROR) {
-												alertAndKillThatProcess(targetProcess);
-												deleteMonitoringFunc();
-												startupFunc();
-											}
-										}
-										
-										for (const auto& pair : dllPatterns) {
-											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
-													
-												alertAndKillThatProcess(targetProcess);
-
-												std::string report = dllHookingReportingJson(
-													GetProcessId(targetProcess),
-													std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
-													std::string("Hooked ") + std::string(routineName),
-													(std::string)"0x" + concernedAddress,
-													(std::string)bytesToHexString(pair.first, pair.second),
-													"DLL Patterns",
-													(std::string)bytesToHexString(dump, dumpBytesRead)
-												);
-
-												std::cout << "\n" << report << "\n" << std::endl;
-
-												deleteMonitoringFunc();
-												startupFunc();
-											}
-										}
-
-										for (const auto& pair : generalPatterns) {
-											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
-												alertAndKillThatProcess(targetProcess);
-
-												std::string report = dllHookingReportingJson(
-													GetProcessId(targetProcess),
-													std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
-													std::string("DLL Hooking on ") + std::string(routineName),
-													(std::string)"0x" + concernedAddress,
-													(std::string)bytesToHexString(pair.first, pair.second),
-													"General Patterns",
-													(std::string)bytesToHexString(dump, dumpBytesRead)
-												);
-
-												std::cout << "\n" << report << "\n" << std::endl;
-
-												deleteMonitoringFunc();
-												startupFunc();
-											}
-										}
-									}
-	
-									pfnNtResumeProcess(targetProcess);
 								}
+
+								std::string routineName = root["Function"].asString();
+
+								printBlueAlert("Intercepted " + routineName);
+
+								if (root.isMember("Size")) {
+									std::string size = root["Size"].asString();
+
+								}
+
+								LPCVOID addrPointer;
+								BYTE* addr;
+								std::string concernedAddress;
+
+								if (root.isMember("RawData")) {
+
+									concernedAddress = root["RawData"].asCString();
+
+									size_t capturedDataSize = (size_t)strlen(root["RawData"].asCString());
+
+									if (capturedDataSize > 0) {
+										addr = hexStringToBytes(concernedAddress, capturedDataSize);
+										memccpy(&addrPointer, addr, 8, 8);
+										//BYTE rAddr[8] = { addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0] };
+									}
+								}
+
+								if (root.isMember("StringData")) {
+
+									concernedAddress = root["StringData"].asCString();
+
+									size_t capturedDataSize = (size_t)strlen(root["StringData"].asCString());
+
+									if (capturedDataSize > 0) {
+										addrPointer = hexStringToLPCVOID(root["StringData"].asCString());
+									}
+								}
+
+								BYTE dump[1024];
+								size_t dumpBytesRead;
+
+								if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
+
+									if (yaraEnabled) {
+
+										//amsitest((LPVOID)dump, dumpBytesRead);
+
+										if (yr_scanner_scan_mem(scanner, dump, dumpBytesRead) == CALLBACK_ERROR) {
+											alertAndKillThatProcess(targetProcess);
+											deleteMonitoringFunc();
+											startupFunc();
+										}
+									}
+
+									for (const auto& pair : dllPatterns) {
+										if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
+
+											alertAndKillThatProcess(targetProcess);
+
+											std::string report = dllHookingReportingJson(
+												GetProcessId(targetProcess),
+												std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+												std::string("Hooked ") + std::string(routineName),
+												(std::string)"0x" + concernedAddress,
+												(std::string)bytesToHexString(pair.first, pair.second),
+												"DLL Patterns",
+												(std::string)bytesToHexString(dump, dumpBytesRead)
+											);
+
+											std::cout << "\n" << report << "\n" << std::endl;
+
+											deleteMonitoringFunc();
+											startupFunc();
+										}
+									}
+
+									for (const auto& pair : generalPatterns) {
+										if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
+											alertAndKillThatProcess(targetProcess);
+
+											std::string report = dllHookingReportingJson(
+												GetProcessId(targetProcess),
+												std::string(GetProcessPathByPID((DWORD)GetProcessId(targetProcess), targetProcess)),
+												std::string("DLL Hooking on ") + std::string(routineName),
+												(std::string)"0x" + concernedAddress,
+												(std::string)bytesToHexString(pair.first, pair.second),
+												"General Patterns",
+												(std::string)bytesToHexString(dump, dumpBytesRead)
+											);
+
+											std::cout << "\n" << report << "\n" << std::endl;
+
+											deleteMonitoringFunc();
+											startupFunc();
+										}
+									}
+								}
+
+							} else {
+								
+								// Inactive for now
+
+								const char* receivedBuffer = root["Hexdump"].asCString();
+
+								size_t bytesBufferSize;
+								BYTE* bytesBuffer = convertHexToBytes(receivedBuffer, bytesBufferSize);
+								yr_scanner_scan_mem(scanner, bytesBuffer, bytesBufferSize);
+							}
+
+							pfnNtResumeProcess(targetProcess);
+
+						}
 					}
 				}
 			}
@@ -742,11 +760,13 @@ public:
 
 									// Function Name Retrieving
 
+									yaraEnabled = _yara_enabled_global_;
+
+
 									IMAGEHLP_SYMBOL64* symbol = (IMAGEHLP_SYMBOL64*)malloc(sizeof(IMAGEHLP_SYMBOL64) + 1024);
 									symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
 									symbol->MaxNameLength = 1024;
 
-									yaraEnabled = _yara_enabled_global_;
 
 									if (SymFromAddr(targetProcess, (DWORD_PTR&)stackFrame64.AddrPC.Offset, &displacement, &symbolInfo)) {
 										if (symbolInfo.Name != NULL) {
@@ -822,8 +842,45 @@ public:
 										} else {
 											printOrangeAlert("Code injection may be occuring !");
 											if (yaraEnabled) {
-												printOrangeAlert("Scanning the process (Yara)...");
-												yr_scanner_scan_proc(scanner, GetProcessId(hProcess));
+												printOrangeAlert("Scanning the memory region for patterns...");
+												
+												int indexOfMemoryRegionOfOfsset = pe64Utils->indexOfMemoryRegion((LPVOID)stackFrame64.AddrPC.Offset);
+
+												//std::cout << "et l'index c'estttt ---->  " << std::dec << (int)indexOfMemoryRegionOfOfsset << std::endl;
+
+												if(pe64Utils->memoryRegionsContainsIndex(indexOfMemoryRegionOfOfsset)) {
+													//std::cout << "Memory region contains index" << std::endl;
+
+													int sizeOfRegion = pe64Utils->getSizeOfMemoryRegionByItsIndex(indexOfMemoryRegionOfOfsset);
+
+													if (sizeOfRegion > 0) {
+
+														std::cout << std::dec << sizeOfRegion << std::endl;
+
+														BYTE* content = new BYTE[sizeOfRegion];
+														size_t bytesRead;
+														if (ReadProcessMemory(
+															hProcess,
+															(LPCVOID)pe64Utils->getStartOfMemoryRegion(indexOfMemoryRegionOfOfsset),
+															content,
+															sizeOfRegion,//sizeOfRegion,
+															//(SIZE_T)pe64Utils->getSizeOfMemoryRegionByItsIndex(indexOfMemoryRegionOfOfsset),
+															&bytesRead
+														)) {
+
+															// analyze content
+															yr_scanner_scan_mem(scanner,
+																content,
+																pe64Utils->getSizeOfMemoryRegionByItsIndex(indexOfMemoryRegionOfOfsset)
+															);
+														}
+
+														yaraEnabled = _yara_enabled_global_;
+													}
+
+												} else {
+													std::cout << "Memory region does not contain index" << std::endl;
+												}
 											}
 										}
 									}
