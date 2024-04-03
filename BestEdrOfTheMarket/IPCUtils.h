@@ -471,6 +471,8 @@ public:
 
 						if (root.isMember("Function")) {
 
+							pfnNtSuspendProcess(targetProcess);
+
 							pe64Utils->enumerateMemoryRegionsOfProcess();
 
 							if (!root.isMember("Hexdump")) {
@@ -498,9 +500,8 @@ public:
 								/*NtTraceEventPatchResult = patchUtils.checkNtTraceEvents(GetProcAddress(LoadLibraryA("ntdll"), "NtTraceEvent"));
 
 								EtwEventWritePatchResult = patchUtils.checkEtwEventWrite(GetProcAddress(LoadLibraryA("ntdll"), "EtwEventWrite"));
+								*/
 
-								pfnNtSuspendProcess(targetProcess);
-*/
 
 								if (NtTraceEventPatchResult == 0 || EtwEventWritePatchResult == 0) {
 									printRedAlert("Malicious process detected ! (ETW Patch). Killing it...");
@@ -838,33 +839,31 @@ public:
 										}
 
 										if(pe64Utils->isAddressInModulesMemPools(stackFrame64.AddrPC.Offset)) {
+										
 											printGreenAlert("Non resolved address in modules memory pools.");
+										
 										} else {
+											
 											printOrangeAlert("Code injection may be occuring !");
+											
 											if (yaraEnabled) {
 												printOrangeAlert("Scanning the memory region for patterns...");
 												
 												int indexOfMemoryRegionOfOfsset = pe64Utils->indexOfMemoryRegion((LPVOID)stackFrame64.AddrPC.Offset);
 
-												//std::cout << "et l'index c'estttt ---->  " << std::dec << (int)indexOfMemoryRegionOfOfsset << std::endl;
-
 												if(pe64Utils->memoryRegionsContainsIndex(indexOfMemoryRegionOfOfsset)) {
-													//std::cout << "Memory region contains index" << std::endl;
 
 													int sizeOfRegion = pe64Utils->getSizeOfMemoryRegionByItsIndex(indexOfMemoryRegionOfOfsset);
 
 													if (sizeOfRegion > 0) {
-
-														std::cout << std::dec << sizeOfRegion << std::endl;
-
+	
 														BYTE* content = new BYTE[sizeOfRegion];
 														size_t bytesRead;
 														if (ReadProcessMemory(
 															hProcess,
 															(LPCVOID)pe64Utils->getStartOfMemoryRegion(indexOfMemoryRegionOfOfsset),
 															content,
-															sizeOfRegion,//sizeOfRegion,
-															//(SIZE_T)pe64Utils->getSizeOfMemoryRegionByItsIndex(indexOfMemoryRegionOfOfsset),
+															sizeOfRegion,
 															&bytesRead
 														)) {
 
@@ -874,6 +873,8 @@ public:
 																pe64Utils->getSizeOfMemoryRegionByItsIndex(indexOfMemoryRegionOfOfsset)
 															);
 														}
+
+														delete[] content;
 
 														yaraEnabled = _yara_enabled_global_;
 													}
