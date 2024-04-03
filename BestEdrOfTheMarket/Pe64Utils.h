@@ -36,9 +36,9 @@ private:
 
 	std::vector<HANDLE> hThreads;
 
-	LPVOID startOfMemoryRegion[512];
-	LPVOID endOfMemoryRegion[512];
-	SIZE_T sizeOfMemoryRegion[512];
+	LPVOID startOfMemoryRegion[2048];
+	LPVOID endOfMemoryRegion[2048];
+	SIZE_T sizeOfMemoryRegion[2048];
 
 public:
 
@@ -65,6 +65,7 @@ public:
 		LPVOID currentAddr = 0;
 		int i = 0;
 		while (VirtualQueryEx(target, currentAddr, &memInfo, sizeof(memInfo)) != 0) {
+			
 			startOfMemoryRegion[i] = memInfo.BaseAddress;
 			endOfMemoryRegion[i] = (LPVOID)((DWORD_PTR)memInfo.BaseAddress + memInfo.RegionSize);
 			sizeOfMemoryRegion[i] = memInfo.RegionSize;

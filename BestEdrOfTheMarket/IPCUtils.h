@@ -412,6 +412,8 @@ public:
 							&& root["RIP"].asString() != "00007FF83EE4C5F4"
 							&& root["RIP"].asString() != "00007FF83EE4A034") {
 
+							pfnNtSuspendProcess(targetProcess);
+
 							std::string ripPointer = root["RIP"].asString();
 
 							stackEnabled = _stack_val_global_;
@@ -420,26 +422,15 @@ public:
 								analyzeCompleteProcessThreadsStackTrace(targetProcess);
 							}
 
-							if (_v_) {
-								std::cout << "\n[*] RIP is at 0x" << ripPointer;
-							}
-
 							DWORD_PTR targetAddress = std::stoull(ripPointer, nullptr, 16);
 
 							SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
 							SymInitialize(targetProcess, NULL, TRUE);
 
-							if (SymFromAddr(targetProcess, (DWORD_PTR&)targetAddress, &displacement, &symbolInfo)) {
-								if (symbolInfo.Name != NULL) {
+							if (directSyscallEnabled) {
 
-									if (_v_) { std::cout << "\t -> " << symbolInfo.Name << std::endl; }
-
-								}
-							}
-							else {
-
-								if (directSyscallEnabled) {
-
+								if (!SymFromAddr(targetProcess, (DWORD_PTR&)targetAddress, &displacement, &symbolInfo)) {
+									
 									std::cout << "\n";
 									std::string alertText = "Direct Syscall stub at " + ripPointer;
 									printRedAlert(alertText);
@@ -456,8 +447,16 @@ public:
 									alertAndKillThatProcess(targetProcess);
 									deleteMonitoringFunc();
 									startupFunc();
+								
+								} else {
+					
+									if (_v_) { std::cout << "\t -> " << symbolInfo.Name << std::endl; }
+								
 								}
 							}
+
+							pfnNtResumeProcess(targetProcess);
+
 						}
 
 						if (root.isMember("Thread")) {

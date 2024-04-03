@@ -492,7 +492,6 @@ void startup() {
 		cout << "[*] Here we go !\n" << endl;
 	}
 
-	
 	//cout << " [DEBUG] Working threads table size : " << threads.size() << endl;
 
 	if (!SymInitialize(targetProcess, nullptr, TRUE)) {
