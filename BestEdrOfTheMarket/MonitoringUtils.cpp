@@ -40,12 +40,14 @@
 #include "ColorsUtils.h"
 #include "SymbolsUtils.h"
 #include "BytesSequencesUtils.h"
+#include <amsi.h>
 
 #include "IPCUtils.h"
 
 #include "json/json.h"
 
 #pragma comment(lib, "dbghelp.lib")
+#pragma comment(lib, "amsi.lib")
 
 #pragma warning(disable : 266) // temporary
 
@@ -149,6 +151,12 @@ std::unordered_map<BYTE*, SIZE_T> generalPatterns;
 // Handled threads on target processes
 unordered_map<DWORD, HANDLE> ThreadsState;
 
+// Process information block
+const char* processPath;
+
+STARTUPINFO startupInfo;
+PROCESS_INFORMATION processInfo;
+
 /// <summary>
 /// Control Handler for proper deletion of the threads when hitting Ctrl+C/// </summary>
 /// <param name="fdwCtrlType">Control type</param>
@@ -177,8 +185,6 @@ BOOL _heap_ = FALSE;
 BOOL _ssn_ = FALSE;
 BOOL _amsi_ = FALSE;
 BOOL _etw_ = FALSE;
-BOOL _backed_ = FALSE;
-BOOL _rop_ = FALSE;
 BOOL _debug_ = FALSE;
 BOOL _boost_ = FALSE;
 BOOL _stack_spoof_ = FALSE;
@@ -186,12 +192,18 @@ BOOL _d_syscalls_ = FALSE;
 BOOL _i_syscalls_ = FALSE;
 BOOL _yara_ = FALSE;
 
+
+BOOL _p_ = FALSE;
+
 int main(int argc, char* argv[]) {
+
+	pfnNtSuspendProcess = (NtSuspendProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtSuspendProcess");
+	pfnNtResumeProcess = (NtResumeProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtResumeProcess");
 
 	for (int arg = 0; arg < argc; arg++) {
 
 		if (!strcmp(argv[arg], "/help")) {
-			printHelp();
+			printHelp();	
 			return 0;
 		}
 		if (!strcmp(argv[arg], "/v")) {
@@ -221,20 +233,8 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[arg], "/etw")) {
 			_etw_ = TRUE;
 		}
-		if (!strcmp(argv[arg], "/backed")) { // a degager
-			_backed_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/rop")) {
-			_rop_ = TRUE;
-		}	
 		if (!strcmp(argv[arg], "/debug")) { 
 			_debug_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/boost")) { // a degager
-			_boost_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/stack-spoof")) { // a degager pour l'instant
-			_stack_spoof_ = TRUE;
 		}
 		if (!strcmp(argv[arg], "/direct")) {
 			_d_syscalls_ = TRUE;
@@ -244,6 +244,61 @@ int main(int argc, char* argv[]) {
 		}
 		if(!strcmp(argv[arg], "/yara")) {
 			_yara_ = TRUE;
+		}
+
+		if(!strcmp(argv[arg], "/p")) {
+			
+			if(argv[arg+1]) {
+
+				_p_ = TRUE;
+				_inherited_p_ = TRUE;
+				
+				ZeroMemory(&startupInfo, sizeof(startupInfo));
+				ZeroMemory(&processInfo, sizeof(processInfo));
+				startupInfo.cb = sizeof(startupInfo);
+				startupInfo.dwFlags = STARTF_USESHOWWINDOW;
+				startupInfo.wShowWindow = SW_SHOW;
+
+				//const wchar_t* pathToExecutable = (wchar_t*)argv[arg + 1];
+
+				std::cout << "[*] Spawning " << (char*)argv[arg + 1] << " ..." << std::endl;
+
+				LPWSTR converted = ConvertCharToLPWSTR(argv[arg + 1]);
+
+				if (!CreateProcess(
+					NULL,                     
+					converted,
+					NULL,                      
+					NULL,                      
+					FALSE,                     
+				    CREATE_NEW_CONSOLE,
+					NULL,                      
+					NULL,                      
+					&startupInfo,              
+					&processInfo               
+				)) {
+					std::cerr << "[X] Failed to spawn process. Error code: " << GetLastError() << std::endl;
+					
+					printLastError();
+					
+					//_p_ = FALSE;
+					startup(); // Si ça casse ça vient de là
+					exit(-1);
+				}
+
+				arg += 1;
+				
+				//targetProcess = processInfo.hProcess;
+				targetProcId = processInfo.dwProcessId;
+
+				Sleep(100);
+				
+				//WaitForSingleObject(targetProcess, INFINITE);
+
+				//pfnNtSuspendProcess(targetProcess);
+
+
+			}
 		}
 
 	}
@@ -422,18 +477,22 @@ void startup() {
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 
 	// Demanding PID
-	pidFilling();
-
-	//cout << " [DEBUG] Working threads table size : " << threads.size() << endl;
+	if (!_p_) {
+		pidFilling();
+	}
 
 	// Opening el famoso Handle on target process identfied by its PID
 	targetProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)targetProcId);
 	if (!targetProcess) {
 		cout << "[X] Can't find that PID ! Give me a valid one please ! .\n" << endl;
 		startup();
-	} else {
+	}
+	else {
 		cout << "[*] Here we go !\n" << endl;
 	}
+
+	
+	//cout << " [DEBUG] Working threads table size : " << threads.size() << endl;
 
 	if (!SymInitialize(targetProcess, nullptr, TRUE)) {
 		std::cerr << "SymInitialize failed. Error code: " << GetLastError() << std::endl;
@@ -717,19 +776,7 @@ void startup() {
 
 	}
 
-	if (_stack_ || _backed_ || _stack_spoof_) {
-		
-		cout << endl;
-		while (true) {
-			//checkProcThreads(targetProcId);
-			Sleep(1500); // Ref : 1500
-		}
-
-		for (int i = 0; i < threads.size(); i++) {
-			threads.at(i)->join();
-		}
-
-	}
+	//pfnNtResumeProcess(targetProcess);
 
 	while (true) {
 		Sleep(100000);

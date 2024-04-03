@@ -27,7 +27,7 @@ private:
     std::unordered_map<std::string, LPVOID> IATFunctionsMapping;
     std::unordered_map<std::string, LPVOID> IATFunctionsAddressesMapping;
 	std::unordered_map<std::string, DWORD_PTR> functionsNamesMapping;		// En créer une autre inversée ??
-	std::unordered_map < std::string, int > modulesOrder;
+	std::unordered_map < std::string, int> modulesOrder;
 
 	LPVOID modStartAddrs[512];
 	LPVOID modEndAddrs[512];
@@ -44,6 +44,10 @@ public:
 
 	LPVOID getModEndAddr(int order) {
 		return modEndAddrs[order];
+	}
+
+	LPVOID getAddressOfExport(const char* exportName) {
+		return (LPVOID)functionsNamesMapping[exportName];
 	}
 
 	std::vector<HANDLE>* getThreads() {
@@ -114,6 +118,12 @@ public:
 
 	HMODULE* getLoadedModules() {
 		return hModules;
+	}
+
+	// Function to check if a module exists among the loaded ones
+
+	BOOL isModulePresent(std::string moduleName) {
+		return modulesOrder.find(moduleName) != modulesOrder.end();
 	}
 
 	/* ---------------------------------------------------------------------------- */

@@ -49,6 +49,14 @@ std::string removeBOM(const std::string& input) {
     }
 }
     
+LPWSTR ConvertCharToLPWSTR(const char* charArray)
+{
+	int length = strlen(charArray) + 1;
+	LPWSTR str = new WCHAR[length];
+	MultiByteToWideChar(CP_ACP, 0, charArray, length, str, length);
+	return str;
+}
+
 LPCWSTR ConvertCharToLPCWSTR(const char* charArray)
 {
     int length = strlen(charArray) + 1;

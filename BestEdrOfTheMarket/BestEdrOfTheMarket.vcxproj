@@ -31,6 +31,7 @@
     <None Include="YaroRules.json" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AmsiUtils.h" />
     <ClInclude Include="BytesSequencesUtils.h" />
     <ClInclude Include="ColorsUtils.h" />
     <ClInclude Include="ConversionUtils.h" />
@@ -39,7 +40,7 @@
     <ClInclude Include="IPCUtils.h" />
     <ClInclude Include="HeapUtils.h" />
     <ClInclude Include="ModuleLoadingUtils.h" />
-    <ClInclude Include="ParchingMitigUtils.h" />
+    <ClInclude Include="PatchingUtils.h" />
     <ClInclude Include="Pe64Utils.h" />
     <ClInclude Include="ProcessStructUtils.h" />
     <ClInclude Include="ReportingUtils.h" />

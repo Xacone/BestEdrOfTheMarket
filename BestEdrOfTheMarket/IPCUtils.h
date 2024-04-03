@@ -16,6 +16,10 @@
 #include "ColorsUtils.h"
 #include "BytesSequencesUtils.h"
 #include "ReportingUtils.h"
+#include "PatchingUtils.h"
+#include "AmsiUtils.h"
+
+#pragma comment(lib, "amsi.lib")
 
 namespace fs = std::filesystem;
 
@@ -23,6 +27,9 @@ namespace fs = std::filesystem;
 
 typedef LONG(NTAPI* NtSuspendProcess)(IN HANDLE ProcessHandle);
 typedef LONG(NTAPI* NtResumeProcess)(HANDLE ProcessHandle);
+
+NtSuspendProcess pfnNtSuspendProcess;
+NtResumeProcess pfnNtResumeProcess;
 
 typedef void (*DeleteMonitoringWorkerThreads)();
 typedef void (*Startup)();
@@ -34,6 +41,15 @@ Startup startup_global;
 BOOL _stack_val_global_ = FALSE;
 BOOL _yara_enabled_global_ = FALSE;
 
+HRESULT hr;
+HAMSICONTEXT amsiContext = NULL;
+
+PVOID AmsiScanOpenSessionPtr = NULL;
+PVOID AmsiScanBufferPtr = NULL;
+PVOID EtwEventWritePtr = NULL;
+PVOID NtTraceEventsPtr = NULL;
+
+BOOL _inherited_p_ = FALSE;
 
 int callback_function(
 	YR_SCAN_CONTEXT* context,
@@ -67,9 +83,14 @@ int callback_function(
 		MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Yara)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
 		printRedAlert("Malicious process terminated !");
+		
+		if (!_inherited_p_) {
+			dmwt_global();
+			startup_global();
+		} else {
+			exit(0);
+		}
 
-		dmwt_global();
-		startup_global();
 
 		return CALLBACK_ERROR;
 	}
@@ -100,7 +121,7 @@ int initYaraUtils() {
 
 			const char* rule_file_path = entry.path().string().c_str(); 
 
-			//std::cout << "[YARA] Added rule file : " << rule_file_path << "\n";
+			std::cout << "[YARA] Added rule file : " << rule_file_path << "\n";
 
 			FILE* file;
 			fopen_s(&file, rule_file_path, "r");
@@ -154,13 +175,10 @@ private:
 	BOOL _v_;
 
 	// Legacy patterns
-	//std::unordered_map<std::string, std::string> stackLevelMonitoredFunctions; --> To remove
-	
 	std::unordered_map<BYTE*, SIZE_T>& dllPatterns;
 	std::unordered_map<BYTE*, SIZE_T>& generalPatterns;
 	std::unordered_map<int, BYTE*>* stackPatterns;
 	std::unordered_map<BYTE*, SIZE_T>* heapPatterns;
-
 
 	DeleteMonitoringWorkerThreads deleteMonitoringFunc;
 	Startup startupFunc;
@@ -180,8 +198,9 @@ private:
 	BOOL stackEnabled ;
 	BOOL directSyscallEnabled;
 
-	NtSuspendProcess pfnNtSuspendProcess;
-	NtResumeProcess pfnNtResumeProcess;
+
+
+	PatchingMitigationUtils patchUtils;
 
 public:
 
@@ -223,15 +242,25 @@ public:
 		heapEnabled(heap),
 		yaraEnabled(yara),
 		stackEnabled(stack),
-		directSyscallEnabled(dsyscalls) {
+		directSyscallEnabled(dsyscalls),
+		patchUtils(tProcess) {
 
 		pfnNtSuspendProcess = (NtSuspendProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtSuspendProcess");
 		pfnNtResumeProcess = (NtResumeProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtResumeProcess");
 
+
+		if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
+			AmsiScanBufferPtr = GetProcAddress(GetModuleHandleA("amsi.dll"), "AmsiScanBuffer");
+			AmsiScanOpenSessionPtr = GetProcAddress(GetModuleHandleA("amsi.dll"), "AmsiScanOpenSession");
+		}
+
+		EtwEventWritePtr = GetProcAddress(GetModuleHandleA("ntdll.dll"), "EtwEventWrite");
+		NtTraceEventsPtr = GetProcAddress(GetModuleHandleA("ntdll.dll"), "NtTraceEvent");
+
 		initYaraUtils();
 		functionsNamesMapping = pe64Utils->getFunctionsNamesMapping();
 		hThreads = pe64Utils->getThreads();
-	
+
 		// globals for yara
 		tProcess_global = tProcess;
 		dmwt_global = f1;
@@ -239,11 +268,47 @@ public:
 
 		_stack_val_global_ = stack;
 		_yara_enabled_global_ = yara;
+
 	}
 
 	~IpcUtils() {
 		/*yaraUtils->destroyCompilerAndFinalize();
 		delete yaraUtils;*/
+	}
+
+
+	void amsitest(PVOID buffer, ULONG length) {
+		HAMSICONTEXT amsiContext;
+		HRESULT hr = AmsiInitialize(L"MyApp", &amsiContext);
+		if (FAILED(hr)) {
+			std::cerr << "Failed to initialize AMSI\n";
+			return;
+		}
+
+		HAMSISESSION session;
+		hr = AmsiOpenSession(amsiContext, &session);
+		if (FAILED(hr)) {
+			std::cerr << "Failed to open AMSI session\n";
+			AmsiUninitialize(amsiContext);
+			return;
+		}
+
+		AMSI_RESULT result;
+		hr = AmsiScanBuffer(amsiContext, buffer, length, L"MyContent", session, &result);
+		if (SUCCEEDED(hr)) {
+			if (result == AMSI_RESULT_DETECTED) {
+				std::cout << "Malicious content detected!\n";
+			}
+			else {
+				std::cout << "No malicious content detected.\n";
+			}
+		}
+		else {
+			std::cerr << "Failed to scan buffer\n";
+		}
+
+		AmsiCloseSession(amsiContext, session);
+		AmsiUninitialize(amsiContext);
 	}
 
 	void alertAndKillThatProcess(HANDLE hProc) {
@@ -396,9 +461,54 @@ public:
 							std::cout << "Thread Created" << std::endl;
 						}
 
+						int patchResultAmsiOpenSession;
+						int patchResultAmsiScanBuffer;
+						int NtTraceEventPatchResult;
+						int EtwEventWritePatchResult;
+
 						if (root.isMember("Function")) {
 
+
+									PVOID AmsiOpenSessionAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiOpenSession");
+									PVOID AmsiScanBufferAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiScanBuffer");
+
+									if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
+									
+										patchResultAmsiOpenSession = patchUtils.checkAmsiOpenSession(AmsiOpenSessionAddr);
+										patchResultAmsiScanBuffer = patchUtils.checkAmsiScanBuffer(AmsiScanBufferAddr);
+
+										if (patchResultAmsiOpenSession == 0 || patchResultAmsiScanBuffer == 0) {
+											
+											printRedAlert("Malicious process detected ! (AMSI Patch). Killing it...");
+											MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (AMSI Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+
+											TerminateProcess(targetProcess, -1);
+											deleteMonitoringFunc();
+											startupFunc();
+											
+										}
+									}
+									
+									/*NtTraceEventPatchResult = patchUtils.checkNtTraceEvents(GetProcAddress(LoadLibraryA("ntdll"), "NtTraceEvent"));
+
+									EtwEventWritePatchResult = patchUtils.checkEtwEventWrite(GetProcAddress(LoadLibraryA("ntdll"), "EtwEventWrite"));
+
 									pfnNtSuspendProcess(targetProcess);
+*/
+
+									if (NtTraceEventPatchResult == 0 || EtwEventWritePatchResult == 0) {
+										printRedAlert("Malicious process detected ! (ETW Patch). Killing it...");
+										MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (ETW Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+
+										TerminateProcess(targetProcess, -1);
+										deleteMonitoringFunc();
+										startupFunc();
+									}
+
+									// Patching mitigation
+									if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
+										patchUtils.checkAmsiOpenSession(AmsiScanOpenSessionPtr);
+									}
 
 									if (heapEnabled) {
 	
@@ -433,11 +543,7 @@ public:
 										}
 	
 									}
-									
-								/*	for (auto& thread : *hThreads) {
-										SuspendThread(thread);
-									}*/
-							
+								
 									std::string routineName = root["Function"].asString();
 
 									printBlueAlert("Intercepted " + routineName);
@@ -481,19 +587,19 @@ public:
 									if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
 
 										if (yaraEnabled) {
+
+											//amsitest((LPVOID)dump, dumpBytesRead);
+										
 											if(yr_scanner_scan_mem(scanner, dump, dumpBytesRead) == CALLBACK_ERROR) {
 												alertAndKillThatProcess(targetProcess);
 												deleteMonitoringFunc();
 												startupFunc();
 											}
 										}
-										else {
-
-										}
-
+										
 										for (const auto& pair : dllPatterns) {
 											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
-												
+													
 												alertAndKillThatProcess(targetProcess);
 
 												std::string report = dllHookingReportingJson(
@@ -512,7 +618,6 @@ public:
 												startupFunc();
 											}
 										}
-
 
 										for (const auto& pair : generalPatterns) {
 											if (containsSequence(dump, dumpBytesRead, pair.first, pair.second)) {
@@ -537,11 +642,7 @@ public:
 									}
 	
 									pfnNtResumeProcess(targetProcess);
-									/*for (auto& thread : *hThreads) {
-										ResumeThread(thread);
-									}*/
 								}
-						
 					}
 				}
 			}
@@ -742,6 +843,8 @@ public:
 
 		}
 	}
+
+
 
 
 };
