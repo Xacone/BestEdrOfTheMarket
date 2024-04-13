@@ -27,6 +27,7 @@
     <None Include="..\Docs\Setup.md" />
     <None Include="..\README.md" />
     <None Include="MsfvenomWho.yara" />
+    <None Include="rockk.yara" />
     <None Include="TrigerringFunctions.json" />
     <None Include="YaroRules.json" />
   </ItemGroup>

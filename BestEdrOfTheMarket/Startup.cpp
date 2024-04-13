@@ -60,7 +60,7 @@ void printHelp() {
         << "\n\t\t /k32 : Inline Kernel32/Kernelbase hooking"
 		<< "\n\t\t /iat : IAT hooking"
 		<< "\n\t\t /stack : Threads call stack monitoring"
-		<< "\n\t\t /heap : Heap monitoring"
+		<< "\n\t\t /heap : Heap monitoring (to use with /k32, /iat or /nt)"
         << "\n\t\t /direct : Direct Syscalls Detection"
         << "\n\t\t /indirect : Indirect Syscalls Detection"
 		<< "\n\t\t /ssn : SSNcrushing"

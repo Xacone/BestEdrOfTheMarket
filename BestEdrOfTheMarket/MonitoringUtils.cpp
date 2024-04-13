@@ -157,6 +157,8 @@ const char* processPath;
 STARTUPINFO startupInfo;
 PROCESS_INFORMATION processInfo;
 
+
+
 /// <summary>
 /// Control Handler for proper deletion of the threads when hitting Ctrl+C/// </summary>
 /// <param name="fdwCtrlType">Control type</param>
@@ -168,6 +170,7 @@ BOOL CtrlHandler(DWORD fdwCtrlType) {
 	case CTRL_C_EVENT:
 
 		cout << "Terminating..." << endl;
+		SymCleanup(targetProcess);
 		deleteMonitoringWorkerThreads();
 		exit(0);
 	}
@@ -259,8 +262,6 @@ int main(int argc, char* argv[]) {
 				startupInfo.dwFlags = STARTF_USESHOWWINDOW;
 				startupInfo.wShowWindow = SW_SHOW;
 
-				//const wchar_t* pathToExecutable = (wchar_t*)argv[arg + 1];
-
 				std::cout << "[*] Spawning " << (char*)argv[arg + 1] << " ..." << std::endl;
 
 				LPWSTR converted = ConvertCharToLPWSTR(argv[arg + 1]);
@@ -288,17 +289,9 @@ int main(int argc, char* argv[]) {
 
 				arg += 1;
 				
-				Sleep(200);
+				Sleep(100);
 
-
-				//targetProcess = processInfo.hProcess;
 				targetProcId = processInfo.dwProcessId;
-				
-				//WaitForSingleObject(targetProcess, INFINITE);
-
-				//pfnNtSuspendProcess(targetProcess);
-
-
 			}
 		}
 
@@ -315,6 +308,10 @@ void pidFilling() {
 	cout << "\n[*] Choose the PID to monitor : ";
 	cin >> targetProcId;
 }
+
+/*
+	Startup function, called at the beginning of the program. It fills the maps with the content of the JSON files and initializes the monitoring threads.
+*/
 
 void startup() {
 
@@ -484,6 +481,9 @@ void startup() {
 
 	// Opening el famoso Handle on target process identfied by its PID
 	targetProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)targetProcId);
+	Sleep(5);
+	pfnNtSuspendProcess(targetProcess);
+
 	if (!targetProcess) {
 		cout << "[X] Can't find that PID ! Give me a valid one please ! .\n" << endl;
 		startup();
@@ -501,6 +501,7 @@ void startup() {
 
 	Pe64Utils modUtils(targetProcess);
 	_pe64Utils = &modUtils;
+	modUtils.enumerateProcessModulesAndTheirPools();
 	modUtils.enumerateMemoryRegionsOfProcess();
 
 	DllLoader dllLoader(targetProcess);
@@ -574,6 +575,7 @@ void startup() {
 		if (_v_) {
 			cout << "[INFO] Injected hooked ntdll.dll" << endl;
 		}
+		Sleep(500); // avoid conflicts
 		while (!injected_nt_dll) {
 			injected_nt_dll = dllLoader.InjectDll(GetProcessId(targetProcess), ntDllAbsolutePathBuf, addressOfDll);
 		}
@@ -596,16 +598,14 @@ void startup() {
 	if (_v_) {
 		cout << "[INFO] Process PEB at " << targPeb << endl;
 	}
-
-	modUtils.enumerateProcessModulesAndTheirPools();
 	
 	if (_iat_) {
 		modUtils.getFirstModuleIAT();
 
 		cout << "[*] " << modUtils.getIATFunctionsMapping()->size() << " imported functions" << endl;
 
-		functionsNamesImportsMapping = modUtils.getIATFunctionsMapping();
-		functionsAddressesOfAddresses = modUtils.getIATFunctionsAddressesMapping();
+		//functionsNamesImportsMapping = modUtils.getIATFunctionsMapping();
+		//functionsAddressesOfAddresses = modUtils.getIATFunctionsAddressesMapping();
 	}
 
 	ThreadsState.clear();
@@ -733,16 +733,6 @@ void startup() {
 
 	}
 
-	LPVOID IatHookableDllStartAddr = NULL;
-	if (_iat_) {
-		IatHookableDllStartAddr = modUtils.getModStartAddr(modUtils.getModulesOrder()->at((string)iatDllAbsolutePathBuf));
-		if (_v_) {
-			cout << "\n[INFO] Start address of IAT Hooking DLL ->  " << IatHookableDllStartAddr << endl;
-		}
-	}
-
-
-	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, iat_hooking_dll, IatHookableDllStartAddr);
 	functionsNamesMapping = modUtils.getFunctionsNamesMapping();
 
 	if (_ssn_) {
@@ -755,40 +745,23 @@ void startup() {
 
 	}
 
-	if (_iat_) {
-
-		DWORD_PTR _hTarget;
-		for (string func : iatLevelHookedFunctions) {
-			string target = (string)"h" + func;
-			for (const auto& entry : *modUtils.getFunctionsNamesMapping()) {
-				if (entry.first.find(target) != string::npos && entry.first.find(target + "Ex") == string::npos) {
-					/* verbose */
-					if (_v_) {
-						cout << "[INFO] \tHookable " << func << " at " << hex << entry.second << endl;
-					}
-					_hTarget = entry.second;
-				}
-			}
-			auto it = functionsAddressesOfAddresses->find(func);
-			if (it != functionsAddressesOfAddresses->end()) {
-				hookIatTableEntry(targetProcess, functionsAddressesOfAddresses->at(func), (PVOID)&_hTarget);
-			}
-		}
-
-	}
-
-	//pfnNtResumeProcess(targetProcess);
+	pfnNtResumeProcess(targetProcess);
 
 	while (true) {
-		Sleep(100000);
+		Sleep(INFINITE);
 	}
 
 }
 
 /*
-Proper deletion of call stack monitoring threads, invoked when hitting Ctrl+C or when the process is terminated
+Function for proper deletion of monitoring threads, invoked when hitting Ctrl+C / when the process is terminated 
 */
 void deleteMonitoringWorkerThreads() {
+
+	if(targetProcess != NULL) {
+		SymCleanup(targetProcess);
+	}
+
 	if (_debug_) {
 		cout << "[DEBUG] Killing " << threads.size() << " working threads..." << endl;
 	}
@@ -836,51 +809,3 @@ DWORD_PTR printFunctionsMappingKeys(const char* target) {
 	}
 	return NULL;
 }
-
-/// <summary>
-/// 
-/// </summary>
-/// <param name="heapUtils"></param>
-/// <returns></returns>
-//boolean monitorHeapForProc(HeapUtils heapUtils) {
-//
-//	//memUtils.printAllHeapRegionsContent();
-//
-//	while (true) {
-//
-//		try { heapUtils.getHeapRegions(); }
-//		catch (exception& e) { continue; }
-//
-//		for (size_t i = 0; i < heapUtils.getHeapCount(); i++) {
-//			BYTE* data = heapUtils.getHeapRegionContent(i);
-//
-//			//printByteArrayWithoutZerosAndBreaks(data, heapUtils.getHeapSize(i));
-//
-//			for (const auto& pair : heapPatterns) {
-//
-//				if (containsSequence(data, heapUtils.getHeapSize(i), pair.first, pair.second)) {
-//
-//					TerminateProcess(targetProcess, -1);
-//					MessageBoxA(nullptr, "Wooo injection detected (heap) !!", "Best EDR Of The Market", MB_ICONWARNING);
-//
-//					printRedAlert("Malicious injection detected ! Malicious process killed !");
-//
-//					CloseHandle(targetProcess);
-//					deleteMonitoringWorkerThreads();
-//
-//					startup();
-//
-//					/// TODO: verbose ?
-//					//printByteArray(data, memUtils.getHeapSize(i));
-//					//printByteArray(pair.first, strlen((const char*)pair.second));
-//
-//					return TRUE;
-//				}
-//			}
-//			free(data);
-//		}
-//		Sleep(2000);
-//	}
-//	return FALSE;
-//}
-//

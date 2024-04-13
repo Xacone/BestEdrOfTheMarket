@@ -44,6 +44,9 @@
     <None Include="MsfvenomWho.yara">
       <Filter>Fichiers de ressources\Yara Rules</Filter>
     </None>
+    <None Include="rockk.yara">
+      <Filter>Fichiers de ressources\Yara Rules</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Startup.h">

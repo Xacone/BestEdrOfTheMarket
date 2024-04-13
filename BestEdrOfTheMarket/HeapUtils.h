@@ -113,7 +113,7 @@ public:
 
     // New method
     // Heap regions + Size
-    void retrieveHeapRegions() {
+    void retrieveHeapRegions(BOOL verbose) {
 
          PVOID processHeap;
          ReadProcessMemory(target, (LPCVOID)((DWORD_PTR)peb + 0x30), &processHeap, sizeof(PVOID), NULL);
@@ -140,9 +140,14 @@ public:
 
          // print heaps and size
         for (int i = 0; i < numberOfHeaps; i++) {
-			 std::cout << "[*] Heap " << (i+1) << " at " << std::hex << heapAddresses[i] << " size: " << std::dec << (int)(heapSizes[i])/1000 << " kb" << std::endl;
-		 }
-        std::cout << "\n" << std::endl;
+            if (verbose) {
+                std::cout << "[*] Heap " << (i + 1) << " at " << std::hex << heapAddresses[i] << " size: " << std::dec << (int)(heapSizes[i]) / 1000 << " kb" << std::endl;
+            }
+		}
+        
+        if (verbose) {
+            std::cout << "\n" << std::endl;
+        }
     }
 
     void clearHeapRegions() {

@@ -51,6 +51,8 @@ PVOID NtTraceEventsPtr = NULL;
 
 BOOL _inherited_p_ = FALSE;
 
+std::string currentDefensiveMethdod = "";
+
 int numberOfUnbackedFunctionAddresses = 0;
 
 int callback_function(
@@ -60,15 +62,16 @@ int callback_function(
 	void* user_data) {
 
 	if (message == CALLBACK_MSG_RULE_MATCHING) {
-		
+
 		printRedAlert("Malicious process detected ! Killing it .... ");
+		TerminateProcess(tProcess_global, -1);
 
 		YR_RULE* rule = (YR_RULE*)message_data;
 
 		std::string jsonReport = yaraRulesReportingJson(
 			GetProcessId(tProcess_global),
 			GetProcessPathByPID(GetProcessId(tProcess_global), tProcess_global),
-			std::string("Yara rule matching detected."),
+			std::string("Defensive technique revealed a YARA pattern matching."),
 			std::string(context->rules->rules_table->identifier),
 			std::string(context->rules->rules_table->metas->string)
 		);
@@ -80,11 +83,10 @@ int callback_function(
 			context->rules->rules_table->strings[0].length
 		);
 
-		TerminateProcess(tProcess_global, -1);
-
 		MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Yara)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
 		printRedAlert("Malicious process terminated !");
+		
 		
 		if (!_inherited_p_) {
 			dmwt_global();
@@ -93,8 +95,7 @@ int callback_function(
 			exit(0);
 		}
 
-
-		return CALLBACK_ERROR;
+		return CALLBACK_EVENT;
 	}
 
 	return CALLBACK_CONTINUE;
@@ -372,12 +373,13 @@ public:
 
 					if (Json::parseFromStream(reader, jsonStream, &root, nullptr)) {
 
-						//if (_v_) { // [JSON] ?
-						//	std::cout << "\n" << root.toStyledString() << std::endl;
-						//}
-						//
-
+						if (_v_) { // [JSON] ?
+							std::cout << "\n" << root.toStyledString() << std::endl;
+						}
+						
 						if (root.isMember("RSP")) {
+
+							//pfnNtSuspendProcess(targetProcess);
 
 							std::string rspPointer = root["RSP"].asString();
 
@@ -402,6 +404,8 @@ public:
 								deleteMonitoringFunc();
 								startupFunc();
 							}
+
+							//pfnNtResumeProcess(targetProcess);
 
 						}
 
@@ -429,6 +433,7 @@ public:
 
 							if (directSyscallEnabled) {
 
+								
 								if (!SymFromAddr(targetProcess, (DWORD_PTR&)targetAddress, &displacement, &symbolInfo)) {
 									
 									std::cout << "\n";
@@ -450,16 +455,24 @@ public:
 								
 								} else {
 					
+									pfnNtSuspendProcess(targetProcess);
+
 									if (_v_) { std::cout << "\t -> " << symbolInfo.Name << std::endl; }
-								
+									
+									pfnNtResumeProcess(targetProcess);
+
 								}
+
 							}
 
 							pfnNtResumeProcess(targetProcess);
 
 						}
 
+						// inactive for now
+
 						if (root.isMember("Thread")) {
+
 							std::cout << "Thread Created" << std::endl;
 						}
 
@@ -501,7 +514,6 @@ public:
 								EtwEventWritePatchResult = patchUtils.checkEtwEventWrite(GetProcAddress(LoadLibraryA("ntdll"), "EtwEventWrite"));
 								*/
 
-
 								if (NtTraceEventPatchResult == 0 || EtwEventWritePatchResult == 0) {
 									printRedAlert("Malicious process detected ! (ETW Patch). Killing it...");
 									MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (ETW Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
@@ -518,14 +530,16 @@ public:
 
 								if (heapEnabled) {
 
-									heapUtils.retrieveHeapRegions();
+									heapUtils.retrieveHeapRegions(_v_);
+
 									for (int i = 0; i < heapUtils.getHeapCount(); i++) {
 										BYTE* data = heapUtils.getHeapRegionContent(i);
+										
 										if (yaraEnabled) {
-											yr_scanner_scan_mem(scanner, data, heapUtils.getHeapRegionSize(i));
+											yr_scanner_scan_mem(scanner, (BYTE*)data, heapUtils.getHeapRegionSize(i));
 										}
-										else {
-											for (const auto& pair : *heapPatterns) {
+										
+										for (const auto& pair : *heapPatterns) {
 												if (containsSequence(data, heapUtils.getHeapRegionSize(i), pair.first, pair.second)) {
 													printRedAlert("Malicious process detected !!! (Heap). Killing it...");
 													std::string report = heapReportingJson(
@@ -536,15 +550,17 @@ public:
 														std::string(bytesToHexString(pair.first, pair.second))
 													);
 
+													
 													std::cout << report << std::endl;
-
+													
+													
 													MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Heap)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
 													TerminateProcess(targetProcess, -1);
 													deleteMonitoringFunc();
 													startupFunc();
-												}
 											}
+											
 										}
 									}
 
@@ -592,14 +608,17 @@ public:
 
 								if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
 
+									//std::cout << "je analize" << std::endl;
+
 									if (yaraEnabled) {
 
 										//amsitest((LPVOID)dump, dumpBytesRead);
 
-										if (yr_scanner_scan_mem(scanner, dump, dumpBytesRead) == CALLBACK_ERROR) {
+										if (yr_scanner_scan_mem(scanner, dump, dumpBytesRead)) {
 											alertAndKillThatProcess(targetProcess);
 											deleteMonitoringFunc();
 											startupFunc();
+										
 										}
 									}
 
@@ -771,7 +790,7 @@ public:
 									if (SymFromAddr(targetProcess, (DWORD_PTR&)stackFrame64.AddrPC.Offset, &displacement, &symbolInfo)) {
 										if (symbolInfo.Name != NULL) {
 											 
-											yaraEnabled = _yara_enabled_global_;
+										yaraEnabled = _yara_enabled_global_;
 
 											if (_v_) { 
 												std::cout << "\t\t " << stackFrame64.AddrPC.Offset << " -> " << symbolInfo.Name << std::endl;
@@ -783,50 +802,49 @@ public:
 												size_t bytesRead;
 
 												if (ReadProcessMemory(hProcess, (LPCVOID)stackFrame64.Params[i], paramValue, 1024, &bytesRead)) {
-													// TODO --> écrasement de la valeur de yaraEnabled !!
+																										
 													if (yaraEnabled) {
 														yr_scanner_scan_mem(scanner, paramValue, bytesRead);
-													} else {
-														for (const auto& pair : *stackPatterns) {
+													}
 
-															
-															int id = pair.first;
-															BYTE* pattern = pair.second;
-															size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
+													for (const auto& pair : *stackPatterns) {
 
-															
-															if (containsSequence(paramValue, bytesRead, pair.second, patternSize)) {
+														int id = pair.first;
+														BYTE* pattern = pair.second;
+														size_t patternSize = strlen(reinterpret_cast<const char*>(pattern));
+	
+														if (containsSequence(paramValue, bytesRead, pair.second, patternSize)) {
 																
-																printRedAlert("Malicious Process Detected ! (Stacked Functions Arguments Analysis). Killing it...");
-																std::string symbolName;
-																if (symbolInfo.Name != NULL) {
-																	symbolName = symbolInfo.Name;
-																}
-																else {
-																	symbolName = "Unknown Symbol";
-																}
-
-																std::string report = stackFrameReportingJson(
-																	GetProcessId(hProcess),
-																	std::string(GetProcessPathByPID(GetProcessId(hProcess), hProcess)),
-																	std::string("Stacked Functions Arguments Analysis (Normal patterns)"),
-																	std::string(symbolName),
-																	(DWORD_PTR)stackFrame64.AddrPC.Offset,
-																	(std::string)bytesToHexString(pattern, patternSize),
-																	(std::string)bytesToHexString(paramValue, bytesRead)	
-																);
-
-																MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Stack)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
-
-																std::cout << report << std::endl;
-
-																TerminateProcess(hProcess, -1);
-																//alertAndKillThatProcess(hProcess);
-																deleteMonitoringFunc();
-																startupFunc();
+															printRedAlert("Malicious Process Detected ! (Stacked Functions Arguments Analysis). Killing it...");
+															std::string symbolName;
+															if (symbolInfo.Name != NULL) {
+																symbolName = symbolInfo.Name;
 															}
+															else {
+																symbolName = "Unknown Symbol";
+															}
+
+															std::string report = stackFrameReportingJson(
+																GetProcessId(hProcess),
+																std::string(GetProcessPathByPID(GetProcessId(hProcess), hProcess)),
+																std::string("Stacked Functions Arguments Analysis (Normal patterns)"),
+																std::string(symbolName),
+																(DWORD_PTR)stackFrame64.AddrPC.Offset,
+																(std::string)bytesToHexString(pattern, patternSize),
+																(std::string)bytesToHexString(paramValue, bytesRead)	
+															);
+
+															MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Stack)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
+
+															std::cout << report << std::endl;
+
+															TerminateProcess(hProcess, -1);
+															//alertAndKillThatProcess(hProcess);
+															deleteMonitoringFunc();
+															startupFunc();
 														}
 													}
+													
 												}
 											}
 										}
@@ -877,6 +895,7 @@ public:
 
 														yaraEnabled = _yara_enabled_global_;
 													}
+
 
 												} else {
 													std::cout << "Memory region does not contain index" << std::endl;
