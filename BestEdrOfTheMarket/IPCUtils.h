@@ -654,7 +654,7 @@ public:
 										addr = hexStringToBytes(concernedAddress, capturedDataSize);
 										memccpy(&addrPointer, addr, 8, 8);
 
-										std::cout << "debug recu --> " << std::hex << (DWORD_PTR)addrPointer << std::endl;
+										/*std::cout << "debug recu --> " << std::hex << (DWORD_PTR)addrPointer << std::endl;*/
 
 										//BYTE rAddr[8] = { addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0] };
 
@@ -938,15 +938,18 @@ public:
 										}
 
 										if (pe64Utils->isAddressInModulesMemPools(stackFrame64.AddrPC.Offset)) {
-										
-											printGreenAlert("Non resolved address in modules memory pools.");
-										
+											if (_v_) {
+												printGreenAlert("Resolved address in modules memory pools.");
+											}
+											
 										} else {
 											
-											printOrangeAlert("Code injection may be occuring !");
+											if (_v_) {
+												printOrangeAlert("Code injection may be occuring !");
+											}
 											
 											if (yaraEnabled) {
-												printOrangeAlert("Scanning the memory region for patterns...");
+												//printOrangeAlert("Scanning the memory region for patterns...");
 												
 												int indexOfMemoryRegionOfOfsset = pe64Utils->indexOfMemoryRegion((LPVOID)stackFrame64.AddrPC.Offset);
 												
@@ -979,8 +982,6 @@ public:
 													}
 
 
-												} else {
-													std::cout << "Memory region does not contain index" << std::endl;
 												}
 											}
 										}
