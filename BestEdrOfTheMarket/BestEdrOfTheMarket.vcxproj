@@ -19,28 +19,28 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CallStackMonitoringUtils.cpp" />
-    <ClCompile Include="IATHookingUtils.cpp" />
-    <ClCompile Include="ModulesMemPools.cpp" />
-    <ClCompile Include="ParchingMitig.cpp" />
-    <ClCompile Include="ProcessStructUtils.cpp" />
+    <ClCompile Include="MonitoringUtils.cpp" />
     <ClCompile Include="Startup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Docs\Setup.md" />
     <None Include="..\README.md" />
-    <None Include="TrigerringFunctions.json" />
+    <None Include="MsfvenomWho.yara" />
+    <None Include="rockk.yara" />
     <None Include="YaroRules.json" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BytesSequencesUtils.h" />
+    <ClInclude Include="ColorsUtils.h" />
     <ClInclude Include="ConversionUtils.h" />
     <ClInclude Include="ErrorsReportingUtils.h" />
-    <ClInclude Include="IATHookingUtils.h" />
-    <ClInclude Include="Imports.h" />
-    <ClInclude Include="ModuleExportsUtils.h" />
+    <ClInclude Include="IPCUtils.h" />
+    <ClInclude Include="HeapUtils.h" />
     <ClInclude Include="ModuleLoadingUtils.h" />
+    <ClInclude Include="PatchingUtils.h" />
     <ClInclude Include="Pe64Utils.h" />
     <ClInclude Include="ProcessStructUtils.h" />
+    <ClInclude Include="ReportingUtils.h" />
     <ClInclude Include="SSNHookingUtils.h" />
     <ClInclude Include="Startup.h" />
   </ItemGroup>
@@ -147,6 +147,8 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\km;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\ucrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\winrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared;</AdditionalIncludeDirectories>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,6 +157,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\km\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x64;</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

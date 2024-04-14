@@ -1,0 +1,45 @@
+\doxysection{SSNHooking\+Utils.\+h}
+\hypertarget{_s_s_n_hooking_utils_8h_source}{}\label{_s_s_n_hooking_utils_8h_source}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <Windows.h>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <ntstatus.h>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}ErrorsReportingUtils.h"{}}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{typedef}\ NTSTATUS(WINAPI*\ pNtWriteVirtualMemory)\ (}
+\DoxyCodeLine{00009\ \ \ \ \ HANDLE\ ProcessHandle,}
+\DoxyCodeLine{00010\ \ \ \ \ PVOID\ BaseAddress,}
+\DoxyCodeLine{00011\ \ \ \ \ PVOID\ Buffer,}
+\DoxyCodeLine{00012\ \ \ \ \ SIZE\_T\ BufferSize,}
+\DoxyCodeLine{00013\ \ \ \ \ PSIZE\_T\ NumberOfBytesWritten}
+\DoxyCodeLine{00014\ \ \ \ \ );}
+\DoxyCodeLine{00015\ }
+\DoxyCodeLine{00016\ pNtWriteVirtualMemory\ NtWriteVirtualMemory\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00018\ DWORD\ doingSomethingWithTheSyscall(HANDLE\ hProc,\ DWORD\_PTR\ funcAddr)\ \{}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \ \ \ \ HMODULE\ hNtdll\ =\ GetModuleHandleA(\textcolor{stringliteral}{"{}ntdll.dll"{}});}
+\DoxyCodeLine{00021\ \ \ \ \ NtWriteVirtualMemory\ =\ (pNtWriteVirtualMemory)GetProcAddress(hNtdll,\ \textcolor{stringliteral}{"{}NtWriteVirtualMemory"{}});}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \ \ \ \ DWORD\ oldProtect\ =\ NULL;}
+\DoxyCodeLine{00024\ \ \ \ \ BYTE\ ssn[1]\ =\ \{\ 0x21\ \};}
+\DoxyCodeLine{00025\ \ \ \ \ PSIZE\_T\ bytesWritten\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \ \ \ \ \textcolor{keywordflow}{if}\ (VirtualProtectEx(hProc,\ (LPVOID)(funcAddr\ +\ 0x4),\ \textcolor{keyword}{sizeof}(ssn),\ PAGE\_EXECUTE\_READWRITE,\ \&oldProtect))\ \{}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ NTSTATUS\ status\ =\ NtWriteVirtualMemory(}
+\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ \ \ \ \ hProc,}
+\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \ \ \ \ (LPVOID)(funcAddr\ +\ 0x4),}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \ \ \ \ ssn,}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{sizeof}(ssn),}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \ \ \ \ bytesWritten);}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (status\ ==\ STATUS\_SUCCESS)\ \{}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (VirtualProtectEx(hProc,\ (LPVOID)(funcAddr\ +\ 0x4),\ \textcolor{keyword}{sizeof}(ssn),\ oldProtect,\ \&oldProtect))\ \{}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00038\ \ \ \ \ \}}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordflow}{return}\ NULL;}
+\DoxyCodeLine{00040\ \}}
+
+\end{DoxyCode}

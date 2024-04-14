@@ -1,8 +1,18 @@
+/**
+ * @file ErrorsReportingUtils.h
+ * @brief Error reporting utilities.
+ *
+ * Description détaillée du fichier C++.
+ */
+
 #pragma once
 
 #include <Windows.h>
 #include <iostream>
 
+/**
+	* Retrieves and prints the last error message (explicitly).
+*/
 void printLastError() {
 	DWORD errorCode = GetLastError();
 

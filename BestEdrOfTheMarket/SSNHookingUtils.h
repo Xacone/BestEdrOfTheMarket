@@ -1,3 +1,8 @@
+/**
+* @file SSNHookingUtils.h
+* @brief Utiliites for Syscall ID crushing 
+*/
+
 #pragma once
 #include <Windows.h>
 #include <iostream>
@@ -14,6 +19,12 @@ typedef NTSTATUS(WINAPI* pNtWriteVirtualMemory) (
 	);
 
 pNtWriteVirtualMemory NtWriteVirtualMemory = nullptr;
+
+/**
+	* Crusfy the syscall ID of a specific NT-routine
+	* @param hProc The handle of the process to which the syscall ID will be crushed
+	* @param funcAddr The address of the NT-routine to which the syscall ID will be crushed
+*/
 
 DWORD doingSomethingWithTheSyscall(HANDLE hProc, DWORD_PTR funcAddr) {
 

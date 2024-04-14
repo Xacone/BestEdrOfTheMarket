@@ -1,0 +1,65 @@
+\hypertarget{SSNHookingUtils_8h}{}\doxysection{SSNHooking\+Utils.\+h File Reference}
+\label{SSNHookingUtils_8h}\index{SSNHookingUtils.h@{SSNHookingUtils.h}}
+
+
+Utiliites for Syscall ID crushing.  
+
+
+{\ttfamily \#include $<$Windows.\+h$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$ntstatus.\+h$>$}\newline
+{\ttfamily \#include \char`\"{}Errors\+Reporting\+Utils.\+h\char`\"{}}\newline
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef NTSTATUS(WINAPI $\ast$ \mbox{\hyperlink{SSNHookingUtils_8h_ae5bebe65ae2355a8983e593530d43456}{p\+Nt\+Write\+Virtual\+Memory}}) (HANDLE Process\+Handle, PVOID Base\+Address, PVOID Buffer, SIZE\+\_\+T Buffer\+Size, PSIZE\+\_\+T Number\+Of\+Bytes\+Written)
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+DWORD \mbox{\hyperlink{SSNHookingUtils_8h_a4fed402e844ce9010c734b7104db2525}{doing\+Something\+With\+The\+Syscall}} (HANDLE h\+Proc, DWORD\+\_\+\+PTR func\+Addr)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{SSNHookingUtils_8h_ae5bebe65ae2355a8983e593530d43456}{p\+Nt\+Write\+Virtual\+Memory}} \mbox{\hyperlink{SSNHookingUtils_8h_ab781f440869aea28f40fb4f2cff928d4}{Nt\+Write\+Virtual\+Memory}} = nullptr
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Utiliites for Syscall ID crushing. 
+
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{SSNHookingUtils_8h_ae5bebe65ae2355a8983e593530d43456}\label{SSNHookingUtils_8h_ae5bebe65ae2355a8983e593530d43456}} 
+\index{SSNHookingUtils.h@{SSNHookingUtils.h}!pNtWriteVirtualMemory@{pNtWriteVirtualMemory}}
+\index{pNtWriteVirtualMemory@{pNtWriteVirtualMemory}!SSNHookingUtils.h@{SSNHookingUtils.h}}
+\doxysubsubsection{\texorpdfstring{pNtWriteVirtualMemory}{pNtWriteVirtualMemory}}
+{\footnotesize\ttfamily typedef NTSTATUS(WINAPI$\ast$ p\+Nt\+Write\+Virtual\+Memory) (HANDLE Process\+Handle, PVOID Base\+Address, PVOID Buffer, SIZE\+\_\+T Buffer\+Size, PSIZE\+\_\+T Number\+Of\+Bytes\+Written)}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{SSNHookingUtils_8h_a4fed402e844ce9010c734b7104db2525}\label{SSNHookingUtils_8h_a4fed402e844ce9010c734b7104db2525}} 
+\index{SSNHookingUtils.h@{SSNHookingUtils.h}!doingSomethingWithTheSyscall@{doingSomethingWithTheSyscall}}
+\index{doingSomethingWithTheSyscall@{doingSomethingWithTheSyscall}!SSNHookingUtils.h@{SSNHookingUtils.h}}
+\doxysubsubsection{\texorpdfstring{doingSomethingWithTheSyscall()}{doingSomethingWithTheSyscall()}}
+{\footnotesize\ttfamily DWORD doing\+Something\+With\+The\+Syscall (\begin{DoxyParamCaption}\item[{HANDLE}]{h\+Proc,  }\item[{DWORD\+\_\+\+PTR}]{func\+Addr }\end{DoxyParamCaption})}
+
+Crusfy the syscall ID of a specific NT-\/routine 
+\begin{DoxyParams}{Parameters}
+{\em h\+Proc} & The handle of the process to which the syscall ID will be crushed \\
+\hline
+{\em func\+Addr} & The address of the NT-\/routine to which the syscall ID will be crushed \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{SSNHookingUtils_8h_ab781f440869aea28f40fb4f2cff928d4}\label{SSNHookingUtils_8h_ab781f440869aea28f40fb4f2cff928d4}} 
+\index{SSNHookingUtils.h@{SSNHookingUtils.h}!NtWriteVirtualMemory@{NtWriteVirtualMemory}}
+\index{NtWriteVirtualMemory@{NtWriteVirtualMemory}!SSNHookingUtils.h@{SSNHookingUtils.h}}
+\doxysubsubsection{\texorpdfstring{NtWriteVirtualMemory}{NtWriteVirtualMemory}}
+{\footnotesize\ttfamily \mbox{\hyperlink{SSNHookingUtils_8h_ae5bebe65ae2355a8983e593530d43456}{p\+Nt\+Write\+Virtual\+Memory}} Nt\+Write\+Virtual\+Memory = nullptr}
+

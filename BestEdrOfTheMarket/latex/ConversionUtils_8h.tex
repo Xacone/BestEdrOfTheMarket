@@ -1,0 +1,397 @@
+\hypertarget{ConversionUtils_8h}{}\doxysection{Conversion\+Utils.\+h File Reference}
+\label{ConversionUtils_8h}\index{ConversionUtils.h@{ConversionUtils.h}}
+
+
+Utility functions for conversion between different data types \& output formatting.  
+
+
+{\ttfamily \#include $<$Windows.\+h$>$}\newline
+{\ttfamily \#include $<$Tl\+Help32.\+h$>$}\newline
+{\ttfamily \#include $<$string$>$}\newline
+{\ttfamily \#include $<$sstream$>$}\newline
+{\ttfamily \#include $<$iomanip$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$algorithm$>$}\newline
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+BYTE $\ast$ \mbox{\hyperlink{ConversionUtils_8h_ae737d14afb355f00c002c18f5fd34c9d}{LPVOIDTo\+BYTE}} (LPVOID lp\+Void)
+\item 
+LPCVOID \mbox{\hyperlink{ConversionUtils_8h_a93681b435861cc80e05848b8fd2e6dec}{hex\+String\+To\+LPCVOID}} (const std\+::string \&hex\+String)
+\item 
+std\+::string \mbox{\hyperlink{ConversionUtils_8h_a4142c5169f85a8438af27ddf4f43f6b3}{bytes\+To\+Hex\+String}} (const BYTE $\ast$bytes, size\+\_\+t size)
+\item 
+std\+::string \mbox{\hyperlink{ConversionUtils_8h_aed9623fb6a490d092a22d11b84c11bda}{remove\+BOM}} (const std\+::string \&input)
+\item 
+BYTE \mbox{\hyperlink{ConversionUtils_8h_a63edab89b8ea86e5165f2d372d5f9108}{hex\+To\+Byte}} (char hex)
+\item 
+BYTE $\ast$ \mbox{\hyperlink{ConversionUtils_8h_aef759333ca25e4f590f5e74dc3b7b125}{convert\+Hex\+To\+Bytes}} (const char $\ast$hex\+String, size\+\_\+t \&length)
+\item 
+LPWSTR \mbox{\hyperlink{ConversionUtils_8h_a76deed4af3d72a0656c2a5c3c5b9b6cc}{Convert\+Char\+To\+LPWSTR}} (const char $\ast$char\+Array)
+\item 
+LPCWSTR \mbox{\hyperlink{ConversionUtils_8h_a974584a2413a2c018c007f1f2c33c707}{Convert\+Char\+To\+LPCWSTR}} (const char $\ast$char\+Array)
+\item 
+const char $\ast$ \mbox{\hyperlink{ConversionUtils_8h_a2037ab6d8a067e9bb07f058f8dbfe622}{WChar\+To\+Const\+Char}} (const WCHAR $\ast$wstr)
+\item 
+char $\ast$ \mbox{\hyperlink{ConversionUtils_8h_a3cf87cab9ddb2235c71d2c1bad0afc3a}{Wide\+String\+To\+Char}} (const WCHAR wide\+Array\mbox{[}250\mbox{]})
+\item 
+std\+::vector$<$ BYTE $>$ \mbox{\hyperlink{ConversionUtils_8h_a77411913a98156f46555017fb64bfc3b}{hex\+String\+To\+Bytes\+Vector}} (const std\+::string \&hex\+String)
+\item 
+BYTE $\ast$ \mbox{\hyperlink{ConversionUtils_8h_a38a312cd5c5de8448873c0293d0359cf}{hex\+String\+To\+Byte\+Array}} (const std\+::string \&hex\+String, size\+\_\+t \&length)
+\item 
+void \mbox{\hyperlink{ConversionUtils_8h_a5daf853b115939d648a0969d23b57962}{print\+Byte\+Array}} (const BYTE $\ast$byte\+Array, size\+\_\+t size)
+\item 
+void \mbox{\hyperlink{ConversionUtils_8h_a8e577d9ce1ec4aa5c494cd291b327b7f}{print\+Byte\+Array\+Without\+Zeros\+And\+Breaks}} (const BYTE $\ast$byte\+Array, size\+\_\+t size)
+\item 
+BYTE $\ast$ \mbox{\hyperlink{ConversionUtils_8h_a0b7230c705835dc7fef2e1c7caca23c7}{char\+To\+Byte}} (const char $\ast$input)
+\item 
+BYTE $\ast$ \mbox{\hyperlink{ConversionUtils_8h_aecfb303a447c07b192fea50fda48dca5}{char\+To\+Hex\+Dump}} (const char $\ast$input)
+\item 
+BYTE $\ast$ \mbox{\hyperlink{ConversionUtils_8h_aa7ae29273fd39d43ce8ef0f0a0f02c5d}{hex\+String\+To\+Bytes}} (const std\+::string \&hex\+String, size\+\_\+t \&size)
+\item 
+void \mbox{\hyperlink{ConversionUtils_8h_ad1eaf37e83dbb658bce7b54649033369}{reverse\+Bytes\+Order}} (BYTE $\ast$bytes, size\+\_\+t size)
+\item 
+void \mbox{\hyperlink{ConversionUtils_8h_adeaa2efe70717e42e113004a47ff2958}{print\+Ascii\+Dump}} (const uint8\+\_\+t $\ast$buffer, size\+\_\+t size)
+\item 
+void \mbox{\hyperlink{ConversionUtils_8h_a8567baf9449289234163354bdc00e9ed}{print\+Ascii\+Dump\+Without\+Zeros}} (const BYTE $\ast$byte\+Array, size\+\_\+t size, size\+\_\+t bytes\+Per\+Line=16)
+\item 
+void \mbox{\hyperlink{ConversionUtils_8h_a3f3341fbc1deb6a47e6ba7a388742d03}{print\+Null\+Terminated\+Hex\+Dump}} (const uint8\+\_\+t $\ast$buffer)
+\item 
+std\+::string \mbox{\hyperlink{ConversionUtils_8h_a333b5413e0cb25ebfc2919e897c49e0c}{get\+Current\+Date\+Time}} ()
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Utility functions for conversion between different data types \& output formatting. 
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{ConversionUtils_8h_a4142c5169f85a8438af27ddf4f43f6b3}\label{ConversionUtils_8h_a4142c5169f85a8438af27ddf4f43f6b3}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!bytesToHexString@{bytesToHexString}}
+\index{bytesToHexString@{bytesToHexString}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{bytesToHexString()}{bytesToHexString()}}
+{\footnotesize\ttfamily std\+::string bytes\+To\+Hex\+String (\begin{DoxyParamCaption}\item[{const BYTE $\ast$}]{bytes,  }\item[{size\+\_\+t}]{size }\end{DoxyParamCaption})}
+
+Convert a byte array to a hex string. 
+\begin{DoxyParams}{Parameters}
+{\em bytes} & The byte array to convert. \\
+\hline
+{\em size} & The size of the byte array. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The hex string. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a0b7230c705835dc7fef2e1c7caca23c7}\label{ConversionUtils_8h_a0b7230c705835dc7fef2e1c7caca23c7}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!charToByte@{charToByte}}
+\index{charToByte@{charToByte}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{charToByte()}{charToByte()}}
+{\footnotesize\ttfamily BYTE$\ast$ char\+To\+Byte (\begin{DoxyParamCaption}\item[{const char $\ast$}]{input }\end{DoxyParamCaption})}
+
+Convert a char array to a byte array.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & The char array to convert. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_aecfb303a447c07b192fea50fda48dca5}\label{ConversionUtils_8h_aecfb303a447c07b192fea50fda48dca5}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!charToHexDump@{charToHexDump}}
+\index{charToHexDump@{charToHexDump}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{charToHexDump()}{charToHexDump()}}
+{\footnotesize\ttfamily BYTE$\ast$ char\+To\+Hex\+Dump (\begin{DoxyParamCaption}\item[{const char $\ast$}]{input }\end{DoxyParamCaption})}
+
+Convert a char array to a hex dump.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & The char array to convert.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The hex dump. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a974584a2413a2c018c007f1f2c33c707}\label{ConversionUtils_8h_a974584a2413a2c018c007f1f2c33c707}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!ConvertCharToLPCWSTR@{ConvertCharToLPCWSTR}}
+\index{ConvertCharToLPCWSTR@{ConvertCharToLPCWSTR}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{ConvertCharToLPCWSTR()}{ConvertCharToLPCWSTR()}}
+{\footnotesize\ttfamily LPCWSTR Convert\+Char\+To\+LPCWSTR (\begin{DoxyParamCaption}\item[{const char $\ast$}]{char\+Array }\end{DoxyParamCaption})}
+
+Convert a char array to a LPCWSTR. 
+\begin{DoxyParams}{Parameters}
+{\em char\+Array} & The char array to convert. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The LPCWSTR. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a76deed4af3d72a0656c2a5c3c5b9b6cc}\label{ConversionUtils_8h_a76deed4af3d72a0656c2a5c3c5b9b6cc}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!ConvertCharToLPWSTR@{ConvertCharToLPWSTR}}
+\index{ConvertCharToLPWSTR@{ConvertCharToLPWSTR}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{ConvertCharToLPWSTR()}{ConvertCharToLPWSTR()}}
+{\footnotesize\ttfamily LPWSTR Convert\+Char\+To\+LPWSTR (\begin{DoxyParamCaption}\item[{const char $\ast$}]{char\+Array }\end{DoxyParamCaption})}
+
+Convert a char array to a LPWSTR. 
+\begin{DoxyParams}{Parameters}
+{\em char\+Array} & The char array to convert. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The LPWSTR. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_aef759333ca25e4f590f5e74dc3b7b125}\label{ConversionUtils_8h_aef759333ca25e4f590f5e74dc3b7b125}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!convertHexToBytes@{convertHexToBytes}}
+\index{convertHexToBytes@{convertHexToBytes}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{convertHexToBytes()}{convertHexToBytes()}}
+{\footnotesize\ttfamily BYTE$\ast$ convert\+Hex\+To\+Bytes (\begin{DoxyParamCaption}\item[{const char $\ast$}]{hex\+String,  }\item[{size\+\_\+t \&}]{length }\end{DoxyParamCaption})}
+
+Convert a hex string to a byte array.
+
+
+\begin{DoxyParams}{Parameters}
+{\em hex\+String} & The hex string to convert.\\
+\hline
+{\em length} & The length of the resulting byte array.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The byte array. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a333b5413e0cb25ebfc2919e897c49e0c}\label{ConversionUtils_8h_a333b5413e0cb25ebfc2919e897c49e0c}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!getCurrentDateTime@{getCurrentDateTime}}
+\index{getCurrentDateTime@{getCurrentDateTime}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{getCurrentDateTime()}{getCurrentDateTime()}}
+{\footnotesize\ttfamily std\+::string get\+Current\+Date\+Time (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Print a null-\/terminated ASCII dump of the given buffer.
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & The buffer to print. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_a38a312cd5c5de8448873c0293d0359cf}\label{ConversionUtils_8h_a38a312cd5c5de8448873c0293d0359cf}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!hexStringToByteArray@{hexStringToByteArray}}
+\index{hexStringToByteArray@{hexStringToByteArray}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{hexStringToByteArray()}{hexStringToByteArray()}}
+{\footnotesize\ttfamily BYTE$\ast$ hex\+String\+To\+Byte\+Array (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{hex\+String,  }\item[{size\+\_\+t \&}]{length }\end{DoxyParamCaption})}
+
+Convert a hex string to a byte array.
+
+
+\begin{DoxyParams}{Parameters}
+{\em hex\+String} & The hex string to convert.\\
+\hline
+{\em length} & The length of the resulting byte array.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The byte array. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_aa7ae29273fd39d43ce8ef0f0a0f02c5d}\label{ConversionUtils_8h_aa7ae29273fd39d43ce8ef0f0a0f02c5d}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!hexStringToBytes@{hexStringToBytes}}
+\index{hexStringToBytes@{hexStringToBytes}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{hexStringToBytes()}{hexStringToBytes()}}
+{\footnotesize\ttfamily BYTE$\ast$ hex\+String\+To\+Bytes (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{hex\+String,  }\item[{size\+\_\+t \&}]{size }\end{DoxyParamCaption})}
+
+Convert a hex string to a byte array.
+
+
+\begin{DoxyParams}{Parameters}
+{\em hex\+String} & The hex string to convert.\\
+\hline
+{\em size} & The size of the resulting byte array.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The byte array. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a77411913a98156f46555017fb64bfc3b}\label{ConversionUtils_8h_a77411913a98156f46555017fb64bfc3b}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!hexStringToBytesVector@{hexStringToBytesVector}}
+\index{hexStringToBytesVector@{hexStringToBytesVector}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{hexStringToBytesVector()}{hexStringToBytesVector()}}
+{\footnotesize\ttfamily std\+::vector$<$BYTE$>$ hex\+String\+To\+Bytes\+Vector (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{hex\+String }\end{DoxyParamCaption})}
+
+Convert a byte array to a hex string. 
+\begin{DoxyParams}{Parameters}
+{\em byte\+Array} & The byte array to convert. \\
+\hline
+{\em size} & The size of the byte array. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The hex string. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a93681b435861cc80e05848b8fd2e6dec}\label{ConversionUtils_8h_a93681b435861cc80e05848b8fd2e6dec}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!hexStringToLPCVOID@{hexStringToLPCVOID}}
+\index{hexStringToLPCVOID@{hexStringToLPCVOID}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{hexStringToLPCVOID()}{hexStringToLPCVOID()}}
+{\footnotesize\ttfamily LPCVOID hex\+String\+To\+LPCVOID (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{hex\+String }\end{DoxyParamCaption})}
+
+converts a hex string to an LPCVOID. 
+\begin{DoxyParams}{Parameters}
+{\em hex\+String} & The hex string to convert. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The LPCVOID. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a63edab89b8ea86e5165f2d372d5f9108}\label{ConversionUtils_8h_a63edab89b8ea86e5165f2d372d5f9108}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!hexToByte@{hexToByte}}
+\index{hexToByte@{hexToByte}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{hexToByte()}{hexToByte()}}
+{\footnotesize\ttfamily BYTE hex\+To\+Byte (\begin{DoxyParamCaption}\item[{char}]{hex }\end{DoxyParamCaption})}
+
+Convert a CHAR representing a hex character to its BYTE equivalent.
+
+
+\begin{DoxyParams}{Parameters}
+{\em byte\+Array} & The byte array to convert.\\
+\hline
+{\em size} & The size of the byte array.\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The hex string. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_ae737d14afb355f00c002c18f5fd34c9d}\label{ConversionUtils_8h_ae737d14afb355f00c002c18f5fd34c9d}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!LPVOIDToBYTE@{LPVOIDToBYTE}}
+\index{LPVOIDToBYTE@{LPVOIDToBYTE}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{LPVOIDToBYTE()}{LPVOIDToBYTE()}}
+{\footnotesize\ttfamily BYTE$\ast$ LPVOIDTo\+BYTE (\begin{DoxyParamCaption}\item[{LPVOID}]{lp\+Void }\end{DoxyParamCaption})}
+
+Converts an LPVOID to a BYTE array. 
+\begin{DoxyParams}{Parameters}
+{\em lp\+Void} & The LPVOID to convert. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The BYTE array. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_adeaa2efe70717e42e113004a47ff2958}\label{ConversionUtils_8h_adeaa2efe70717e42e113004a47ff2958}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!printAsciiDump@{printAsciiDump}}
+\index{printAsciiDump@{printAsciiDump}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{printAsciiDump()}{printAsciiDump()}}
+{\footnotesize\ttfamily void print\+Ascii\+Dump (\begin{DoxyParamCaption}\item[{const uint8\+\_\+t $\ast$}]{buffer,  }\item[{size\+\_\+t}]{size }\end{DoxyParamCaption})}
+
+Print a hex dump of the given buffer.
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & The buffer to print. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_a8567baf9449289234163354bdc00e9ed}\label{ConversionUtils_8h_a8567baf9449289234163354bdc00e9ed}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!printAsciiDumpWithoutZeros@{printAsciiDumpWithoutZeros}}
+\index{printAsciiDumpWithoutZeros@{printAsciiDumpWithoutZeros}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{printAsciiDumpWithoutZeros()}{printAsciiDumpWithoutZeros()}}
+{\footnotesize\ttfamily void print\+Ascii\+Dump\+Without\+Zeros (\begin{DoxyParamCaption}\item[{const BYTE $\ast$}]{byte\+Array,  }\item[{size\+\_\+t}]{size,  }\item[{size\+\_\+t}]{bytes\+Per\+Line = {\ttfamily 16} }\end{DoxyParamCaption})}
+
+Print a hex dump of the given buffer.
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & The buffer to print. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_a5daf853b115939d648a0969d23b57962}\label{ConversionUtils_8h_a5daf853b115939d648a0969d23b57962}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!printByteArray@{printByteArray}}
+\index{printByteArray@{printByteArray}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{printByteArray()}{printByteArray()}}
+{\footnotesize\ttfamily void print\+Byte\+Array (\begin{DoxyParamCaption}\item[{const BYTE $\ast$}]{byte\+Array,  }\item[{size\+\_\+t}]{size }\end{DoxyParamCaption})}
+
+Print a byte array.
+
+
+\begin{DoxyParams}{Parameters}
+{\em byte\+Array} & The byte array to print.\\
+\hline
+{\em size} & The size of the byte array. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_a8e577d9ce1ec4aa5c494cd291b327b7f}\label{ConversionUtils_8h_a8e577d9ce1ec4aa5c494cd291b327b7f}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!printByteArrayWithoutZerosAndBreaks@{printByteArrayWithoutZerosAndBreaks}}
+\index{printByteArrayWithoutZerosAndBreaks@{printByteArrayWithoutZerosAndBreaks}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{printByteArrayWithoutZerosAndBreaks()}{printByteArrayWithoutZerosAndBreaks()}}
+{\footnotesize\ttfamily void print\+Byte\+Array\+Without\+Zeros\+And\+Breaks (\begin{DoxyParamCaption}\item[{const BYTE $\ast$}]{byte\+Array,  }\item[{size\+\_\+t}]{size }\end{DoxyParamCaption})}
+
+Print a byte array without zeros and breaks.
+
+
+\begin{DoxyParams}{Parameters}
+{\em byte\+Array} & The byte array to print.\\
+\hline
+{\em size} & The size of the byte array. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_a3f3341fbc1deb6a47e6ba7a388742d03}\label{ConversionUtils_8h_a3f3341fbc1deb6a47e6ba7a388742d03}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!printNullTerminatedHexDump@{printNullTerminatedHexDump}}
+\index{printNullTerminatedHexDump@{printNullTerminatedHexDump}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{printNullTerminatedHexDump()}{printNullTerminatedHexDump()}}
+{\footnotesize\ttfamily void print\+Null\+Terminated\+Hex\+Dump (\begin{DoxyParamCaption}\item[{const uint8\+\_\+t $\ast$}]{buffer }\end{DoxyParamCaption})}
+
+Print a null-\/terminated hex dump of the given buffer.
+
+
+\begin{DoxyParams}{Parameters}
+{\em buffer} & The buffer to print. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_aed9623fb6a490d092a22d11b84c11bda}\label{ConversionUtils_8h_aed9623fb6a490d092a22d11b84c11bda}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!removeBOM@{removeBOM}}
+\index{removeBOM@{removeBOM}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{removeBOM()}{removeBOM()}}
+{\footnotesize\ttfamily std\+::string remove\+BOM (\begin{DoxyParamCaption}\item[{const std\+::string \&}]{input }\end{DoxyParamCaption})}
+
+Removes the BOM (Byte Order Mark) from the given string. 
+\begin{DoxyParams}{Parameters}
+{\em input} & The input string. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The string without the BOM. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_ad1eaf37e83dbb658bce7b54649033369}\label{ConversionUtils_8h_ad1eaf37e83dbb658bce7b54649033369}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!reverseBytesOrder@{reverseBytesOrder}}
+\index{reverseBytesOrder@{reverseBytesOrder}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{reverseBytesOrder()}{reverseBytesOrder()}}
+{\footnotesize\ttfamily void reverse\+Bytes\+Order (\begin{DoxyParamCaption}\item[{BYTE $\ast$}]{bytes,  }\item[{size\+\_\+t}]{size }\end{DoxyParamCaption})}
+
+Reverse the order of bytes in the given buffer.
+
+
+\begin{DoxyParams}{Parameters}
+{\em bytes} & The buffer to reverse.\\
+\hline
+{\em size} & The size of the buffer. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ConversionUtils_8h_a2037ab6d8a067e9bb07f058f8dbfe622}\label{ConversionUtils_8h_a2037ab6d8a067e9bb07f058f8dbfe622}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!WCharToConstChar@{WCharToConstChar}}
+\index{WCharToConstChar@{WCharToConstChar}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{WCharToConstChar()}{WCharToConstChar()}}
+{\footnotesize\ttfamily const char$\ast$ WChar\+To\+Const\+Char (\begin{DoxyParamCaption}\item[{const WCHAR $\ast$}]{wstr }\end{DoxyParamCaption})}
+
+Convert a wide string to a char array. 
+\begin{DoxyParams}{Parameters}
+{\em wstr} & The wide string to convert. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The char array. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{ConversionUtils_8h_a3cf87cab9ddb2235c71d2c1bad0afc3a}\label{ConversionUtils_8h_a3cf87cab9ddb2235c71d2c1bad0afc3a}} 
+\index{ConversionUtils.h@{ConversionUtils.h}!WideStringToChar@{WideStringToChar}}
+\index{WideStringToChar@{WideStringToChar}!ConversionUtils.h@{ConversionUtils.h}}
+\doxysubsubsection{\texorpdfstring{WideStringToChar()}{WideStringToChar()}}
+{\footnotesize\ttfamily char$\ast$ Wide\+String\+To\+Char (\begin{DoxyParamCaption}\item[{const WCHAR}]{wide\+Array\mbox{[}250\mbox{]} }\end{DoxyParamCaption})}
+
+Convert a wide string to a char array. 
+\begin{DoxyParams}{Parameters}
+{\em wide\+Array} & The wide string to convert. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The char array. 
+\end{DoxyReturn}
