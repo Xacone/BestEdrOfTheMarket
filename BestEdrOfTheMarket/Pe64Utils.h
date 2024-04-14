@@ -1,3 +1,9 @@
+/**
+* @file Pe64Utils.h
+* @brief Contains the definition of the Pe64Utils which serves to provide runtimes utilities functions for x64 PE processes 
+*/
+
+
 #pragma once
 
 #define MAX_FUNCTION_NAME_LENGTH 256
@@ -13,6 +19,8 @@
 class Pe64Utils {
 
 private: 
+
+	BOOL initialized = false;
 
 	HANDLE target;
 	HMODULE hModules[1024];
@@ -46,6 +54,10 @@ public:
 		return sizeOfMemoryRegion[index];
 	}
 
+	/**
+		* Retrieves the content of a specific memory region by its index
+	*/
+
 	BYTE* getContentOfMemoryRegionByItsIndex(int index) {
 		BYTE* buffer = new BYTE[(DWORD_PTR)endOfMemoryRegion[index] - (DWORD_PTR)startOfMemoryRegion[index]];
 		SIZE_T bytesRead;
@@ -53,10 +65,16 @@ public:
 		return buffer;
 	}
 
-
+	/**
+		* Checks if a specific memory region contains a specific index
+	*/
 	BOOL memoryRegionsContainsIndex(int index) {
 		return startOfMemoryRegion[index] != NULL && endOfMemoryRegion[index] != NULL;
 	}
+
+	/**
+		* Enumerates the memory regions of the targeted process
+	*/
 
 	void enumerateMemoryRegionsOfProcess() {
 		
@@ -74,6 +92,9 @@ public:
 		}
 	}
 
+	/**
+		* Retrives the memory region index of a specific address
+	*/
 
 	int indexOfMemoryRegion(LPVOID addr) {
 		for (int i = 0; i < 512; i++) {
@@ -134,6 +155,10 @@ public:
 		return &functionsNamesMapping;
 	}
 
+	/** 
+		* Checks if a specific export exists in the retrieved exports
+	*/
+
 	bool doExportAddressExistInRetrievedExports(DWORD_PTR value) {
 
 		for (const auto& pair : functionsNamesMapping) {
@@ -144,6 +169,9 @@ public:
 		return false;
 	}
 
+	/**
+		* Checks if a specific address is in the memory range of the targeted process
+	*/
 
 	BOOL isAddressInProcessMemory(LPVOID address)
 	{
@@ -158,6 +186,9 @@ public:
 			((BYTE*)address < ((BYTE*)memInfo.BaseAddress + memInfo.RegionSize));
 	}
 
+	/**
+		* Checks if a specific address is in the memory range of a loaded module
+	*/
 
 	BOOL isAddressInModulesMemPools(DWORD64 addr) {
 
@@ -170,27 +201,40 @@ public:
 		return FALSE;
 	}
 
+	/**
+		* Retrieves the loaded modules handles of the targeted process
+	*/
+
 	HMODULE* getLoadedModules() {
 		return hModules;
 	}
 
-	// Function to check if a module exists among the loaded ones
+	/**
+		* Checks if a speciific module has been loaded by the targeted process
+		* @param moduleName The name of the module to check
+	*/
 
 	BOOL isModulePresent(std::string moduleName) {
 		return modulesOrder.find(moduleName) != modulesOrder.end();
 	}
 
-	/* ---------------------------------------------------------------------------- */
+	/**
+		* Fills the appropriates structures by enumerating the modules that were loaded by a process and their exports
+		* @param verbose If set to true, the function will print the loaded modules and their memory range
+	*/
 
-	void enumerateProcessModulesAndTheirPools() {
+	void enumerateProcessModulesAndTheirPools(BOOL verbose) {
+
 		HANDLE targetProc = target;
 		DWORD cbNeeded; // Variable pour stocker la taille nécessaire
 
 		if (EnumProcessModulesEx(targetProc, hModules, sizeof(hModules), &cbNeeded, LIST_MODULES_ALL)) {
 			moduleCount = cbNeeded / sizeof(HMODULE);
 
-			std::cout << "\n[*] " << moduleCount << " loaded modules found." << std::endl;
-
+			if (verbose) {
+				std::cout << "\n[*] " << moduleCount << " loaded modules found." << std::endl;
+			}
+			
 			for (int i = 0; i < moduleCount; i++) {
 				MODULEINFO moduleInfo;
 				PIMAGE_DOS_HEADER moduleDosHeader = NULL;
@@ -207,61 +251,25 @@ public:
 
 							modulesOrder.insert({(std::string)WideStringToChar(moduleFileName), i});
 							
-							std::wcout << "[ " << modStartAddrs[i] << " : " << modEndAddrs[i] << " ] -> " << moduleFileName << std::endl;
-
-							/// TODO
-							/// -> Crash lors du cast sur msvcrt.dll : Appel des objets de la structure (moduleDosHeader->e_lfanew)
-							/// -> Cerner les addresses des routines exportées au lieu de tout le module ? 
-
-							/*
-							// Obtenez l'en-tête DOS
-							moduleDosHeader = (PIMAGE_DOS_HEADER)hModules[i];
-
-							try {
-								std::cout << (((BYTE*)moduleDosHeader)[0] == NULL) << std::endl;
+							if (!initialized) {
+								std::wcout << "[ " << modStartAddrs[i] << " : " << modEndAddrs[i] << " ] -> " << moduleFileName << std::endl;
 							}
-							catch (const std::exception& e) {
-								std::cout << "There's a problem" << std::endl;
-							}
-
-							if (moduleDosHeader != nullptr && moduleDosHeader->e_magic == IMAGE_DOS_SIGNATURE) {
-								// Obtenez l'en-tête NT
-								PIMAGE_NT_HEADERS64 moduleNtHeaders64 = (PIMAGE_NT_HEADERS64)((BYTE*)moduleDosHeader + moduleDosHeader->e_lfanew);
-
-								if (moduleNtHeaders64 != nullptr && moduleNtHeaders64->Signature == IMAGE_NT_SIGNATURE) {
-									// Obtenez la table des exports
-									DWORD moduleExpDirRVA = moduleNtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-									DWORD moduleExpDirSize = moduleNtHeaders64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].Size;
-
-									if (moduleExpDirSize >= sizeof(IMAGE_EXPORT_DIRECTORY)) {
-										PIMAGE_EXPORT_DIRECTORY moduleExportDir = (PIMAGE_EXPORT_DIRECTORY)((BYTE*)hModules[i] + moduleExpDirRVA);
-
-										std::cout << "\t" << "Exp dir from " << modExpDataDirStartAddrs[i] << " to " << modExpDataDirEndAddrs[i] << std::endl;
-									}
-									else {
-										std::cerr << "Export directory size is not sufficient." << std::endl;
-									}
-								}
-								else {
-									std::cerr << "Invalid NT header." << std::endl;
-								}
-							}
-							else {
-								std::cerr << "Invalid DOS header." << std::endl;
-							}
-						}*/
-
+					
 						}
 					}
-				}
+				}			
 			}
+			
+			initialized = true;
+
 		}
 	}
 
 
-	// Could be replaced by the PEB alternative -> less code 
+	/**
+		* Retrieves the Import Address Table of the targeted process and fills the appropriate structure 
+	*/
     void getFirstModuleIAT() {
-
 
         IMAGE_DOS_HEADER dosHeader;
         if (ReadProcessMemory(target, hModules[0], &dosHeader, sizeof(dosHeader), NULL)) {
@@ -359,8 +367,16 @@ public:
         }
     }
 
+	/**
+		* Retrives a specific module exports
+		* @param moduleName The name of the module to retrieve the exports from
+		* @param hProcess The handle of the targeted process
+	*/
 
 	BOOL RetrieveExportsForGivenModuleAndFillMap(HANDLE hProcess, const char* moduleName) {
+	
+		// for patching
+			
 		HMODULE hModule = GetModuleHandleA(moduleName);
 		if (hModule == NULL) {
 			std::cerr << "Module not found: " << moduleName << std::endl;
@@ -439,81 +455,10 @@ public:
 		return TRUE;
 	}
 
-	// TODO : no need for hProcess param
 
-	BOOL RetrieveExportsForGivenModuleAndFillMap(HANDLE hProcess, char* moduleName, LPVOID moduleAddress) {
-
-		IMAGE_DOS_HEADER moduleDosHeader;
-		if (ReadProcessMemory(hProcess, moduleAddress, &moduleDosHeader, sizeof(moduleDosHeader), NULL)) {
-			if (moduleDosHeader.e_magic == IMAGE_DOS_SIGNATURE) {
-				DWORD moduleNTHeaderOffset = moduleDosHeader.e_lfanew;
-				IMAGE_NT_HEADERS64 moduleNtHeader64;
-
-				if (ReadProcessMemory(hProcess, (LPVOID)((DWORD_PTR)moduleAddress + moduleNTHeaderOffset), &moduleNtHeader64, sizeof(moduleNtHeader64), NULL)) {
-					DWORD moduleExportTableRVA = moduleNtHeader64.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
-
-					if (moduleExportTableRVA != 0) {
-						IMAGE_EXPORT_DIRECTORY moduleExportDirectory;
-						size_t moduleExportDirectoryBytesRead;
-						if (ReadProcessMemory(hProcess, (LPVOID)((DWORD_PTR)moduleAddress + moduleExportTableRVA), &moduleExportDirectory, sizeof(moduleExportDirectory), &moduleExportDirectoryBytesRead) && (moduleExportDirectoryBytesRead == sizeof(IMAGE_EXPORT_DIRECTORY))) {
-
-							SIZE_T bytesRead;
-
-							std::vector<DWORD> funcAddresses(moduleExportDirectory.NumberOfFunctions);
-							std::vector<DWORD> funcNames(moduleExportDirectory.NumberOfNames);
-							std::vector<DWORD> funcNamesOrdinals(moduleExportDirectory.NumberOfNames);
-
-							BOOL fillFuncAddresses = ReadProcessMemory(hProcess,
-								(LPVOID)((DWORD_PTR)moduleAddress + moduleExportDirectory.AddressOfFunctions),
-								funcAddresses.data(),
-								sizeof(DWORD) * moduleExportDirectory.NumberOfFunctions,
-								NULL);
-
-							BOOL fillFuncNames = ReadProcessMemory(hProcess,
-								(LPVOID)((DWORD_PTR)moduleAddress + moduleExportDirectory.AddressOfNames),
-								funcNames.data(),
-								sizeof(DWORD) * moduleExportDirectory.NumberOfNames,
-								NULL);
-
-							BOOL fillFuncNamesOrdinals = ReadProcessMemory(hProcess,
-								(LPVOID)((DWORD_PTR)moduleAddress + moduleExportDirectory.AddressOfNameOrdinals),
-								funcNamesOrdinals.data(),
-								sizeof(WORD) * moduleExportDirectory.NumberOfNames,
-								NULL);
-
-							for (DWORD i = 0; i < funcNames.size(); ++i) {
-								char functionName[MAX_FUNCTION_NAME_LENGTH]; // Adjust the size as needed
-
-								if (ReadProcessMemory(hProcess,
-									(LPVOID)((DWORD_PTR)moduleAddress + funcNames[i]),
-									functionName,
-									sizeof(functionName),
-									NULL)) {
-									if (functionName[0] != '\0') {
-										DWORD functionRVA;
-
-										if (!strcmp(moduleName, "ntdll.dll")) {
-											functionRVA = funcAddresses[i + 1];
-										}
-										else {
-											functionRVA = funcAddresses[i];
-										}
-
-										DWORD_PTR functionAddress = ((DWORD_PTR)moduleAddress + functionRVA);
-										std::string functionNameStr(functionName);
-
-										//cout << " { " << hex << functionAddress << " } " << functionNameStr << endl;
-										functionsNamesMapping.insert({ functionNameStr, functionAddress });
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		return TRUE;
-	}
+	/**
+		*	Enumerates the target process current threads and opens a HANDLE to each of them then fills the appropriate structure
+	*/
 
 	void enumerateProcessThreads() {
 		

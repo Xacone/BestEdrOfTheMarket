@@ -1,0 +1,234 @@
+\hypertarget{ColorsUtils_8h}{}\doxysection{Colors\+Utils.\+h File Reference}
+\label{ColorsUtils_8h}\index{ColorsUtils.h@{ColorsUtils.h}}
+
+
+Utils for printing colored messages in the console using ANSI escape codes.  
+
+
+{\ttfamily \#include $<$iostream$>$}\newline
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_af5204e182e074b4c840671043c845e53}{ANSI\+\_\+\+COLOR\+\_\+\+BLACK}}~\char`\"{}\textbackslash{}033\mbox{[}0;30m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a34995b955465f6bbb37c359173d50477}{ANSI\+\_\+\+COLOR\+\_\+\+RED}}~\char`\"{}\textbackslash{}033\mbox{[}0;31m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a966c72d8d733c7734c6c784753d894c7}{ANSI\+\_\+\+COLOR\+\_\+\+GREEN}}~\char`\"{}\textbackslash{}033\mbox{[}0;32m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a5a123b382640b3aa65dd5db386002fbc}{ANSI\+\_\+\+COLOR\+\_\+\+YELLOW}}~\char`\"{}\textbackslash{}033\mbox{[}0;33m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_aca16e6a49eb51333c5fd3eee19487315}{ANSI\+\_\+\+COLOR\+\_\+\+BLUE}}~\char`\"{}\textbackslash{}033\mbox{[}0;34m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_acb30614ba1535da5b9d0c490b3c10515}{ANSI\+\_\+\+COLOR\+\_\+\+MAGENTA}}~\char`\"{}\textbackslash{}033\mbox{[}0;35m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a8d0b0043e152438bb39b918a1f98c65f}{ANSI\+\_\+\+COLOR\+\_\+\+CYAN}}~\char`\"{}\textbackslash{}033\mbox{[}0;36m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_ab126a29a20ee0fe9ada8269c91edb753}{ANSI\+\_\+\+COLOR\+\_\+\+WHITE}}~\char`\"{}\textbackslash{}033\mbox{[}0;37m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a625346eae4bf587a35acb326909fecdc}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+BLACK}}~\char`\"{}\textbackslash{}033\mbox{[}40m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_ad466cff77cf9e9c871ca7e2f2b0070dd}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+RED}}~\char`\"{}\textbackslash{}033\mbox{[}41m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_adbecc5d16bc68b318d7d2c1fbe94b82d}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+GREEN}}~\char`\"{}\textbackslash{}033\mbox{[}42m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a0bcfdc57e0c6610f88288d378d75f98c}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+YELLOW}}~\char`\"{}\textbackslash{}033\mbox{[}43m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a1c30604ff071f52e4e1ae8a7a55043bf}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+BLUE}}~\char`\"{}\textbackslash{}033\mbox{[}44m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a394091466dc5d2635624b7178195d28b}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+MAGENTA}}~\char`\"{}\textbackslash{}033\mbox{[}45m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_ad6e6cd2f747ab143eb6ce6019f1417c9}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+CYAN}}~\char`\"{}\textbackslash{}033\mbox{[}46m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_ab414e951cc94bbf5370de047f96ac966}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+WHITE}}~\char`\"{}\textbackslash{}033\mbox{[}47m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_ac224c6b4d171a3596d15d18fcd9ca4b6}{ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+VIOLET}}~\char`\"{}\textbackslash{}033\mbox{[}48;5;93m\char`\"{}
+\item 
+\#define \mbox{\hyperlink{ColorsUtils_8h_a92a364c2b863dde1a024a77eac2a5b3b}{ANSI\+\_\+\+COLOR\+\_\+\+RESET}}~\char`\"{}\textbackslash{}033\mbox{[}0m\char`\"{}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{ColorsUtils_8h_afea611d46e31ef822d3d58dba58b130b}{print\+Red\+Alert}} (std\+::string msg)
+\item 
+void \mbox{\hyperlink{ColorsUtils_8h_a780d9626062007af9c61358aced58bd4}{print\+Green\+Alert}} (std\+::string msg)
+\item 
+void \mbox{\hyperlink{ColorsUtils_8h_a405e224cf28c5914d69864015fe4ede4}{print\+Yellow\+Alert}} (std\+::string msg)
+\item 
+void \mbox{\hyperlink{ColorsUtils_8h_a8cd24c3af328357ec0d0ac28e7ad1e0c}{print\+Blue\+Alert}} (std\+::string msg)
+\item 
+void \mbox{\hyperlink{ColorsUtils_8h_a5d7bf6cd35a8f3e15348b8e5183f2aba}{print\+Orange\+Alert}} (std\+::string msg)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Utils for printing colored messages in the console using ANSI escape codes. 
+
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{ColorsUtils_8h_a625346eae4bf587a35acb326909fecdc}\label{ColorsUtils_8h_a625346eae4bf587a35acb326909fecdc}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_BLACK@{ANSI\_COLOR\_BG\_BLACK}}
+\index{ANSI\_COLOR\_BG\_BLACK@{ANSI\_COLOR\_BG\_BLACK}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_BLACK}{ANSI\_COLOR\_BG\_BLACK}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+BLACK~\char`\"{}\textbackslash{}033\mbox{[}40m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a1c30604ff071f52e4e1ae8a7a55043bf}\label{ColorsUtils_8h_a1c30604ff071f52e4e1ae8a7a55043bf}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_BLUE@{ANSI\_COLOR\_BG\_BLUE}}
+\index{ANSI\_COLOR\_BG\_BLUE@{ANSI\_COLOR\_BG\_BLUE}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_BLUE}{ANSI\_COLOR\_BG\_BLUE}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+BLUE~\char`\"{}\textbackslash{}033\mbox{[}44m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_ad6e6cd2f747ab143eb6ce6019f1417c9}\label{ColorsUtils_8h_ad6e6cd2f747ab143eb6ce6019f1417c9}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_CYAN@{ANSI\_COLOR\_BG\_CYAN}}
+\index{ANSI\_COLOR\_BG\_CYAN@{ANSI\_COLOR\_BG\_CYAN}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_CYAN}{ANSI\_COLOR\_BG\_CYAN}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+CYAN~\char`\"{}\textbackslash{}033\mbox{[}46m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_adbecc5d16bc68b318d7d2c1fbe94b82d}\label{ColorsUtils_8h_adbecc5d16bc68b318d7d2c1fbe94b82d}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_GREEN@{ANSI\_COLOR\_BG\_GREEN}}
+\index{ANSI\_COLOR\_BG\_GREEN@{ANSI\_COLOR\_BG\_GREEN}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_GREEN}{ANSI\_COLOR\_BG\_GREEN}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+GREEN~\char`\"{}\textbackslash{}033\mbox{[}42m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a394091466dc5d2635624b7178195d28b}\label{ColorsUtils_8h_a394091466dc5d2635624b7178195d28b}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_MAGENTA@{ANSI\_COLOR\_BG\_MAGENTA}}
+\index{ANSI\_COLOR\_BG\_MAGENTA@{ANSI\_COLOR\_BG\_MAGENTA}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_MAGENTA}{ANSI\_COLOR\_BG\_MAGENTA}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+MAGENTA~\char`\"{}\textbackslash{}033\mbox{[}45m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_ad466cff77cf9e9c871ca7e2f2b0070dd}\label{ColorsUtils_8h_ad466cff77cf9e9c871ca7e2f2b0070dd}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_RED@{ANSI\_COLOR\_BG\_RED}}
+\index{ANSI\_COLOR\_BG\_RED@{ANSI\_COLOR\_BG\_RED}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_RED}{ANSI\_COLOR\_BG\_RED}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+RED~\char`\"{}\textbackslash{}033\mbox{[}41m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_ac224c6b4d171a3596d15d18fcd9ca4b6}\label{ColorsUtils_8h_ac224c6b4d171a3596d15d18fcd9ca4b6}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_VIOLET@{ANSI\_COLOR\_BG\_VIOLET}}
+\index{ANSI\_COLOR\_BG\_VIOLET@{ANSI\_COLOR\_BG\_VIOLET}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_VIOLET}{ANSI\_COLOR\_BG\_VIOLET}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+VIOLET~\char`\"{}\textbackslash{}033\mbox{[}48;5;93m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_ab414e951cc94bbf5370de047f96ac966}\label{ColorsUtils_8h_ab414e951cc94bbf5370de047f96ac966}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_WHITE@{ANSI\_COLOR\_BG\_WHITE}}
+\index{ANSI\_COLOR\_BG\_WHITE@{ANSI\_COLOR\_BG\_WHITE}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_WHITE}{ANSI\_COLOR\_BG\_WHITE}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+WHITE~\char`\"{}\textbackslash{}033\mbox{[}47m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a0bcfdc57e0c6610f88288d378d75f98c}\label{ColorsUtils_8h_a0bcfdc57e0c6610f88288d378d75f98c}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BG\_YELLOW@{ANSI\_COLOR\_BG\_YELLOW}}
+\index{ANSI\_COLOR\_BG\_YELLOW@{ANSI\_COLOR\_BG\_YELLOW}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BG\_YELLOW}{ANSI\_COLOR\_BG\_YELLOW}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BG\+\_\+\+YELLOW~\char`\"{}\textbackslash{}033\mbox{[}43m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_af5204e182e074b4c840671043c845e53}\label{ColorsUtils_8h_af5204e182e074b4c840671043c845e53}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BLACK@{ANSI\_COLOR\_BLACK}}
+\index{ANSI\_COLOR\_BLACK@{ANSI\_COLOR\_BLACK}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BLACK}{ANSI\_COLOR\_BLACK}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BLACK~\char`\"{}\textbackslash{}033\mbox{[}0;30m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_aca16e6a49eb51333c5fd3eee19487315}\label{ColorsUtils_8h_aca16e6a49eb51333c5fd3eee19487315}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_BLUE@{ANSI\_COLOR\_BLUE}}
+\index{ANSI\_COLOR\_BLUE@{ANSI\_COLOR\_BLUE}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_BLUE}{ANSI\_COLOR\_BLUE}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+BLUE~\char`\"{}\textbackslash{}033\mbox{[}0;34m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a8d0b0043e152438bb39b918a1f98c65f}\label{ColorsUtils_8h_a8d0b0043e152438bb39b918a1f98c65f}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_CYAN@{ANSI\_COLOR\_CYAN}}
+\index{ANSI\_COLOR\_CYAN@{ANSI\_COLOR\_CYAN}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_CYAN}{ANSI\_COLOR\_CYAN}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+CYAN~\char`\"{}\textbackslash{}033\mbox{[}0;36m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a966c72d8d733c7734c6c784753d894c7}\label{ColorsUtils_8h_a966c72d8d733c7734c6c784753d894c7}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_GREEN@{ANSI\_COLOR\_GREEN}}
+\index{ANSI\_COLOR\_GREEN@{ANSI\_COLOR\_GREEN}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_GREEN}{ANSI\_COLOR\_GREEN}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+GREEN~\char`\"{}\textbackslash{}033\mbox{[}0;32m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_acb30614ba1535da5b9d0c490b3c10515}\label{ColorsUtils_8h_acb30614ba1535da5b9d0c490b3c10515}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_MAGENTA@{ANSI\_COLOR\_MAGENTA}}
+\index{ANSI\_COLOR\_MAGENTA@{ANSI\_COLOR\_MAGENTA}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_MAGENTA}{ANSI\_COLOR\_MAGENTA}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+MAGENTA~\char`\"{}\textbackslash{}033\mbox{[}0;35m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a34995b955465f6bbb37c359173d50477}\label{ColorsUtils_8h_a34995b955465f6bbb37c359173d50477}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_RED@{ANSI\_COLOR\_RED}}
+\index{ANSI\_COLOR\_RED@{ANSI\_COLOR\_RED}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_RED}{ANSI\_COLOR\_RED}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+RED~\char`\"{}\textbackslash{}033\mbox{[}0;31m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a92a364c2b863dde1a024a77eac2a5b3b}\label{ColorsUtils_8h_a92a364c2b863dde1a024a77eac2a5b3b}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_RESET@{ANSI\_COLOR\_RESET}}
+\index{ANSI\_COLOR\_RESET@{ANSI\_COLOR\_RESET}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_RESET}{ANSI\_COLOR\_RESET}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+RESET~\char`\"{}\textbackslash{}033\mbox{[}0m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_ab126a29a20ee0fe9ada8269c91edb753}\label{ColorsUtils_8h_ab126a29a20ee0fe9ada8269c91edb753}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_WHITE@{ANSI\_COLOR\_WHITE}}
+\index{ANSI\_COLOR\_WHITE@{ANSI\_COLOR\_WHITE}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_WHITE}{ANSI\_COLOR\_WHITE}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+WHITE~\char`\"{}\textbackslash{}033\mbox{[}0;37m\char`\"{}}
+
+\mbox{\Hypertarget{ColorsUtils_8h_a5a123b382640b3aa65dd5db386002fbc}\label{ColorsUtils_8h_a5a123b382640b3aa65dd5db386002fbc}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!ANSI\_COLOR\_YELLOW@{ANSI\_COLOR\_YELLOW}}
+\index{ANSI\_COLOR\_YELLOW@{ANSI\_COLOR\_YELLOW}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{ANSI\_COLOR\_YELLOW}{ANSI\_COLOR\_YELLOW}}
+{\footnotesize\ttfamily \#define ANSI\+\_\+\+COLOR\+\_\+\+YELLOW~\char`\"{}\textbackslash{}033\mbox{[}0;33m\char`\"{}}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{ColorsUtils_8h_a8cd24c3af328357ec0d0ac28e7ad1e0c}\label{ColorsUtils_8h_a8cd24c3af328357ec0d0ac28e7ad1e0c}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!printBlueAlert@{printBlueAlert}}
+\index{printBlueAlert@{printBlueAlert}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{printBlueAlert()}{printBlueAlert()}}
+{\footnotesize\ttfamily void print\+Blue\+Alert (\begin{DoxyParamCaption}\item[{std\+::string}]{msg }\end{DoxyParamCaption})}
+
+Print a message in blue color 
+\begin{DoxyParams}{Parameters}
+{\em msg} & The message to print \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ColorsUtils_8h_a780d9626062007af9c61358aced58bd4}\label{ColorsUtils_8h_a780d9626062007af9c61358aced58bd4}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!printGreenAlert@{printGreenAlert}}
+\index{printGreenAlert@{printGreenAlert}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{printGreenAlert()}{printGreenAlert()}}
+{\footnotesize\ttfamily void print\+Green\+Alert (\begin{DoxyParamCaption}\item[{std\+::string}]{msg }\end{DoxyParamCaption})}
+
+Print a message in green color 
+\begin{DoxyParams}{Parameters}
+{\em msg} & The message to print \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ColorsUtils_8h_a5d7bf6cd35a8f3e15348b8e5183f2aba}\label{ColorsUtils_8h_a5d7bf6cd35a8f3e15348b8e5183f2aba}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!printOrangeAlert@{printOrangeAlert}}
+\index{printOrangeAlert@{printOrangeAlert}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{printOrangeAlert()}{printOrangeAlert()}}
+{\footnotesize\ttfamily void print\+Orange\+Alert (\begin{DoxyParamCaption}\item[{std\+::string}]{msg }\end{DoxyParamCaption})}
+
+Print a message in orange color 
+\begin{DoxyParams}{Parameters}
+{\em msg} & The message to print \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ColorsUtils_8h_afea611d46e31ef822d3d58dba58b130b}\label{ColorsUtils_8h_afea611d46e31ef822d3d58dba58b130b}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!printRedAlert@{printRedAlert}}
+\index{printRedAlert@{printRedAlert}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{printRedAlert()}{printRedAlert()}}
+{\footnotesize\ttfamily void print\+Red\+Alert (\begin{DoxyParamCaption}\item[{std\+::string}]{msg }\end{DoxyParamCaption})}
+
+Print a message in red color 
+\begin{DoxyParams}{Parameters}
+{\em msg} & The message to print \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{ColorsUtils_8h_a405e224cf28c5914d69864015fe4ede4}\label{ColorsUtils_8h_a405e224cf28c5914d69864015fe4ede4}} 
+\index{ColorsUtils.h@{ColorsUtils.h}!printYellowAlert@{printYellowAlert}}
+\index{printYellowAlert@{printYellowAlert}!ColorsUtils.h@{ColorsUtils.h}}
+\doxysubsubsection{\texorpdfstring{printYellowAlert()}{printYellowAlert()}}
+{\footnotesize\ttfamily void print\+Yellow\+Alert (\begin{DoxyParamCaption}\item[{std\+::string}]{msg }\end{DoxyParamCaption})}
+
+Print a message in yellow color 
+\begin{DoxyParams}{Parameters}
+{\em msg} & The message to print \\
+\hline
+\end{DoxyParams}

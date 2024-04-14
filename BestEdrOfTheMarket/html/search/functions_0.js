@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['enumerateprocessmodulesandtheirpools_0',['enumerateProcessModulesAndTheirPools',['../class_pe64_utils.html#a9cb47cda548a74452d779e7909304c00',1,'Pe64Utils']]]
+  ['alertandkillthatprocess_234',['alertAndKillThatProcess',['../classIpcUtils.html#a1c590351ec141346eb06b81008918164',1,'IpcUtils']]],
+  ['analyzecompleteprocessthreadsstacktrace_235',['analyzeCompleteProcessThreadsStackTrace',['../classIpcUtils.html#a4fd7804701df68acdd3e8db06ed67682',1,'IpcUtils']]]
 ];

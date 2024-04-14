@@ -1,4 +1,11 @@
-﻿/*
+﻿/**
+	* @file MonitoringUtils.cpp
+	* @brief Contains the startup and initializations functions.
+
+*/
+
+
+/*
  ____            _     _____ ____  ____           __   _____ _            __  __            _        _
 | __ )  ___  ___| |_  | ____|  _ \|  _ \    ___  / _| |_   _| |__   ___  |  \/  | __ _ _ __| | _____| |_
 |  _ \ / _ \/ __| __| |  _| | | | | |_) |  / _ \| |_    | | | '_ \ / _ \ | |\/| |/ _` | '__| |/ / _ \ __|
@@ -7,7 +14,7 @@
 
 							You gotta worry about them malicious processes
 
-									  Made w/ <3 by Yazidou
+									    Made w/ <3 by Yazid
 
 */
 
@@ -36,9 +43,7 @@
 #include "ProcessStructUtils.h"
 #include "ModuleLoadingUtils.h"
 #include "SSNHookingUtils.h"
-#include "IATHookingUtils.h"
 #include "ColorsUtils.h"
-#include "SymbolsUtils.h"
 #include "BytesSequencesUtils.h"
 #include <amsi.h>
 
@@ -158,7 +163,6 @@ STARTUPINFO startupInfo;
 PROCESS_INFORMATION processInfo;
 
 
-
 /// <summary>
 /// Control Handler for proper deletion of the threads when hitting Ctrl+C/// </summary>
 /// <param name="fdwCtrlType">Control type</param>
@@ -186,17 +190,17 @@ BOOL _k32_ = FALSE;
 BOOL _stack_ = FALSE;
 BOOL _heap_ = FALSE;
 BOOL _ssn_ = FALSE;
-BOOL _amsi_ = FALSE;
-BOOL _etw_ = FALSE;
+BOOL _patch_ = FALSE;
 BOOL _debug_ = FALSE;
-BOOL _boost_ = FALSE;
-BOOL _stack_spoof_ = FALSE;
 BOOL _d_syscalls_ = FALSE;
 BOOL _i_syscalls_ = FALSE;
 BOOL _yara_ = FALSE;
 
-
 BOOL _p_ = FALSE;
+
+/**
+	* Main function
+*/
 
 int main(int argc, char* argv[]) {
 
@@ -230,11 +234,8 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[arg], "/ssn")) {
 			_ssn_ = TRUE;
 		}
-		if (!strcmp(argv[arg], "/amsi")) {
-			_amsi_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/etw")) {
-			_etw_ = TRUE;
+		if (!strcmp(argv[arg], "/patch")) {
+			_patch_ = TRUE;
 		}
 		if (!strcmp(argv[arg], "/debug")) { 
 			_debug_ = TRUE;
@@ -303,14 +304,16 @@ int main(int argc, char* argv[]) {
 }
 
 
-// PID filling
+/**
+	* PID filling function, used when the /p flag is not set
+*/
 void pidFilling() {
 	cout << "\n[*] Choose the PID to monitor : ";
 	cin >> targetProcId;
 }
 
 /*
-	Startup function, called at the beginning of the program. It fills the maps with the content of the JSON files and initializes the monitoring threads.
+	* Startup function, called at the beginning of the program. It fills the maps with the content of the JSON files and initializes the IPC & monitoring threads.
 */
 
 void startup() {
@@ -320,51 +323,6 @@ void startup() {
 
 	cout << "\n\t\t\tMy PID is " << GetProcessId(GetCurrentProcess()) << endl;
 
-	// Filling appropriate maps based on json files contents
-
-	ifstream trigFunctions("TrigerringFunctions.json");
-	if (trigFunctions.is_open()) {
-
-		std::ostringstream contentStream;
-		contentStream << trigFunctions.rdbuf();
-		std::string fileContent = contentStream.str();
-
-		// Parse the JSON content
-		Json::Value root;
-		Json::Reader reader;
-
-		fileContent = removeBOM(fileContent);
-		
-		cout << endl;
-		if (!reader.parse(fileContent.c_str(), root, false)) {
-			std::cout << "\n[X] Invalid TrigerringFunctions.json ! Please check the validity of the file." << std::endl;
-			std::cout << reader.getFormattedErrorMessages() << std::endl;
-			exit(-23);
-		} else {
-			std::cout << "[*] Successfully parsed TrigerringFunctions.json" << std::endl;
-		}
-
-		if (root["StackBasedHooking"]["Functions"].size() > 0) {
-			for (int i = 0; i < root["StackBasedHooking"]["Functions"].size(); i++) {
-				stackLevelMonitoredFunctions.insert({
-					(string)root["StackBasedHooking"]["Functions"][i].asString(),
-					"NONE"
-					});
-			}
-		}
-
-		for (int i = 0; i < root["SSNCrushingRoutines"]["Functions"].size(); i++) {
-			routinesToCrush.push_back((string)root["SSNCrushingRoutines"]["Functions"][i].asString());
-		}
-
-		for (int i = 0; i < root["IATHooking"]["Functions"].size(); i++) {
-			iatLevelHookedFunctions.push_back((string)root["IATHooking"]["Functions"][i].asString());
-		}
-	}
-
-	trigFunctions.close();
-
-	// Filling pattern matching signatures for heap & stack monitoring
 
 	ifstream maliciousPatterns("YaroRules.json");
 	if (maliciousPatterns.is_open()) {
@@ -501,7 +459,7 @@ void startup() {
 
 	Pe64Utils modUtils(targetProcess);
 	_pe64Utils = &modUtils;
-	modUtils.enumerateProcessModulesAndTheirPools();
+	modUtils.enumerateProcessModulesAndTheirPools(_v_);
 	modUtils.enumerateMemoryRegionsOfProcess();
 
 	DllLoader dllLoader(targetProcess);
@@ -551,7 +509,7 @@ void startup() {
 		absoluteDllPath = GetFullPathNameA(magicbp_dll, magicbpDllBufferSize, magicbpDllAbsolutePathBuf, nullptr);
 		while (!injected_magic_bp_dll) {
 			if (_v_) {
-				cout << "[INFO] Injected magicbp.dll" << endl;
+				cout << "[INFO] In	jected magicbp.dll" << endl;
 			}
 			injected_magic_bp_dll = dllLoader.InjectDll(GetProcessId(targetProcess), magicbpDllAbsolutePathBuf, addressOfDll);
 		}
@@ -608,31 +566,22 @@ void startup() {
 		//functionsAddressesOfAddresses = modUtils.getIATFunctionsAddressesMapping();
 	}
 
+
 	ThreadsState.clear();
 
 	modUtils.clearFunctionsNamesMapping();
 
-	/// TODO : Check that they do exist
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "ntdll.dll");
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "kernel32.dll");
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "KERNELBASE.dll");
+
+	LoadLibraryA("amsi.dll");
 
 	// Powershell test
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "win32u.dll");
 	modUtils.RetrieveExportsForGivenModuleAndFillMap(targetProcess, "user32.dll");
 
-
-	// Yara
-	//YaraUtils yaraUtils(targetProcess); pas ici
-
-
 	HeapUtils heapUtils(targetProcess);
-
-	// Heap Monitoring 
-	/*if (_heap_) {
-		thread* heapMonThread = new thread(monitorHeapForProc, heapUtils);
-		threads.push_back(heapMonThread);
-	}*/
 
 	// needs functions mapping to be filled
 	if (_nt_ || _k32_ || _iat_ || _stack_ || _d_syscalls_ || _i_syscalls_) {
@@ -747,6 +696,7 @@ void startup() {
 
 	pfnNtResumeProcess(targetProcess);
 
+
 	while (true) {
 		Sleep(INFINITE);
 	}
@@ -754,7 +704,7 @@ void startup() {
 }
 
 /*
-Function for proper deletion of monitoring threads, invoked when hitting Ctrl+C / when the process is terminated 
+* Function for proper deletion of monitoring threads, invoked when hitting Ctrl+C / when the process is terminated 
 */
 void deleteMonitoringWorkerThreads() {
 
@@ -777,7 +727,8 @@ void deleteMonitoringWorkerThreads() {
 }
 
 /*
-Returns the name of a function by searching for its memory address in a functionsNamesMapping (associates function names with their addresses). Used to identify functions during the analysis of call stacks
+* Returns the name of a function by searching for its memory address in a functionsNamesMapping (associates function names with their addresses). Used to identify functions during the analysis of call stacks
+* @param targetAddr Address of the function to identify
 */
 char* getFunctionNameFromVA(DWORD_PTR targetAddr) {
 
@@ -790,8 +741,8 @@ char* getFunctionNameFromVA(DWORD_PTR targetAddr) {
 }
 
 /*
-	Prints the address of an export
-	const char* target : Export name
+	* Prints the address of an export
+	* @param target Export name
 */
 DWORD_PTR printFunctionsMappingKeys(const char* target) {
 

@@ -1,0 +1,53 @@
+\hypertarget{ProcessStructUtils_8cpp}{}\doxysection{Process\+Struct\+Utils.\+cpp File Reference}
+\label{ProcessStructUtils_8cpp}\index{ProcessStructUtils.cpp@{ProcessStructUtils.cpp}}
+{\ttfamily \#include \char`\"{}Process\+Struct\+Utils.\+h\char`\"{}}\newline
+\doxysubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef NTSTATUS($\ast$ \mbox{\hyperlink{ProcessStructUtils_8cpp_ad46879f128fa2455f2eec9d3643461e3}{\+\_\+\+Nt\+Query\+Information\+Process}}) (HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG)
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+PPEB \mbox{\hyperlink{ProcessStructUtils_8cpp_a08dabf12af8f8f573330211976b57b59}{get\+Handled\+Process\+Peb}} (HANDLE h\+Process)
+\item 
+bool \mbox{\hyperlink{ProcessStructUtils_8cpp_a491159e1790090ace52b92a1f3b8146e}{Is\+Thread\+Suspended}} (HANDLE h\+Thread)
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{ProcessStructUtils_8cpp_ad46879f128fa2455f2eec9d3643461e3}{\+\_\+\+Nt\+Query\+Information\+Process}} \mbox{\hyperlink{ProcessStructUtils_8cpp_a2665e388735a4686e91961ed8ca1069d}{Nt\+Query\+Information\+Process2}} = nullptr
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Typedef Documentation}
+\mbox{\Hypertarget{ProcessStructUtils_8cpp_ad46879f128fa2455f2eec9d3643461e3}\label{ProcessStructUtils_8cpp_ad46879f128fa2455f2eec9d3643461e3}} 
+\index{ProcessStructUtils.cpp@{ProcessStructUtils.cpp}!\_NtQueryInformationProcess@{\_NtQueryInformationProcess}}
+\index{\_NtQueryInformationProcess@{\_NtQueryInformationProcess}!ProcessStructUtils.cpp@{ProcessStructUtils.cpp}}
+\doxysubsubsection{\texorpdfstring{\_NtQueryInformationProcess}{\_NtQueryInformationProcess}}
+{\footnotesize\ttfamily typedef NTSTATUS($\ast$ \+\_\+\+Nt\+Query\+Information\+Process) (HANDLE, PROCESSINFOCLASS, PVOID, ULONG, PULONG)}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{ProcessStructUtils_8cpp_a08dabf12af8f8f573330211976b57b59}\label{ProcessStructUtils_8cpp_a08dabf12af8f8f573330211976b57b59}} 
+\index{ProcessStructUtils.cpp@{ProcessStructUtils.cpp}!getHandledProcessPeb@{getHandledProcessPeb}}
+\index{getHandledProcessPeb@{getHandledProcessPeb}!ProcessStructUtils.cpp@{ProcessStructUtils.cpp}}
+\doxysubsubsection{\texorpdfstring{getHandledProcessPeb()}{getHandledProcessPeb()}}
+{\footnotesize\ttfamily PPEB get\+Handled\+Process\+Peb (\begin{DoxyParamCaption}\item[{HANDLE}]{h\+Process }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{ProcessStructUtils_8cpp_a491159e1790090ace52b92a1f3b8146e}\label{ProcessStructUtils_8cpp_a491159e1790090ace52b92a1f3b8146e}} 
+\index{ProcessStructUtils.cpp@{ProcessStructUtils.cpp}!IsThreadSuspended@{IsThreadSuspended}}
+\index{IsThreadSuspended@{IsThreadSuspended}!ProcessStructUtils.cpp@{ProcessStructUtils.cpp}}
+\doxysubsubsection{\texorpdfstring{IsThreadSuspended()}{IsThreadSuspended()}}
+{\footnotesize\ttfamily bool Is\+Thread\+Suspended (\begin{DoxyParamCaption}\item[{HANDLE}]{h\+Thread }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{ProcessStructUtils_8cpp_a2665e388735a4686e91961ed8ca1069d}\label{ProcessStructUtils_8cpp_a2665e388735a4686e91961ed8ca1069d}} 
+\index{ProcessStructUtils.cpp@{ProcessStructUtils.cpp}!NtQueryInformationProcess2@{NtQueryInformationProcess2}}
+\index{NtQueryInformationProcess2@{NtQueryInformationProcess2}!ProcessStructUtils.cpp@{ProcessStructUtils.cpp}}
+\doxysubsubsection{\texorpdfstring{NtQueryInformationProcess2}{NtQueryInformationProcess2}}
+{\footnotesize\ttfamily \mbox{\hyperlink{ProcessStructUtils_8cpp_ad46879f128fa2455f2eec9d3643461e3}{\+\_\+\+Nt\+Query\+Information\+Process}} Nt\+Query\+Information\+Process2 = nullptr}
+

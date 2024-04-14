@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['memoryutils_0',['MemoryUtils',['../class_memory_utils.html',1,'']]]
+  ['iatimportinfo_214',['IATImportInfo',['../structIATImportInfo.html',1,'']]],
+  ['ipcutils_215',['IpcUtils',['../classIpcUtils.html',1,'']]]
 ];

@@ -1,6 +1,9 @@
-﻿#pragma once
+﻿/**
+* @file IPCUtils.h
+* @brief Inter process communication & utilities, contains YARA scanning utils & all sequences of analysis operations that are done for each incoming buffer. 
+*/
 
-/// TODO : 00007FF83EE4ACF4
+#pragma once
 
 #include <Windows.h>
 #include <tchar.h>
@@ -25,10 +28,16 @@ namespace fs = std::filesystem;
 
 #define PIPE_BUFFER_SIZE 512
 
+// NtSuspendProcess function prototype
 typedef LONG(NTAPI* NtSuspendProcess)(IN HANDLE ProcessHandle);
+
+// NtResumeProcess function prototype
 typedef LONG(NTAPI* NtResumeProcess)(HANDLE ProcessHandle);
 
+// NtSuspendProcess function pointers
 NtSuspendProcess pfnNtSuspendProcess;
+
+// NtResumeProcess function pointer
 NtResumeProcess pfnNtResumeProcess;
 
 typedef void (*DeleteMonitoringWorkerThreads)();
@@ -54,6 +63,17 @@ BOOL _inherited_p_ = FALSE;
 std::string currentDefensiveMethdod = "";
 
 int numberOfUnbackedFunctionAddresses = 0;
+
+/**
+* 
+* YARA callback invoked for each yara scan.
+* 
+* @param context : YR_SCAN_CONTEXT* : The context of the scan.
+* @param message : int : The message type.
+* @param message_data : void* : The message data.
+* @param user_data : void* : The user data.
+* 
+**/
 
 int callback_function(
 	YR_SCAN_CONTEXT* context,
@@ -108,7 +128,12 @@ YR_RULES* rules;
 
 int result;
 
-// Temporary 
+
+/**
+* 
+* Initialize the YARA utils, loads the YARA lib and rules files and initializes the YARA scanner & compiler.
+**/
+
 int initYaraUtils() {
 
 	yr_initialize();
@@ -142,8 +167,6 @@ int initYaraUtils() {
 		}
 	}
 		
-
-
 	result = yr_compiler_get_rules(compiler, &rules);
 	
 	if (result != 0) {
@@ -163,6 +186,24 @@ int initYaraUtils() {
 
 	return 0;
 }
+
+/**
+*	
+
+*	@param pipeName : LPCWSTR : The name of the pipe.
+* 	@param tProcess : HANDLE : The target process handle.
+* 	@param verbose : BOOL : The verbosity flag.	
+* 	@param dll_p : std::unordered_map<BYTE*, SIZE_T>& : The DLL patterns.
+* 	@param general_p : std::unordered_map<BYTE*, SIZE_T>& : The general patterns.
+* 	@param f1 : DeleteMonitoringWorkerThreads : The function to delete monitoring worker threads.
+* 	@param f2 : Startup : The function to start the monitoring.
+* 	@param pe64utils : Pe64Utils* : The PE64 utils.
+* 	@param heapUtils : HeapUtils& : The heap utils.
+* 	@param heap : BOOL : The heap flag.
+* 	@param yara : BOOL : The yara flag.
+* 	@param stack : BOOL : The stack flag.
+* 	@param dsyscalls : BOOL : The direct syscalls flag.
+**/
 
 class IpcUtils {
 
@@ -201,11 +242,13 @@ private:
 	BOOL stackEnabled ;
 	BOOL directSyscallEnabled;
 
-
+	BOOL amsi_module_found = FALSE;
 
 	PatchingMitigationUtils patchUtils;
 
 public:
+
+	///explor
 
 	void setPatterns(
 		std::unordered_map<BYTE*, SIZE_T>& dll_p,
@@ -218,6 +261,25 @@ public:
 		this->stackPatterns = stack_p;
 		this->heapPatterns = heapPatterns;
 	}
+
+	/** 
+	* 
+	* Constructor of the IpcUtils class.
+	* @param pipeName : LPCWSTR : The name of the pipe.
+	* @param tProcess : HANDLE : The target process handle.
+	* @param verbose : BOOL : The verbosity flag.
+	* @param dllPatterns : std::unordered_map<BYTE*, SIZE_T>& : The DLL patterns.
+	* @param generalPatterns : std::unordered_map<BYTE*, SIZE_T>& : The general patterns.
+	* @param f1 : DeleteMonitoringWorkerThreads : The function to delete monitoring worker threads.
+	* @param f2 : Startup : The function to start the monitoring.
+	* @param pe64utils : Pe64Utils* : The PE64 utils.
+	* @param heapUtils : HeapUtils& : The heap utils.
+	* @param heap : BOOL : The heap flag.
+	* @param yara : BOOL : The yara flag.
+	* @param stack : BOOL : The stack flag.
+	* @param dsyscalls : BOOL : The direct syscalls flag.
+	* 
+	*/
 
 	IpcUtils(LPCWSTR pipeName,
 		HANDLE& tProcess,
@@ -251,7 +313,6 @@ public:
 		pfnNtSuspendProcess = (NtSuspendProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtSuspendProcess");
 		pfnNtResumeProcess = (NtResumeProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtResumeProcess");
 
-
 		if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
 			AmsiScanBufferPtr = GetProcAddress(GetModuleHandleA("amsi.dll"), "AmsiScanBuffer");
 			AmsiScanOpenSessionPtr = GetProcAddress(GetModuleHandleA("amsi.dll"), "AmsiScanOpenSession");
@@ -280,39 +341,10 @@ public:
 	}
 
 
-	void amsitest(PVOID buffer, ULONG length) {
-		HAMSICONTEXT amsiContext;
-		HRESULT hr = AmsiInitialize(L"MyApp", &amsiContext);
-		if (FAILED(hr)) {
-			std::cerr << "Failed to initialize AMSI\n";
-			return;
-		}
-
-		HAMSISESSION session;
-		hr = AmsiOpenSession(amsiContext, &session);
-		if (FAILED(hr)) {
-			std::cerr << "Failed to open AMSI session\n";
-			AmsiUninitialize(amsiContext);
-			return;
-		}
-
-		AMSI_RESULT result;
-		hr = AmsiScanBuffer(amsiContext, buffer, length, L"MyContent", session, &result);
-		if (SUCCEEDED(hr)) {
-			if (result == AMSI_RESULT_DETECTED) {
-				std::cout << "Malicious content detected!\n";
-			}
-			else {
-				std::cout << "No malicious content detected.\n";
-			}
-		}
-		else {
-			std::cerr << "Failed to scan buffer\n";
-		}
-
-		AmsiCloseSession(amsiContext, session);
-		AmsiUninitialize(amsiContext);
-	}
+	/**
+	* Kills a process and alerts the user.
+	* @param hProc : HANDLE : The process handle.
+	*/
 
 	void alertAndKillThatProcess(HANDLE hProc) {
 
@@ -330,9 +362,12 @@ public:
 		printRedAlert("Malicious process was terminated !");
 	}
 
+	/**
+		* Initializes the pipe and waits for an incoming message. 
+	*/
 
 	HANDLE initPipeAndWaitForConnection() {
-
+		
 		memset(&symbolInfo, 0, sizeof(SYMBOL_INFO));
 		symbolInfo.SizeOfStruct = sizeof(SYMBOL_INFO);
 		symbolInfo.MaxNameLen = MAX_SYM_NAME;
@@ -483,19 +518,49 @@ public:
 
 						if (root.isMember("Function")) {
 
+							/*patchUtils.checkRemoteFunction();*/
+
+							//pe64Utils->enumerateProcessModulesAndTheirPools();
+
 							pfnNtSuspendProcess(targetProcess);
 
 							pe64Utils->enumerateMemoryRegionsOfProcess();
 
 							if (!root.isMember("Hexdump")) {
 
-								PVOID AmsiOpenSessionAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiOpenSession");
-								PVOID AmsiScanBufferAddr = GetProcAddress(LoadLibraryA("amsi"), "AmsiScanBuffer");
+								if (!amsi_module_found) {
+									pe64Utils->enumerateProcessModulesAndTheirPools(_v_);
+									if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
+										
+										amsi_module_found = TRUE;
+										
+										pe64Utils->RetrieveExportsForGivenModuleAndFillMap(targetProcess, "amsi.dll");
+										PVOID amsiScanBufferAddr = pe64Utils->getAddressOfExport("AmsiScanBuffer");
+										PVOID amsiOpenSessionAddr = pe64Utils->getAddressOfExport("AmsiOpenSession");
 
-								if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
+										patchUtils.fillProtectedFunctions(
+											(PVOID)amsiOpenSessionAddr,
+											(PVOID)amsiScanBufferAddr,
+											(PVOID)GetProcAddress(LoadLibraryA("ntdll"), "EtwEventWrite"),
+											(PVOID)GetProcAddress(LoadLibraryA("ntdll"), "NtTraceEvent")
+										);
+									}
+								}
+							
+								
+								if (!patchUtils.checkRemoteFunction(amsi_module_found)) {
+									printRedAlert("Malicious process detected ! (Patch). Killing it...");
+									MessageBoxA(NULL, (LPCSTR)"Malicious process detected ! (Patching)", "Best Edr Of The Market", MB_ICONEXCLAMATION);
 
-									patchResultAmsiOpenSession = patchUtils.checkAmsiOpenSession(AmsiOpenSessionAddr);
-									patchResultAmsiScanBuffer = patchUtils.checkAmsiScanBuffer(AmsiScanBufferAddr);
+									TerminateProcess(targetProcess, -1);
+									deleteMonitoringFunc();
+									startupFunc();
+								}
+
+							
+
+								/*	patchResultAmsiOpenSession = patchUtils.checkAmsiOpenSession(AmsiOpenSessionAddr);
+									patchResultAmsiScanBuffer = patchUtils.checkAmsiScanBuffer(AmsiScanBufferAddr);*/
 
 									if (patchResultAmsiOpenSession == 0 || patchResultAmsiScanBuffer == 0) {
 
@@ -507,7 +572,7 @@ public:
 										startupFunc();
 
 									}
-								}
+								
 
 								/*NtTraceEventPatchResult = patchUtils.checkNtTraceEvents(GetProcAddress(LoadLibraryA("ntdll"), "NtTraceEvent"));
 
@@ -523,10 +588,10 @@ public:
 									startupFunc();
 								}
 
-								// Patching mitigation
-								if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
-									patchUtils.checkAmsiOpenSession(AmsiScanOpenSessionPtr);
-								}
+								//// Patching mitigation
+								//if (pe64Utils->isModulePresent("C:\\Windows\\SYSTEM32\\amsi.dll")) {
+								//	patchUtils.checkAmsiOpenSession(AmsiScanOpenSessionPtr);
+								//}
 
 								if (heapEnabled) {
 
@@ -588,9 +653,15 @@ public:
 									if (capturedDataSize > 0) {
 										addr = hexStringToBytes(concernedAddress, capturedDataSize);
 										memccpy(&addrPointer, addr, 8, 8);
+
+										std::cout << "debug recu --> " << std::hex << (DWORD_PTR)addrPointer << std::endl;
+
 										//BYTE rAddr[8] = { addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0] };
+
 									}
 								}
+
+								pfnNtSuspendProcess(targetProcess);
 
 								if (root.isMember("StringData")) {
 
@@ -608,11 +679,7 @@ public:
 
 								if (ReadProcessMemory(targetProcess, (LPCVOID)addrPointer, dump, sizeof(dump), &dumpBytesRead)) {
 
-									//std::cout << "je analize" << std::endl;
-
 									if (yaraEnabled) {
-
-										//amsitest((LPVOID)dump, dumpBytesRead);
 
 										if (yr_scanner_scan_mem(scanner, dump, dumpBytesRead)) {
 											alertAndKillThatProcess(targetProcess);
@@ -666,15 +733,21 @@ public:
 									}
 								}
 
+								pfnNtResumeProcess(targetProcess);
+
 							} else {
 								
-								// Inactive for now
+
 
 								const char* receivedBuffer = root["Hexdump"].asCString();
+								size_t bytesBufferSize = strlen(receivedBuffer);
 
-								size_t bytesBufferSize;
-								BYTE* bytesBuffer = convertHexToBytes(receivedBuffer, bytesBufferSize);
-								yr_scanner_scan_mem(scanner, bytesBuffer, bytesBufferSize);
+								printf("%s", receivedBuffer);
+
+
+					
+								//BYTE* bytesBuffer = convertHexToBytes(receivedBuffer, bytesBufferSize);
+								//yr_scanner_scan_mem(scanner, bytesBuffer, bytesBufferSize);
 							}
 
 							pfnNtResumeProcess(targetProcess);
@@ -688,6 +761,11 @@ public:
 		return hPipe;
 	}
 	
+
+	/**
+		* Terminates the pipe connection.
+	*/
+
 	void terminatePipeConnection() {
 		if (!DisconnectNamedPipe(hPipe)) {
 			std::cerr << "Error when disconnecting from BEOTM pipe." << std::endl;
@@ -696,6 +774,10 @@ public:
 		}
 	}
 
+	/**
+		* Analyzes the complete stack trace of a process.
+		* @param hProcess : HANDLE : The process handle.
+	*/
 
 	BOOL analyzeCompleteProcessThreadsStackTrace(HANDLE hProcess) {
 
@@ -741,7 +823,7 @@ public:
 								int i = 0;
 
 								if (_v_) {
-									std::cout << "\n\n[*] Captured Stack Frame : " << std::endl;
+									std::cout << "\n\n[*] Captured Stack Trace : " << std::endl;
 								}
 
 								while (StackWalk64(IMAGE_FILE_MACHINE_AMD64,
@@ -855,7 +937,7 @@ public:
 											std::cout << "\t\t " << std::hex << (DWORD_PTR)stackFrame64.AddrPC.Offset << std::endl;
 										}
 
-										if(pe64Utils->isAddressInModulesMemPools(stackFrame64.AddrPC.Offset)) {
+										if (pe64Utils->isAddressInModulesMemPools(stackFrame64.AddrPC.Offset)) {
 										
 											printGreenAlert("Non resolved address in modules memory pools.");
 										
@@ -867,7 +949,7 @@ public:
 												printOrangeAlert("Scanning the memory region for patterns...");
 												
 												int indexOfMemoryRegionOfOfsset = pe64Utils->indexOfMemoryRegion((LPVOID)stackFrame64.AddrPC.Offset);
-
+												
 												if(pe64Utils->memoryRegionsContainsIndex(indexOfMemoryRegionOfOfsset)) {
 
 													int sizeOfRegion = pe64Utils->getSizeOfMemoryRegionByItsIndex(indexOfMemoryRegionOfOfsset);
@@ -919,10 +1001,6 @@ public:
 
 		}
 	}
-
-
-
-
 };
 
 

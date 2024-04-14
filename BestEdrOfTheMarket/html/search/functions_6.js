@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['getaddressofexport_260',['getAddressOfExport',['../classPe64Utils.html#a0871a4f736f0f50724ebb56d66773f4a',1,'Pe64Utils']]],
+  ['getcontentofmemoryregionbyitsindex_261',['getContentOfMemoryRegionByItsIndex',['../classPe64Utils.html#a1e12de47e169c43693bbed754196b98a',1,'Pe64Utils']]],
+  ['getcurrentdatetime_262',['getCurrentDateTime',['../ConversionUtils_8h.html#a333b5413e0cb25ebfc2919e897c49e0c',1,'ConversionUtils.h']]],
+  ['getendofmemoryregion_263',['getEndOfMemoryRegion',['../classPe64Utils.html#a81bc63e8c3bcf8a7afcee845c7292461',1,'Pe64Utils']]],
+  ['getfirstmoduleiat_264',['getFirstModuleIAT',['../classPe64Utils.html#a290a136cafe98e56a723afbd8a6c9e5a',1,'Pe64Utils']]],
+  ['getfunctionnamefromva_265',['getFunctionNameFromVA',['../MonitoringUtils_8cpp.html#a760e9844217d2cdf474c11374a07568a',1,'MonitoringUtils.cpp']]],
+  ['getfunctionsnamesmapping_266',['getFunctionsNamesMapping',['../classPe64Utils.html#a438e362842eb0d9abd6a3f3168e309c3',1,'Pe64Utils']]],
+  ['gethandledprocesspeb_267',['getHandledProcessPeb',['../ProcessStructUtils_8h.html#a08dabf12af8f8f573330211976b57b59',1,'getHandledProcessPeb(HANDLE hProcess):&#160;ProcessStructUtils.h'],['../MonitoringUtils_8cpp.html#af4459b912d4e6f111bc1dcab89ad1821',1,'getHandledProcessPeb(HANDLE):&#160;ProcessStructUtils.h']]],
+  ['getheapaddress_268',['getHeapAddress',['../classHeapUtils.html#ad24d323f6fc5ce35a854f2c5c28e83a5',1,'HeapUtils']]],
+  ['getheapaddresses_269',['getHeapAddresses',['../classHeapUtils.html#a98f74a9663b488c9cde72a76f494e5c9',1,'HeapUtils']]],
+  ['getheapcount_270',['getHeapCount',['../classHeapUtils.html#a4429c8e62927d5472bb0b91a54fd86da',1,'HeapUtils']]],
+  ['getheapregioncontent_271',['getHeapRegionContent',['../classHeapUtils.html#aeddf0a2e2a8ff11cb81e8ba712ef31b0',1,'HeapUtils']]],
+  ['getheapregionsize_272',['getHeapRegionSize',['../classHeapUtils.html#a4d922b4f7103bbee1126224e0fa45fb5',1,'HeapUtils']]],
+  ['getheapregionsizes_273',['getHeapRegionSizes',['../classHeapUtils.html#a0ed13c4565123c06c93b98fe3f4dfe59',1,'HeapUtils']]],
+  ['getiatfunctionsaddressesmapping_274',['getIATFunctionsAddressesMapping',['../classPe64Utils.html#a2f74875ce79965cd64a7ee4b4f018762',1,'Pe64Utils']]],
+  ['getiatfunctionsmapping_275',['getIATFunctionsMapping',['../classPe64Utils.html#a0ee5695bc701930c2a67335423370cab',1,'Pe64Utils']]],
+  ['getloadedmodules_276',['getLoadedModules',['../classPe64Utils.html#a1babb17036f709335982b4156032fac0',1,'Pe64Utils']]],
+  ['getmodendaddr_277',['getModEndAddr',['../classPe64Utils.html#a4d0e2729f8c18d0f7aa1ba4ae86f873f',1,'Pe64Utils']]],
+  ['getmodstartaddr_278',['getModStartAddr',['../classPe64Utils.html#ad5a0e73b815a781557e997504922683b',1,'Pe64Utils']]],
+  ['getmodulesorder_279',['getModulesOrder',['../classPe64Utils.html#a0115aee831555390d0f1e40a0ec74b89',1,'Pe64Utils']]],
+  ['getprocesspathbypid_280',['GetProcessPathByPID',['../ReportingUtils_8h.html#a01baf6725250fd26d7b0524c52186cfc',1,'ReportingUtils.h']]],
+  ['getsizeofmemoryregionbyitsindex_281',['getSizeOfMemoryRegionByItsIndex',['../classPe64Utils.html#a87c12901684e773a14a4e3aaba17ee57',1,'Pe64Utils']]],
+  ['getstartofmemoryregion_282',['getStartOfMemoryRegion',['../classPe64Utils.html#a4d878f71d275564ed6131fe95259a562',1,'Pe64Utils']]],
+  ['getthreads_283',['getThreads',['../classPe64Utils.html#a9c01698285b272148d0cec0b35c14a0d',1,'Pe64Utils']]]
+];

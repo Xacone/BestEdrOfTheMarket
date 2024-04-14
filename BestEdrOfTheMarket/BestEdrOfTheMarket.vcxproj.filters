@@ -18,9 +18,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ProcessStructUtils.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
     <ClCompile Include="MonitoringUtils.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
@@ -29,9 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="TrigerringFunctions.json">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
     <None Include="YaroRules.json">
       <Filter>Fichiers de ressources</Filter>
     </None>
@@ -64,9 +58,6 @@
     <ClInclude Include="ModuleLoadingUtils.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="IATHookingUtils.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
     <ClInclude Include="ErrorsReportingUtils.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
@@ -82,9 +73,6 @@
     <ClInclude Include="ColorsUtils.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="SymbolsUtils.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
     <ClInclude Include="BytesSequencesUtils.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
@@ -92,9 +80,6 @@
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="PatchingUtils.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="AmsiUtils.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>

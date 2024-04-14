@@ -1,4 +1,10 @@
-#pragma once*
+/**
+* @file HeapUtils.h
+* @brief Utilities for heap memory regions retrieving.
+*/
+
+#pragma once
+
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <iostream>
@@ -8,10 +14,6 @@
 #include "ErrorsReportingUtils.h"
 
 class HeapUtils;
-
-
-// https://stackoverflow.com/questions/3313581/runtime-process-memory-patching-for-restoring-state/3313700#3313700
-
 
 class HeapUtils {
 
@@ -59,6 +61,11 @@ public:
         //delete peb;
     }
 
+    /**
+    * Returns the content of a specific heap region
+    * @param index The index of the heap region
+    */
+
     BYTE* getHeapRegionContent(int index) {
 
         BYTE* buffer = new BYTE[heapSizes[index]];
@@ -79,6 +86,10 @@ public:
         return NULL;
     }
 
+    /*
+    * Print all heap regions content
+    */
+
     void printAllHeapRegionsContent() {
 
         for (int i = 0; i < h; i++) {
@@ -87,11 +98,8 @@ public:
     }
 
     // Old method
-
     //void getHeapRegions() {
-
     //    clearHeapRegions();
-
     //    for (p = NULL;
     //        VirtualQueryEx(target, p, &info, sizeof(info)) == sizeof(info);
     //        p += info.RegionSize)
@@ -111,8 +119,12 @@ public:
     //    }
     //}   
 
-    // New method
-    // Heap regions + Size
+    
+    /**
+    * Retrieves heap regions of the target process from its Process Environment Block (PEB) and shows the memory regions if verbose is set to true
+    * @param verbose If set to true, the memory regions will be shown
+    */
+
     void retrieveHeapRegions(BOOL verbose) {
 
          PVOID processHeap;
@@ -138,7 +150,6 @@ public:
 
          std::cout << "\n" << std::endl;
 
-         // print heaps and size
         for (int i = 0; i < numberOfHeaps; i++) {
             if (verbose) {
                 std::cout << "[*] Heap " << (i + 1) << " at " << std::hex << heapAddresses[i] << " size: " << std::dec << (int)(heapSizes[i]) / 1000 << " kb" << std::endl;
@@ -149,6 +160,10 @@ public:
             std::cout << "\n" << std::endl;
         }
     }
+
+    /**
+    * Clears the memory regions that were previously retrieved
+    */
 
     void clearHeapRegions() {
         for (int i = 0; i < h; i++) {

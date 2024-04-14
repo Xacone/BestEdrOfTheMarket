@@ -1,4 +1,12 @@
+/**
+ * @file ConversionUtils.h
+ * @brief Utility functions for conversion between different data types & output formatting.
+ * 
+ */
+
+
 #pragma once
+
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <string>
@@ -7,10 +15,23 @@
 #include <iostream>
 #include <algorithm>
 
+
+/**
+	* Converts an LPVOID to a BYTE array.
+    * @param lpVoid The LPVOID to convert.
+    * @return The BYTE array.
+*/
+
 BYTE* LPVOIDToBYTE(LPVOID lpVoid) {
     return reinterpret_cast<BYTE*>(lpVoid);
 }
 
+
+/**
+    * converts a hex string to an LPCVOID.
+    * @param hexString The hex string to convert.
+    * @return The LPCVOID.
+*/
 LPCVOID hexStringToLPCVOID(const std::string& hexString) {
 
     std::string hexStringWithoutSpaces;
@@ -29,6 +50,13 @@ LPCVOID hexStringToLPCVOID(const std::string& hexString) {
     return lpVoid;
 }
 
+
+/**
+    * Convert a byte array to a hex string.
+	* @param bytes The byte array to convert.
+	* @param size The size of the byte array.
+	* @return The hex string.
+*/
 std::string bytesToHexString(const BYTE* bytes, size_t size) {
 
 	std::stringstream ss;
@@ -39,6 +67,12 @@ std::string bytesToHexString(const BYTE* bytes, size_t size) {
 	return ss.str();
 }
 
+
+/**
+    * Removes the BOM (Byte Order Mark) from the given string.
+    * @param input The input string.
+    * @return The string without the BOM.
+*/
 std::string removeBOM(const std::string& input) {
 
     if (input.size() >= 3 && input[0] == '\xEF' && input[1] == '\xBB' && input[2] == '\xBF') {
@@ -49,6 +83,18 @@ std::string removeBOM(const std::string& input) {
     }
 }
 
+
+/**
+
+	* Convert a CHAR representing a hex character to its BYTE equivalent.
+
+ *  @param byteArray The byte array to convert.
+
+ *  @param size The size of the byte array.
+
+ *  @return The hex string.
+
+ */
 BYTE hexToByte(char hex) {
     if (hex >= '0' && hex <= '9')
         return hex - '0';
@@ -59,6 +105,19 @@ BYTE hexToByte(char hex) {
     else
         return 0;
 }
+
+
+/**
+    * Convert a hex string to a byte array.
+
+ *  @param hexString The hex string to convert.
+
+ *  @param length The length of the resulting byte array.
+
+ *  @return The byte array.
+
+ */
+
 
 BYTE* convertHexToBytes(const char* hexString, size_t& length) {
     length = strlen(hexString) / 2;
@@ -71,6 +130,13 @@ BYTE* convertHexToBytes(const char* hexString, size_t& length) {
     return bytes;
 }
 
+
+/**
+    * Convert a char array to a LPWSTR.
+	* @param charArray The char array to convert.
+	* @return The LPWSTR.
+*/
+
 LPWSTR ConvertCharToLPWSTR(const char* charArray)
 {
 	int length = strlen(charArray) + 1;
@@ -78,6 +144,12 @@ LPWSTR ConvertCharToLPWSTR(const char* charArray)
 	MultiByteToWideChar(CP_ACP, 0, charArray, length, str, length);
 	return str;
 }
+
+/**
+    * Convert a char array to a LPCWSTR.
+	* @param charArray The char array to convert.
+	* @return The LPCWSTR.
+*/
 
 LPCWSTR ConvertCharToLPCWSTR(const char* charArray)
 {
@@ -87,6 +159,13 @@ LPCWSTR ConvertCharToLPCWSTR(const char* charArray)
     MultiByteToWideChar(CP_ACP, 0, charArray, length, wideArray, lengthW);
     return wideArray;
 }
+
+/**
+    * Convert a wide string to a char array.
+ * @param wstr The wide string to convert.
+ * @return The char array.
+
+*/
 
 const char* WCharToConstChar(const WCHAR* wstr)
 {
@@ -100,6 +179,12 @@ const char* WCharToConstChar(const WCHAR* wstr)
     return str.c_str();
 }
 
+/**
+    * Convert a wide string to a char array.
+    * @param wideArray The wide string to convert.
+    * @return The char array.
+	*/
+
 char* WideStringToChar(const WCHAR wideArray[250]) {
 
     char* charArray = new char[250];  
@@ -110,6 +195,14 @@ char* WideStringToChar(const WCHAR wideArray[250]) {
 
     return charArray;
 }
+
+/**
+* 
+* Convert a byte array to a hex string.
+* @param byteArray The byte array to convert.
+* @param size The size of the byte array.
+* @return The hex string.
+*/
 
 std::vector<BYTE> hexStringToBytesVector(const std::string& hexString) {
 
@@ -123,6 +216,18 @@ std::vector<BYTE> hexStringToBytesVector(const std::string& hexString) {
 
     return bytes;
 }
+
+/**
+
+ * Convert a hex string to a byte array.
+
+ *  @param hexString The hex string to convert.
+
+ *  @param length The length of the resulting byte array.
+
+ *  @return The byte array.
+
+ */
 
 BYTE* hexStringToByteArray(const std::string& hexString, size_t& length) {
 
@@ -140,6 +245,15 @@ BYTE* hexStringToByteArray(const std::string& hexString, size_t& length) {
     return byteArray;
 }
 
+/**
+    * Print a byte array.
+ 
+ *  @param byteArray The byte array to print.
+ 
+ *  @param size The size of the byte array.
+ */
+
+
 void printByteArray(const BYTE* byteArray, size_t size) {
 
     for (size_t i = 0; i < size; ++i) {
@@ -147,6 +261,14 @@ void printByteArray(const BYTE* byteArray, size_t size) {
     }
     std::cout << std::dec << std::endl;
 }
+
+/**
+ * Print a byte array without zeros and breaks.
+ 
+ *  @param byteArray The byte array to print.
+ 
+ *  @param size The size of the byte array.
+ */
 
 void printByteArrayWithoutZerosAndBreaks(const BYTE* byteArray, size_t size) {
 
@@ -157,6 +279,13 @@ void printByteArrayWithoutZerosAndBreaks(const BYTE* byteArray, size_t size) {
     }      
     std::cout << std::dec << std::endl;
 }
+
+/**
+* 
+* Convert a char array to a byte array.
+* 
+* @param input The char array to convert.
+*/
 
 BYTE* charToByte(const char* input) {
 
@@ -170,6 +299,14 @@ BYTE* charToByte(const char* input) {
 
 }
 
+/**
+ * Convert a char array to a hex dump.
+ 
+ *  @param input The char array to convert.
+ 
+ *  @return The hex dump.
+ */
+
 BYTE* charToHexDump(const char* input) {
 
     size_t len = strlen(input);
@@ -179,6 +316,16 @@ BYTE* charToHexDump(const char* input) {
     return hexDump;
 
 }
+
+/**
+    * Convert a hex string to a byte array.
+ 
+ *  @param hexString The hex string to convert.
+ 
+ *  @param size The size of the resulting byte array.
+ 
+ *  @return The byte array.
+ */
 
 
 BYTE* hexStringToBytes(const std::string& hexString, size_t& size) {
@@ -199,6 +346,15 @@ BYTE* hexStringToBytes(const std::string& hexString, size_t& size) {
     return byteArray;
 }
 
+/**
+
+ * Reverse the order of bytes in the given buffer.
+
+ *  @param bytes The buffer to reverse.
+
+ *  @param size The size of the buffer.
+
+ */
 
 void reverseBytesOrder(BYTE* bytes, size_t size) {
     // Implement the logic to reverse the order of bytes
@@ -206,6 +362,12 @@ void reverseBytesOrder(BYTE* bytes, size_t size) {
         std::swap(bytes[i], bytes[size - i - 1]);
     }
 }
+
+/**
+ * Print a hex dump of the given buffer.
+ 
+ *  @param buffer The buffer to print.
+ */
 
 
 void printAsciiDump(const uint8_t* buffer, size_t size) {
@@ -238,6 +400,12 @@ void printAsciiDump(const uint8_t* buffer, size_t size) {
         std::cout << std::endl;
     }
 }
+
+/**
+ * Print a hex dump of the given buffer.
+ 
+ *  @param buffer The buffer to print.
+ */
 
 void printAsciiDumpWithoutZeros(const BYTE* byteArray, size_t size, size_t bytesPerLine = 16) {
     
@@ -272,6 +440,11 @@ void printAsciiDumpWithoutZeros(const BYTE* byteArray, size_t size, size_t bytes
     }
 }
 
+/**
+ * Print a null-terminated hex dump of the given buffer.
+ 
+ *  @param buffer The buffer to print.
+ */
 
 void printNullTerminatedHexDump(const uint8_t* buffer) {
     const int width = 16; // Number of bytes per line
@@ -292,6 +465,12 @@ void printNullTerminatedHexDump(const uint8_t* buffer) {
 
     std::cout << std::endl;
 }
+
+/**
+ * Print a null-terminated ASCII dump of the given buffer.
+ 
+ *  @param buffer The buffer to print.
+ */
 
 std::string getCurrentDateTime() {
 

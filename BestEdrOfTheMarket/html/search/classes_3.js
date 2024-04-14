@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['pe64utils_0',['Pe64Utils',['../class_pe64_utils.html',1,'']]]
+  ['patchingmitigationutils_216',['PatchingMitigationUtils',['../classPatchingMitigationUtils.html',1,'']]],
+  ['pe64utils_217',['Pe64Utils',['../classPe64Utils.html',1,'']]]
 ];

@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MonitoringUtils.cpp" />
-    <ClCompile Include="ProcessStructUtils.cpp" />
     <ClCompile Include="Startup.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -28,16 +27,13 @@
     <None Include="..\README.md" />
     <None Include="MsfvenomWho.yara" />
     <None Include="rockk.yara" />
-    <None Include="TrigerringFunctions.json" />
     <None Include="YaroRules.json" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AmsiUtils.h" />
     <ClInclude Include="BytesSequencesUtils.h" />
     <ClInclude Include="ColorsUtils.h" />
     <ClInclude Include="ConversionUtils.h" />
     <ClInclude Include="ErrorsReportingUtils.h" />
-    <ClInclude Include="IATHookingUtils.h" />
     <ClInclude Include="IPCUtils.h" />
     <ClInclude Include="HeapUtils.h" />
     <ClInclude Include="ModuleLoadingUtils.h" />
@@ -47,7 +43,6 @@
     <ClInclude Include="ReportingUtils.h" />
     <ClInclude Include="SSNHookingUtils.h" />
     <ClInclude Include="Startup.h" />
-    <ClInclude Include="SymbolsUtils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

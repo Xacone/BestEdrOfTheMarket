@@ -1,0 +1,84 @@
+\hypertarget{ReportingUtils_8h}{}\doxysection{Reporting\+Utils.\+h File Reference}
+\label{ReportingUtils_8h}\index{ReportingUtils.h@{ReportingUtils.h}}
+
+
+Reporting utilities for the detection mechanisms.  
+
+
+{\ttfamily \#include $<$Windows.\+h$>$}\newline
+{\ttfamily \#include $<$Psapi.\+h$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include $<$sstream$>$}\newline
+\doxysubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{ReportingUtils_8h_af02e53fa4cf91ba36792c3da4b4269cb}{BEOTM\+\_\+\+VERSION}}~\char`\"{}1.\+1.\+0\char`\"{}
+\end{DoxyCompactItemize}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std\+::string \mbox{\hyperlink{ReportingUtils_8h_a01baf6725250fd26d7b0524c52186cfc}{Get\+Process\+Path\+By\+PID}} (DWORD pid, HANDLE \&h\+Proc)
+\item 
+std\+::string \mbox{\hyperlink{ReportingUtils_8h_a661d3f7a0b998d1b15d519401851c2a2}{dll\+Hooking\+Reporting\+Json}} (DWORD pid, const std\+::string \&process\+Name, const std\+::string \&defense\+Mechanism, const std\+::string \&address, const std\+::string \&detected\+Pattern, const std\+::string \&pattern\+List, const std\+::string \&found\+In)
+\item 
+std\+::string \mbox{\hyperlink{ReportingUtils_8h_a996e0ec27f4d266608e0e6db88425d65}{direct\+Syscall\+Reporting\+Json}} (DWORD pid, const std\+::string \&process\+Name, const std\+::string \&defense\+Mechanism, const std\+::string \&address)
+\item 
+std\+::string \mbox{\hyperlink{ReportingUtils_8h_a96a388697c4d7633550be09719b0cbdb}{heap\+Reporting\+Json}} (DWORD pid, const std\+::string \&process\+Name, const std\+::string \&defense\+Mechanism, const DWORD\+\_\+\+PTR \&address, const std\+::string \&detected\+Pattern)
+\item 
+std\+::string \mbox{\hyperlink{ReportingUtils_8h_a52391a539cd76fd2c1a1816513a1772e}{stack\+Frame\+Reporting\+Json}} (DWORD pid, const std\+::string \&process\+Name, const std\+::string \&defense\+Mechanism, const std\+::string \&function\+Name, const DWORD\+\_\+\+PTR \&Frame\+Address, const std\+::string \&pattern\+List, const std\+::string \&found\+In)
+\item 
+std\+::string \mbox{\hyperlink{ReportingUtils_8h_afda5a7af87f9fa32850366f26d4af919}{yara\+Rules\+Reporting\+Json}} (DWORD pid, const std\+::string \&process\+Name, const std\+::string \&defense\+Mechanism, const std\+::string \&yara\+Rule\+Name, const std\+::string \&yara\+Rule\+Namespace)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Reporting utilities for the detection mechanisms. 
+
+
+
+\doxysubsection{Macro Definition Documentation}
+\mbox{\Hypertarget{ReportingUtils_8h_af02e53fa4cf91ba36792c3da4b4269cb}\label{ReportingUtils_8h_af02e53fa4cf91ba36792c3da4b4269cb}} 
+\index{ReportingUtils.h@{ReportingUtils.h}!BEOTM\_VERSION@{BEOTM\_VERSION}}
+\index{BEOTM\_VERSION@{BEOTM\_VERSION}!ReportingUtils.h@{ReportingUtils.h}}
+\doxysubsubsection{\texorpdfstring{BEOTM\_VERSION}{BEOTM\_VERSION}}
+{\footnotesize\ttfamily \#define BEOTM\+\_\+\+VERSION~\char`\"{}1.\+1.\+0\char`\"{}}
+
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{ReportingUtils_8h_a996e0ec27f4d266608e0e6db88425d65}\label{ReportingUtils_8h_a996e0ec27f4d266608e0e6db88425d65}} 
+\index{ReportingUtils.h@{ReportingUtils.h}!directSyscallReportingJson@{directSyscallReportingJson}}
+\index{directSyscallReportingJson@{directSyscallReportingJson}!ReportingUtils.h@{ReportingUtils.h}}
+\doxysubsubsection{\texorpdfstring{directSyscallReportingJson()}{directSyscallReportingJson()}}
+{\footnotesize\ttfamily std\+::string direct\+Syscall\+Reporting\+Json (\begin{DoxyParamCaption}\item[{DWORD}]{pid,  }\item[{const std\+::string \&}]{process\+Name,  }\item[{const std\+::string \&}]{defense\+Mechanism,  }\item[{const std\+::string \&}]{address }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{ReportingUtils_8h_a661d3f7a0b998d1b15d519401851c2a2}\label{ReportingUtils_8h_a661d3f7a0b998d1b15d519401851c2a2}} 
+\index{ReportingUtils.h@{ReportingUtils.h}!dllHookingReportingJson@{dllHookingReportingJson}}
+\index{dllHookingReportingJson@{dllHookingReportingJson}!ReportingUtils.h@{ReportingUtils.h}}
+\doxysubsubsection{\texorpdfstring{dllHookingReportingJson()}{dllHookingReportingJson()}}
+{\footnotesize\ttfamily std\+::string dll\+Hooking\+Reporting\+Json (\begin{DoxyParamCaption}\item[{DWORD}]{pid,  }\item[{const std\+::string \&}]{process\+Name,  }\item[{const std\+::string \&}]{defense\+Mechanism,  }\item[{const std\+::string \&}]{address,  }\item[{const std\+::string \&}]{detected\+Pattern,  }\item[{const std\+::string \&}]{pattern\+List,  }\item[{const std\+::string \&}]{found\+In }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{ReportingUtils_8h_a01baf6725250fd26d7b0524c52186cfc}\label{ReportingUtils_8h_a01baf6725250fd26d7b0524c52186cfc}} 
+\index{ReportingUtils.h@{ReportingUtils.h}!GetProcessPathByPID@{GetProcessPathByPID}}
+\index{GetProcessPathByPID@{GetProcessPathByPID}!ReportingUtils.h@{ReportingUtils.h}}
+\doxysubsubsection{\texorpdfstring{GetProcessPathByPID()}{GetProcessPathByPID()}}
+{\footnotesize\ttfamily std\+::string Get\+Process\+Path\+By\+PID (\begin{DoxyParamCaption}\item[{DWORD}]{pid,  }\item[{HANDLE \&}]{h\+Proc }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{ReportingUtils_8h_a96a388697c4d7633550be09719b0cbdb}\label{ReportingUtils_8h_a96a388697c4d7633550be09719b0cbdb}} 
+\index{ReportingUtils.h@{ReportingUtils.h}!heapReportingJson@{heapReportingJson}}
+\index{heapReportingJson@{heapReportingJson}!ReportingUtils.h@{ReportingUtils.h}}
+\doxysubsubsection{\texorpdfstring{heapReportingJson()}{heapReportingJson()}}
+{\footnotesize\ttfamily std\+::string heap\+Reporting\+Json (\begin{DoxyParamCaption}\item[{DWORD}]{pid,  }\item[{const std\+::string \&}]{process\+Name,  }\item[{const std\+::string \&}]{defense\+Mechanism,  }\item[{const DWORD\+\_\+\+PTR \&}]{address,  }\item[{const std\+::string \&}]{detected\+Pattern }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{ReportingUtils_8h_a52391a539cd76fd2c1a1816513a1772e}\label{ReportingUtils_8h_a52391a539cd76fd2c1a1816513a1772e}} 
+\index{ReportingUtils.h@{ReportingUtils.h}!stackFrameReportingJson@{stackFrameReportingJson}}
+\index{stackFrameReportingJson@{stackFrameReportingJson}!ReportingUtils.h@{ReportingUtils.h}}
+\doxysubsubsection{\texorpdfstring{stackFrameReportingJson()}{stackFrameReportingJson()}}
+{\footnotesize\ttfamily std\+::string stack\+Frame\+Reporting\+Json (\begin{DoxyParamCaption}\item[{DWORD}]{pid,  }\item[{const std\+::string \&}]{process\+Name,  }\item[{const std\+::string \&}]{defense\+Mechanism,  }\item[{const std\+::string \&}]{function\+Name,  }\item[{const DWORD\+\_\+\+PTR \&}]{Frame\+Address,  }\item[{const std\+::string \&}]{pattern\+List,  }\item[{const std\+::string \&}]{found\+In }\end{DoxyParamCaption})}
+
+\mbox{\Hypertarget{ReportingUtils_8h_afda5a7af87f9fa32850366f26d4af919}\label{ReportingUtils_8h_afda5a7af87f9fa32850366f26d4af919}} 
+\index{ReportingUtils.h@{ReportingUtils.h}!yaraRulesReportingJson@{yaraRulesReportingJson}}
+\index{yaraRulesReportingJson@{yaraRulesReportingJson}!ReportingUtils.h@{ReportingUtils.h}}
+\doxysubsubsection{\texorpdfstring{yaraRulesReportingJson()}{yaraRulesReportingJson()}}
+{\footnotesize\ttfamily std\+::string yara\+Rules\+Reporting\+Json (\begin{DoxyParamCaption}\item[{DWORD}]{pid,  }\item[{const std\+::string \&}]{process\+Name,  }\item[{const std\+::string \&}]{defense\+Mechanism,  }\item[{const std\+::string \&}]{yara\+Rule\+Name,  }\item[{const std\+::string \&}]{yara\+Rule\+Namespace }\end{DoxyParamCaption})}
+

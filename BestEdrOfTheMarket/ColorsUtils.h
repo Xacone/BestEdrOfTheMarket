@@ -1,3 +1,8 @@
+/**
+ * @file ColorsUtils.h
+ * @brief Utils for printing colored messages in the console using ANSI escape codes
+*/
+
 #pragma once
 
 #include <iostream>
@@ -23,22 +28,44 @@
 
 #define ANSI_COLOR_RESET "\033[0m"
 
+/**
+ * Print a message in red color
+ * @param msg The message to print
+*/
+
 void printRedAlert(std::string msg) {
 	std::cout << "\x1B[41m" << "[!] " << msg << "\x1B[0m" << std::endl;
 }
+
+/**
+ * Print a message in green color
+ * @param msg The message to print
+*/
 
 void printGreenAlert(std::string msg) {
 	std::cout << "\x1B[42m" << "[!] " << msg << "\033[0m" << std::endl;
 }
 
+/**
+ * Print a message in yellow color
+ * @param msg The message to print
+*/
 void printYellowAlert(std::string msg) {
 	std::cout << "\x1B[43m" << "[!] " << msg << "\033[0m" << std::endl;
 }
 
+/**
+ * Print a message in blue color
+ * @param msg The message to print
+*/
 void printBlueAlert(std::string msg) {
 	std::cout << "\x1B[48;5;4m" << "[!] " << msg << "\x1B[0m" << std::endl;
 }
 
+/**
+ * Print a message in orange color
+ * @param msg The message to print
+*/
 void printOrangeAlert(std::string msg) {
 	std::cout << "\x1B[48;5;208m" << "[!] " << msg << "\x1B[0m" << std::endl;
 }

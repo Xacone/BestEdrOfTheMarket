@@ -1,3 +1,9 @@
+/**
+* @file Startup.cpp
+* @brief Texts & banners utilities
+*/
+
+
 #include "Startup.h"
 
 std::string startupAsciiTitle = R"( ____            _     _____ ____  ____     ___   __   _____ _          
@@ -49,6 +55,8 @@ void printAsciiArtTitle() {
 	std::cout << startupHelp << std::endl;
 }
 
+//**
+
 void printHelp() {
     printAsciiArtTitle();
 	std::cout
@@ -61,6 +69,7 @@ void printHelp() {
 		<< "\n\t\t /iat : IAT hooking"
 		<< "\n\t\t /stack : Threads call stack monitoring"
 		<< "\n\t\t /heap : Heap monitoring (to use with /k32, /iat or /nt)"
+        << "\n\t\t /patch : ETW/AMSI patching detection"
         << "\n\t\t /direct : Direct Syscalls Detection"
         << "\n\t\t /indirect : Indirect Syscalls Detection"
 		<< "\n\t\t /ssn : SSNcrushing"
@@ -68,7 +77,9 @@ void printHelp() {
 		<< "\n\n" << std::endl;
 }
 
-// <3
+/**
+   * Caramelle
+*/
 std::string caramelle() {
 	return R"(
 	  __      _

@@ -1,3 +1,8 @@
+/**
+* @file ModuleLoadingUtils.h
+* @brief Module injection utility class
+*/
+
 #pragma once
 
 #include <iostream>
@@ -6,6 +11,7 @@
 #include <string>
 
 #include "ConversionUtils.h"
+
 
 class DllLoader {
 
@@ -18,11 +24,20 @@ private:
 
 public:
     
+    /**
+    * @brief Constructor for the DllLoader class
+    * @param hProc Handle to the process to inject the DLL into
+    */
+
     DllLoader(HANDLE hProc) {
         this->hProc = hProc;
     }    
 
-    //Might not work with loading-protected / dll-hijacking-protected processes   
+    /**
+    * Injects a DLL into a target process
+    * @param dllName Name of the DLL to inject
+    * @return TRUE if the DLL was successfully injected, FALSE otherwise
+    */
     BOOL InjectDll(DWORD procID, char* dllName, LPVOID& poolStart) {
        
         char fullDllName[MAX_PATH];

@@ -1,0 +1,151 @@
+\hypertarget{classIpcUtils}{}\doxysection{Ipc\+Utils Class Reference}
+\label{classIpcUtils}\index{IpcUtils@{IpcUtils}}
+
+
+{\ttfamily \#include $<$IPCUtils.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classIpcUtils_a7faf40585b2a762b925bcdd2213ac09a}{set\+Patterns}} (std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&dll\+\_\+p, std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&general\+\_\+p, std\+::unordered\+\_\+map$<$ int, BYTE $\ast$ $>$ $\ast$stack\+\_\+p, std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ $\ast$heap\+Patterns)
+\begin{DoxyCompactList}\small\item\em explor \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classIpcUtils_a9081439f9f30c2a4592855732a01faea}{Ipc\+Utils}} (LPCWSTR pipe\+Name, HANDLE \&t\+Process, BOOL \&verbose, std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&dll\+Patterns, std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&general\+Patterns, \mbox{\hyperlink{IPCUtils_8h_af76be3a660ed3d8ab92c78b4a28f48d8}{Delete\+Monitoring\+Worker\+Threads}} f1, \mbox{\hyperlink{IPCUtils_8h_a84d317da98efa7d0c2c7151d8bf5b0e6}{Startup}} f2, \mbox{\hyperlink{classPe64Utils}{Pe64\+Utils}} $\ast$pe64utils, \mbox{\hyperlink{classHeapUtils}{Heap\+Utils}} \&heap\+Utils, BOOL \&heap, BOOL \&yara, BOOL \&stack, BOOL \&dsyscalls)
+\item 
+\mbox{\hyperlink{classIpcUtils_a638be31f505d6e5f3ce36c712f401e35}{$\sim$\+Ipc\+Utils}} ()
+\item 
+void \mbox{\hyperlink{classIpcUtils_a1c590351ec141346eb06b81008918164}{alert\+And\+Kill\+That\+Process}} (HANDLE h\+Proc)
+\item 
+HANDLE \mbox{\hyperlink{classIpcUtils_a0d61e77e60f7c8ea6703d9fb177ad7e3}{init\+Pipe\+And\+Wait\+For\+Connection}} ()
+\item 
+void \mbox{\hyperlink{classIpcUtils_aa466f4b2aa6c725e6b6a48993a0a5a5c}{terminate\+Pipe\+Connection}} ()
+\item 
+BOOL \mbox{\hyperlink{classIpcUtils_a4fd7804701df68acdd3e8db06ed67682}{analyze\+Complete\+Process\+Threads\+Stack\+Trace}} (HANDLE h\+Process)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+
+\begin{DoxyParams}{Parameters}
+{\em pipe\+Name} & \+: LPCWSTR \+: The name of the pipe. \\
+\hline
+{\em t\+Process} & \+: HANDLE \+: The target process handle. \\
+\hline
+{\em verbose} & \+: BOOL \+: The verbosity flag. \\
+\hline
+{\em dll\+\_\+p} & \+: std\+::unordered\+\_\+map$<$\+BYTE$\ast$, SIZE\+\_\+\+T$>$\& \+: The DLL patterns. \\
+\hline
+{\em general\+\_\+p} & \+: std\+::unordered\+\_\+map$<$\+BYTE$\ast$, SIZE\+\_\+\+T$>$\& \+: The general patterns. \\
+\hline
+{\em f1} & \+: Delete\+Monitoring\+Worker\+Threads \+: The function to delete monitoring worker threads. \\
+\hline
+{\em f2} & \+: Startup \+: The function to start the monitoring. \\
+\hline
+{\em pe64utils} & \+: Pe64\+Utils$\ast$ \+: The PE64 utils. \\
+\hline
+{\em heap\+Utils} & \+: \mbox{\hyperlink{classHeapUtils}{Heap\+Utils}}\& \+: The heap utils. \\
+\hline
+{\em heap} & \+: BOOL \+: The heap flag. \\
+\hline
+{\em yara} & \+: BOOL \+: The yara flag. \\
+\hline
+{\em stack} & \+: BOOL \+: The stack flag. \\
+\hline
+{\em dsyscalls} & \+: BOOL \+: The direct syscalls flag. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classIpcUtils_a9081439f9f30c2a4592855732a01faea}\label{classIpcUtils_a9081439f9f30c2a4592855732a01faea}} 
+\index{IpcUtils@{IpcUtils}!IpcUtils@{IpcUtils}}
+\index{IpcUtils@{IpcUtils}!IpcUtils@{IpcUtils}}
+\doxysubsubsection{\texorpdfstring{IpcUtils()}{IpcUtils()}}
+{\footnotesize\ttfamily Ipc\+Utils\+::\+Ipc\+Utils (\begin{DoxyParamCaption}\item[{LPCWSTR}]{pipe\+Name,  }\item[{HANDLE \&}]{t\+Process,  }\item[{BOOL \&}]{verbose,  }\item[{std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&}]{dll\+Patterns,  }\item[{std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&}]{general\+Patterns,  }\item[{\mbox{\hyperlink{IPCUtils_8h_af76be3a660ed3d8ab92c78b4a28f48d8}{Delete\+Monitoring\+Worker\+Threads}}}]{f1,  }\item[{\mbox{\hyperlink{IPCUtils_8h_a84d317da98efa7d0c2c7151d8bf5b0e6}{Startup}}}]{f2,  }\item[{\mbox{\hyperlink{classPe64Utils}{Pe64\+Utils}} $\ast$}]{pe64utils,  }\item[{\mbox{\hyperlink{classHeapUtils}{Heap\+Utils}} \&}]{heap\+Utils,  }\item[{BOOL \&}]{heap,  }\item[{BOOL \&}]{yara,  }\item[{BOOL \&}]{stack,  }\item[{BOOL \&}]{dsyscalls }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Constructor of the \mbox{\hyperlink{classIpcUtils}{Ipc\+Utils}} class. 
+\begin{DoxyParams}{Parameters}
+{\em pipe\+Name} & \+: LPCWSTR \+: The name of the pipe. \\
+\hline
+{\em t\+Process} & \+: HANDLE \+: The target process handle. \\
+\hline
+{\em verbose} & \+: BOOL \+: The verbosity flag. \\
+\hline
+{\em dll\+Patterns} & \+: std\+::unordered\+\_\+map$<$\+BYTE$\ast$, SIZE\+\_\+\+T$>$\& \+: The DLL patterns. \\
+\hline
+{\em general\+Patterns} & \+: std\+::unordered\+\_\+map$<$\+BYTE$\ast$, SIZE\+\_\+\+T$>$\& \+: The general patterns. \\
+\hline
+{\em f1} & \+: Delete\+Monitoring\+Worker\+Threads \+: The function to delete monitoring worker threads. \\
+\hline
+{\em f2} & \+: Startup \+: The function to start the monitoring. \\
+\hline
+{\em pe64utils} & \+: Pe64\+Utils$\ast$ \+: The PE64 utils. \\
+\hline
+{\em heap\+Utils} & \+: \mbox{\hyperlink{classHeapUtils}{Heap\+Utils}}\& \+: The heap utils. \\
+\hline
+{\em heap} & \+: BOOL \+: The heap flag. \\
+\hline
+{\em yara} & \+: BOOL \+: The yara flag. \\
+\hline
+{\em stack} & \+: BOOL \+: The stack flag. \\
+\hline
+{\em dsyscalls} & \+: BOOL \+: The direct syscalls flag. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classIpcUtils_a638be31f505d6e5f3ce36c712f401e35}\label{classIpcUtils_a638be31f505d6e5f3ce36c712f401e35}} 
+\index{IpcUtils@{IpcUtils}!````~IpcUtils@{$\sim$IpcUtils}}
+\index{````~IpcUtils@{$\sim$IpcUtils}!IpcUtils@{IpcUtils}}
+\doxysubsubsection{\texorpdfstring{$\sim$IpcUtils()}{~IpcUtils()}}
+{\footnotesize\ttfamily Ipc\+Utils\+::$\sim$\+Ipc\+Utils (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classIpcUtils_a1c590351ec141346eb06b81008918164}\label{classIpcUtils_a1c590351ec141346eb06b81008918164}} 
+\index{IpcUtils@{IpcUtils}!alertAndKillThatProcess@{alertAndKillThatProcess}}
+\index{alertAndKillThatProcess@{alertAndKillThatProcess}!IpcUtils@{IpcUtils}}
+\doxysubsubsection{\texorpdfstring{alertAndKillThatProcess()}{alertAndKillThatProcess()}}
+{\footnotesize\ttfamily void Ipc\+Utils\+::alert\+And\+Kill\+That\+Process (\begin{DoxyParamCaption}\item[{HANDLE}]{h\+Proc }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Kills a process and alerts the user. 
+\begin{DoxyParams}{Parameters}
+{\em h\+Proc} & \+: HANDLE \+: The process handle. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classIpcUtils_a4fd7804701df68acdd3e8db06ed67682}\label{classIpcUtils_a4fd7804701df68acdd3e8db06ed67682}} 
+\index{IpcUtils@{IpcUtils}!analyzeCompleteProcessThreadsStackTrace@{analyzeCompleteProcessThreadsStackTrace}}
+\index{analyzeCompleteProcessThreadsStackTrace@{analyzeCompleteProcessThreadsStackTrace}!IpcUtils@{IpcUtils}}
+\doxysubsubsection{\texorpdfstring{analyzeCompleteProcessThreadsStackTrace()}{analyzeCompleteProcessThreadsStackTrace()}}
+{\footnotesize\ttfamily BOOL Ipc\+Utils\+::analyze\+Complete\+Process\+Threads\+Stack\+Trace (\begin{DoxyParamCaption}\item[{HANDLE}]{h\+Process }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Analyzes the complete stack trace of a process. 
+\begin{DoxyParams}{Parameters}
+{\em h\+Process} & \+: HANDLE \+: The process handle. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classIpcUtils_a0d61e77e60f7c8ea6703d9fb177ad7e3}\label{classIpcUtils_a0d61e77e60f7c8ea6703d9fb177ad7e3}} 
+\index{IpcUtils@{IpcUtils}!initPipeAndWaitForConnection@{initPipeAndWaitForConnection}}
+\index{initPipeAndWaitForConnection@{initPipeAndWaitForConnection}!IpcUtils@{IpcUtils}}
+\doxysubsubsection{\texorpdfstring{initPipeAndWaitForConnection()}{initPipeAndWaitForConnection()}}
+{\footnotesize\ttfamily HANDLE Ipc\+Utils\+::init\+Pipe\+And\+Wait\+For\+Connection (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Initializes the pipe and waits for an incoming message. \mbox{\Hypertarget{classIpcUtils_a7faf40585b2a762b925bcdd2213ac09a}\label{classIpcUtils_a7faf40585b2a762b925bcdd2213ac09a}} 
+\index{IpcUtils@{IpcUtils}!setPatterns@{setPatterns}}
+\index{setPatterns@{setPatterns}!IpcUtils@{IpcUtils}}
+\doxysubsubsection{\texorpdfstring{setPatterns()}{setPatterns()}}
+{\footnotesize\ttfamily void Ipc\+Utils\+::set\+Patterns (\begin{DoxyParamCaption}\item[{std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&}]{dll\+\_\+p,  }\item[{std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ \&}]{general\+\_\+p,  }\item[{std\+::unordered\+\_\+map$<$ int, BYTE $\ast$ $>$ $\ast$}]{stack\+\_\+p,  }\item[{std\+::unordered\+\_\+map$<$ BYTE $\ast$, SIZE\+\_\+T $>$ $\ast$}]{heap\+Patterns }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+explor 
+
+\mbox{\Hypertarget{classIpcUtils_aa466f4b2aa6c725e6b6a48993a0a5a5c}\label{classIpcUtils_aa466f4b2aa6c725e6b6a48993a0a5a5c}} 
+\index{IpcUtils@{IpcUtils}!terminatePipeConnection@{terminatePipeConnection}}
+\index{terminatePipeConnection@{terminatePipeConnection}!IpcUtils@{IpcUtils}}
+\doxysubsubsection{\texorpdfstring{terminatePipeConnection()}{terminatePipeConnection()}}
+{\footnotesize\ttfamily void Ipc\+Utils\+::terminate\+Pipe\+Connection (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Terminates the pipe connection. 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{IPCUtils_8h}{IPCUtils.\+h}}\end{DoxyCompactItemize}

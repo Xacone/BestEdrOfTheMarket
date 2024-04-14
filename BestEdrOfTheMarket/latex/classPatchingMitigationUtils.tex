@@ -1,0 +1,79 @@
+\hypertarget{classPatchingMitigationUtils}{}\doxysection{Patching\+Mitigation\+Utils Class Reference}
+\label{classPatchingMitigationUtils}\index{PatchingMitigationUtils@{PatchingMitigationUtils}}
+
+
+{\ttfamily \#include $<$Patching\+Utils.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+BOOL \mbox{\hyperlink{classPatchingMitigationUtils_aa923e612ce022787d7dc300237eab945}{check\+Remote\+Function}} (BOOL amsi\+Enabled)
+\begin{DoxyCompactList}\small\item\em Check if the remote process has been patched. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPatchingMitigationUtils_a12cb5d30c2c7dbf90bc19d7b5850b5b3}{fill\+Protected\+Functions}} (PVOID Amsi\+Open\+Session\+\_\+, PVOID Amsi\+Scan\+Buffer\+\_\+, PVOID Etw\+Event\+Write\+\_\+, PVOID Nt\+Trace\+Events\+\_\+)
+\item 
+\mbox{\hyperlink{classPatchingMitigationUtils_a5a88b0c654ef40c695733894369a6ecb}{Patching\+Mitigation\+Utils}} (HANDLE target)
+\begin{DoxyCompactList}\small\item\em Constructor for \mbox{\hyperlink{classPatchingMitigationUtils}{Patching\+Mitigation\+Utils}}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classPatchingMitigationUtils_a5a88b0c654ef40c695733894369a6ecb}\label{classPatchingMitigationUtils_a5a88b0c654ef40c695733894369a6ecb}} 
+\index{PatchingMitigationUtils@{PatchingMitigationUtils}!PatchingMitigationUtils@{PatchingMitigationUtils}}
+\index{PatchingMitigationUtils@{PatchingMitigationUtils}!PatchingMitigationUtils@{PatchingMitigationUtils}}
+\doxysubsubsection{\texorpdfstring{PatchingMitigationUtils()}{PatchingMitigationUtils()}}
+{\footnotesize\ttfamily Patching\+Mitigation\+Utils\+::\+Patching\+Mitigation\+Utils (\begin{DoxyParamCaption}\item[{HANDLE}]{target }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Constructor for \mbox{\hyperlink{classPatchingMitigationUtils}{Patching\+Mitigation\+Utils}}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em target} & The handle to the remote process \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classPatchingMitigationUtils_aa923e612ce022787d7dc300237eab945}\label{classPatchingMitigationUtils_aa923e612ce022787d7dc300237eab945}} 
+\index{PatchingMitigationUtils@{PatchingMitigationUtils}!checkRemoteFunction@{checkRemoteFunction}}
+\index{checkRemoteFunction@{checkRemoteFunction}!PatchingMitigationUtils@{PatchingMitigationUtils}}
+\doxysubsubsection{\texorpdfstring{checkRemoteFunction()}{checkRemoteFunction()}}
+{\footnotesize\ttfamily BOOL Patching\+Mitigation\+Utils\+::check\+Remote\+Function (\begin{DoxyParamCaption}\item[{BOOL}]{amsi\+Enabled }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Check if the remote process has been patched. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em amsi\+Enabled} & If AMSI is enabled \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+TRUE if the remote process has been patched, FALSE otherwise 
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+This function checks if the remote process has been patched by comparing the current opcodes of the functions with the initial opcodes 
+\end{DoxyNote}
+\mbox{\Hypertarget{classPatchingMitigationUtils_a12cb5d30c2c7dbf90bc19d7b5850b5b3}\label{classPatchingMitigationUtils_a12cb5d30c2c7dbf90bc19d7b5850b5b3}} 
+\index{PatchingMitigationUtils@{PatchingMitigationUtils}!fillProtectedFunctions@{fillProtectedFunctions}}
+\index{fillProtectedFunctions@{fillProtectedFunctions}!PatchingMitigationUtils@{PatchingMitigationUtils}}
+\doxysubsubsection{\texorpdfstring{fillProtectedFunctions()}{fillProtectedFunctions()}}
+{\footnotesize\ttfamily void Patching\+Mitigation\+Utils\+::fill\+Protected\+Functions (\begin{DoxyParamCaption}\item[{PVOID}]{Amsi\+Open\+Session\+\_\+,  }\item[{PVOID}]{Amsi\+Scan\+Buffer\+\_\+,  }\item[{PVOID}]{Etw\+Event\+Write\+\_\+,  }\item[{PVOID}]{Nt\+Trace\+Events\+\_\+ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+Retrieves the addresses of targeted functions from the remote process 
+\begin{DoxyParams}{Parameters}
+{\em Amsi\+Open\+Session\+\_\+} & Remote address of Amsi\+Open\+Session \\
+\hline
+{\em Amsi\+Scan\+Buffer\+\_\+} & Remote address of Amsi\+Scan\+Buffer \\
+\hline
+{\em Etw\+Event\+Write\+\_\+} & Remote address of Etw\+Event\+Write \\
+\hline
+{\em Nt\+Trace\+Events\+\_\+} & Remote address of Nt\+Trace\+Events \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{PatchingUtils_8h}{Patching\+Utils.\+h}}\end{DoxyCompactItemize}

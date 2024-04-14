@@ -1,3 +1,8 @@
+/**
+ * @file ReportingUtils.h
+ * @brief Reporting utilities for the detection mechanisms
+*/
+
 #pragma once
 
 #include <Windows.h>
