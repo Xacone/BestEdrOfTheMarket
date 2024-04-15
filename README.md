@@ -21,7 +21,7 @@
 - [x] <a href="#"> Direct Syscalls Detection </a> <br>
 - [x] <a href="#"> Indirect Syscalls Detection </a> <br>
 - [x] <a href="#"> AMSI/ETW Patching Mitigation </a> <br>
-- [x] <a href="#"> SSN Hooking/Crushing <i>(fantasy)</i></a> <br>
+<!-- - [x] <a href="#"> SSN Hooking/Crushing <i>(fantasy)</i></a> <br> -->
 
 
 <i>In progress</i>:
