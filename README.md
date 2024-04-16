@@ -1,5 +1,5 @@
 ﻿
-# <a href="https://xacone.github.io/BestEdrOfTheMarket.html"> Best EDR Of The Market (BEOTM) 🐲 </a>
+# <a href="https://xacone.github.io/BestEdrOfTheMarketV2.html"> Best EDR Of The Market (BEOTM) 🐲 </a>
 <i>Little AV/EDR Evasion Lab for training & learning purposes.</i> (🏗️ under construction..)​
 
 
