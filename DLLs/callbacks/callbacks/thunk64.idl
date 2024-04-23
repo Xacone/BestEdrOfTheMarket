@@ -1,0 +1,10 @@
+namespace callbacks
+{
+    [bindable]
+    [default_interface]
+    runtimeclass thunk64 
+    {
+        thunk64();
+        Int32 MyProperty;
+    }
+}

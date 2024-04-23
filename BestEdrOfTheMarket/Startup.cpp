@@ -63,6 +63,7 @@ void printHelp() {
 		<< "\n\t\t\t\033[0;38;2;128;0;32mhttps://github.com/Xacone/BestEdrOfTheMarket\033[0m"
 		<< "\n\n\tUsage: BestEdrOfTheMarket.exe [args]\n"
 		<< "\n\t\t /v : Verbosity"
+        << "\n\t\t /p : Process name to monitor"
         << "\n\t\t /yara : Enabling YARA rules"
         << "\n\t\t /nt : Inline Nt-level hooking"
         << "\n\t\t /k32 : Inline Kernel32/Kernelbase hooking"
