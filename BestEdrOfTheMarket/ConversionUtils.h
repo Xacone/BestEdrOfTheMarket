@@ -467,18 +467,32 @@ void printNullTerminatedHexDump(const uint8_t* buffer) {
 }
 
 /**
- * Print a null-terminated ASCII dump of the given buffer.
- 
- *  @param buffer The buffer to print.
+ * Returns the current date & time as a string.
  */
 
 std::string getCurrentDateTime() {
 
     auto now = std::chrono::system_clock::now();
     std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-    std::tm* timeInfo = std::localtime(&currentTime);
-    std::ostringstream oss;
-    oss << std::put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
-    return oss.str();
-
+    std::tm timeInfo;
+    if (localtime_s(&timeInfo, &currentTime) == 0) {
+        std::ostringstream oss;
+        oss << std::put_time(&timeInfo, "%Y-%m-%d %H:%M:%S");
+        return oss.str();
+    }
+    return "Error";
 }
+
+
+// Deprecated
+
+//std::string getCurrentDateTime() {
+//
+//    auto now = std::chrono::system_clock::now();
+//    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+//    std::tm* timeInfo = std::localtime(&currentTime);
+//    std::ostringstream oss;
+//    oss << std::put_time(timeInfo, "%Y-%m-%d %H:%M:%S");
+//    return oss.str();
+//
+//}
