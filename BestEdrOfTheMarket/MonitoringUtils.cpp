@@ -18,6 +18,8 @@
 
 */
 
+#define _CRT_NONSTDC_NO_DEPRECATE
+
 #include <iostream>
 #include <Windows.h>
 #include <winternl.h>
