@@ -82,14 +82,14 @@ VOID ThreadUtils::CreateThreadNotifyRoutine(
 
 		if (threadUtils.isProcessImageTampered()) {
 			DbgPrint("Process Image Tampered !\n");
-			CallbackObjects::GetQueue()->Enqueue(
+			CallbackObjects::GetBufferQueue()->Enqueue(
 				"Process Image Tampered !"
 			);
 		}
 
 		if (threadUtils.isThreadInjected()) {
 			DbgPrint("Thread is injected !\n");
-			CallbackObjects::GetQueue()->Enqueue(
+			CallbackObjects::GetBufferQueue()->Enqueue(
 				"Thread is Injected wazzaaaaaa !"
 			);
 		}

@@ -17,8 +17,6 @@
 #include "Pe.h"
 #include "Offsets.h"
 
-#define MAX_BUFFER_COUNT 256
-
 #pragma comment(lib, "fwpkclnt.lib")
 #pragma comment(lib, "ndis.lib")
 
@@ -26,9 +24,20 @@
 #pragma warning(disable:4245)
 #pragma warning(disable: 4244)
 
-#define BEOTM_RETRIEVE_DATA CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define MAX_BUFFER_COUNT 512
+
+#define BEOTM_RETRIEVE_DATA_BUFFER CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define BEOTM_RETRIEVE_DATA_HASH CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define BEOTM_RETRIEVE_DATA_BYTE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+#define BEOTM_END_ALT_SYSCALL CTL_CODE(FILE_DEVICE_UNKNOWN, 0x216, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
 
 #define ProcessAltSystemCallInformation 0x64
+
+#define SHA256_BLOCK_SIZE 32
 
 #define FORMAT_ADDR(addr) \
 	((addr) & 0xFF), ((addr >> 8) & 0xFF), ((addr >> 16) & 0xFF), ((addr >> 24) & 0xFF)
@@ -302,8 +311,120 @@ public:
 
 };
 
+class BytesQueue {
+private:
+	RAW_BUFFER* bufferArray;
+	ULONG capacity;
+	ULONG size;
+	ULONG head;
+	ULONG tail;
+	KSPIN_LOCK spinLock;
 
-class Queue {
+public:
+	BytesQueue() : bufferArray(nullptr), capacity(0), size(0), head(0), tail(0) {}
+
+	VOID Init(ULONG maxBuf) {
+		capacity = maxBuf;
+		size = 0;
+		head = 0;
+		tail = 0;
+
+		bufferArray = (RAW_BUFFER*)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(RAW_BUFFER) * capacity, 'qBuf');
+		if (!bufferArray) {
+			DbgPrint("Failed to allocate buffer array\n");
+			capacity = 0;
+			return;
+		}
+
+		RtlZeroMemory(bufferArray, sizeof(RAW_BUFFER) * capacity);
+		KeInitializeSpinLock(&spinLock);
+	}
+
+	BOOLEAN Enqueue(RAW_BUFFER rawBuffer) {
+		if (!rawBuffer.buffer || rawBuffer.size == 0) {
+			DbgPrint("Invalid RAW_BUFFER provided to Enqueue\n");
+			return FALSE;
+		}
+
+		KIRQL oldIrql;
+		KeAcquireSpinLock(&spinLock, &oldIrql);
+
+		if (size == capacity) {
+			KeReleaseSpinLock(&spinLock, oldIrql);
+			return FALSE;  // Queue is full
+		}
+
+		bufferArray[tail] = rawBuffer;
+		tail = (tail + 1) % capacity;
+		size++;
+
+		//if (size > 0) {
+		//	DbgPrint("[Enqueue] Data added successfully\n");
+		//}
+
+		KeReleaseSpinLock(&spinLock, oldIrql);
+		return TRUE;
+	}
+
+	RAW_BUFFER Dequeue() {
+		RAW_BUFFER rawBuffer = { nullptr, 0 };
+
+		KIRQL oldIrql;
+		KeAcquireSpinLock(&spinLock, &oldIrql);
+
+		if (size == 0) {
+			KeReleaseSpinLock(&spinLock, oldIrql);
+			return rawBuffer; // Queue is empty
+		}
+
+		rawBuffer = bufferArray[head];
+		head = (head + 1) % capacity;
+		size--;
+
+		//if (size == 0) {
+		//	DbgPrint("[Dequeue] Queue is empty now\n");
+		//}
+
+		KeReleaseSpinLock(&spinLock, oldIrql);
+		return rawBuffer;
+	}
+
+	ULONG GetSize() {
+		KIRQL oldIrql;
+		KeAcquireSpinLockAtDpcLevel(&spinLock);
+		ULONG currentSize = size;
+		KeReleaseSpinLockFromDpcLevel(&spinLock);
+		return currentSize;
+	}
+
+	VOID Cleanup() {
+		if (bufferArray) {
+			ExFreePool(bufferArray);
+			bufferArray = nullptr;
+		}
+		capacity = 0;
+		size = 0;
+		head = 0;
+		tail = 0;
+	}
+
+	VOID PrintSizes() {
+		KIRQL oldIrql;
+		KeAcquireSpinLockAtDpcLevel(&spinLock);
+		for (ULONG i = 0; i < size; i++) {
+			RAW_BUFFER rb = bufferArray[(head + i) % capacity];
+			DbgPrint("\tSize %d: %lu\n", i, rb.size);
+		}
+		KeReleaseSpinLockFromDpcLevel(&spinLock);
+	}
+
+
+	//~BytesQueue() {
+	//	Cleanup();
+	//}
+};
+
+class BufferQueue {
 
 private:
 
@@ -316,7 +437,7 @@ private:
 
 public:
 
-	Queue() {}
+	BufferQueue() {}
 
 	VOID Init(ULONG maxBuf) {
 
@@ -356,6 +477,12 @@ public:
 		KIRQL oldIrql;
 		KeAcquireSpinLock(&spinLock, &oldIrql);
 
+		if (!bufferArray) {
+			KeReleaseSpinLock(&spinLock, oldIrql);
+			DbgPrint("Buffer array is null\n");
+			return nullptr;
+		}
+
 		if (size == 0) {
 			KeReleaseSpinLock(&spinLock, oldIrql);
 			return nullptr;
@@ -379,20 +506,11 @@ public:
 
 };
 
-class BufferQueue : public Queue {
+class HashQueue : public BufferQueue {
 
 public:
 
-	BufferQueue() : Queue() {}
-
-};
-
-
-class HashQueue : public Queue {
-
-public:
-
-	HashQueue() : Queue() {}
+	HashQueue() : BufferQueue() {}
 
 };
 
@@ -443,6 +561,8 @@ public:
 	VOID disableTracing();
 
 	VOID DisableAltSyscallFromThreads2();
+
+	VOID DisableAltSyscallFromThreads3();
 	
 	BOOLEAN isSyscallDirect(
 		ULONG64
@@ -502,6 +622,8 @@ public:
 	static VOID DisableAltSycallForThread(
 		PETHREAD
 	);
+
+	static VOID DestroyAltSyscallThreads();
 
 	static VOID InitExportsMap(
 		PFUNCTION_MAP
@@ -563,6 +685,7 @@ public:
 	BOOLEAN isCredentialDumpingAttempt();
 
 	VOID setObjectNotificationCallback();
+	
 	VOID unsetObjectNotificationCallback();
 };
 
@@ -618,16 +741,30 @@ class ImageUtils {
 
 private:
 
-	BufferQueue* queue;
-
+	//HashQueue* hashQueue;  // On peut s'en passer
+	static KMUTEX g_HashQueueMutex;
 
 public:
+
+	VOID InitHashQueue(HashQueue*);
 
 	BOOLEAN isImageSignatureInvalid(
 		PVOID
 	);
 	
+	static VOID ImageLoadNotifyRoutine(
+		PUNICODE_STRING,
+		HANDLE,
+		PIMAGE_INFO
+	);
+
 	VOID setImageNotificationCallback();
+
+	VOID unsetImageNotificationCallback();
+
+	VOID InitializeHashQueueMutex() {
+		KeInitializeMutex(&g_HashQueueMutex, 0);
+	}
 };
 
 class ThreadUtils : public ProcessUtils {
@@ -670,6 +807,7 @@ public:
 	);
 
 	VOID setThreadNotificationCallback();
+	
 	VOID unsetThreadNotificationCallback();
 };
 
@@ -682,7 +820,9 @@ private:
 public:
 
 	BOOLEAN isRegistryPersistenceBehavior();
+	
 	BOOLEAN isSuspiciousInfoQuuery();
+	
 	BOOLEAN isSuspiciousKeyEntry();
 
 	VOID setRegistryNotificationCallback();
@@ -697,26 +837,50 @@ class CallbackObjects :
 
 {
 
-	static BufferQueue* queue;
+	static BufferQueue* bufferQueue;
+	static HashQueue* hashQueue;
+	static BytesQueue* bytesQueue;
 
 public:
 
 	CallbackObjects() {}
+
 	CallbackObjects(
 		PEPROCESS
 	) {}
 
-	static VOID InitQueue(
+	static VOID InitBufferQueue(
 		BufferQueue* bufQueue
 	) {
-		queue = bufQueue;
+		bufferQueue = bufQueue;
 	}
 
-	static BufferQueue* GetQueue() {
-		return queue;
+	static VOID InitHashQueue(
+		HashQueue* hshQueue
+	) {
+		hashQueue = hshQueue;
+	}
+
+	static VOID InitBytesQueue(
+		BytesQueue* bytQueue
+	) {
+		bytesQueue = bytQueue;
+	}
+
+	static BufferQueue* GetBufferQueue() {
+		return bufferQueue;
+	}
+
+	static HashQueue* GetHashQueue() {
+		return hashQueue;
+	}
+
+	static BytesQueue* GetBytesQueue() {
+		return bytesQueue;
 	}
 
 	VOID setupNotificationsGlobal();
+	
 	VOID unsetNotificationsGlobal();
 };
 

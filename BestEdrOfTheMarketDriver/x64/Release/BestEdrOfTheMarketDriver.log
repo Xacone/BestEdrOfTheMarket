@@ -2,24 +2,8 @@
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(151,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets (2008,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
   Building 'BestEdrOfTheMarketDriver' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
   Stamping x64\Release\BestEdrOfTheMarketDriver.inf
-  Stamping [Version] section with DriverVer=12/28/2024,15.0.47.895
-  Callbacks.cpp
-  Controller.cpp
+  Stamping [Version] section with DriverVer=01/02/2025,17.39.41.849
   DriverEntry.cpp
-  Images.cpp
-  Maps.cpp
-  Objects.cpp
-  Process.cpp
-  ShadowStack.cpp
-  Ssdt.cpp
-  Stack.cpp
-  SyscallsTracing.cpp
-  Tables.cpp
-  Threads.cpp
-  Trackers.cpp
-  Utils.cpp
-  Vad.cpp
-  Génération de code en cours...
   BestEdrOfTheMarketDriver.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarketDriver.sys
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(65,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.props" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.Shared.props (364,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(151,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets (2008,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 

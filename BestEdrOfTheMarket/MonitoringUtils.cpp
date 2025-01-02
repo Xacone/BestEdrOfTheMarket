@@ -51,10 +51,14 @@
 
 #include "IPCUtils.h"
 
-#include "json/json.h"
+#include <json/json.h>
 
 #pragma comment(lib, "dbghelp.lib")
 #pragma comment(lib, "amsi.lib")
+#pragma comment(lib, "libyara.lib")
+#pragma comment(lib, "libssl.lib")
+#pragma comment(lib, "libcrypto.lib")
+#pragma comment(lib, "jsoncpp.lib")
 
 #pragma warning(disable : 266) // temporary
 
@@ -164,7 +168,6 @@ const char* processPath;
 STARTUPINFO startupInfo;
 PROCESS_INFORMATION processInfo;
 
-
 /// <summary>
 /// Control Handler for proper deletion of the threads when hitting Ctrl+C/// </summary>
 /// <param name="fdwCtrlType">Control type</param>
@@ -206,101 +209,106 @@ BOOL _p_ = FALSE;
 
 int main(int argc, char* argv[]) {
 
-	pfnNtSuspendProcess = (NtSuspendProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtSuspendProcess");
-	pfnNtResumeProcess = (NtResumeProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtResumeProcess");
+	
 
-	for (int arg = 0; arg < argc; arg++) {
+	//pfnNtSuspendProcess = (NtSuspendProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtSuspendProcess");
+	//pfnNtResumeProcess = (NtResumeProcess)GetProcAddress(GetModuleHandleA("ntdll"), "NtResumeProcess");
 
-		if (!strcmp(argv[arg], "/help")) {
-			printHelp();	
-			return 0;
-		}
-		if (!strcmp(argv[arg], "/v")) {
-			_v_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/iat")) {
-			_iat_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/nt")) {
-			_nt_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/k32")) {
-			_k32_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/stack")) {
-			_stack_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/heap")) {
-			_heap_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/ssn")) {
-			_ssn_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/patch")) {
-			_patch_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/debug")) { 
-			_debug_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/direct")) {
-			_d_syscalls_ = TRUE;
-		}
-		if (!strcmp(argv[arg], "/indirect")) {
-			_i_syscalls_ = TRUE;
-		}
-		if(!strcmp(argv[arg], "/yara")) {
-			_yara_ = TRUE;
-		}
+	//for (int arg = 0; arg < argc; arg++) {
 
-		if(!strcmp(argv[arg], "/p")) {
-			
-			if(argv[arg+1]) {
+	//	if (!strcmp(argv[arg], "/help")) {
+	//		printHelp();	
+	//		return 0;
+	//	}
+	//	if (!strcmp(argv[arg], "/v")) {
+	//		_v_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/iat")) {
+	//		_iat_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/nt")) {
+	//		_nt_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/k32")) {
+	//		_k32_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/stack")) {
+	//		_stack_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/heap")) {
+	//		_heap_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/ssn")) {
+	//		_ssn_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/patch")) {
+	//		_patch_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/debug")) { 
+	//		_debug_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/direct")) {
+	//		_d_syscalls_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/indirect")) {
+	//		_i_syscalls_ = TRUE;
+	//	}
+	//	if(!strcmp(argv[arg], "/yara")) {
+	//		_yara_ = TRUE;
+	//	}
+	//	if (!strcmp(argv[arg], "/driver")) {
+	//		_yara_ = TRUE;
+	//	}
 
-				_p_ = TRUE;
-				_inherited_p_ = TRUE;
-				
-				ZeroMemory(&startupInfo, sizeof(startupInfo));
-				ZeroMemory(&processInfo, sizeof(processInfo));
-				startupInfo.cb = sizeof(startupInfo);
-				startupInfo.dwFlags = STARTF_USESHOWWINDOW;
-				startupInfo.wShowWindow = SW_SHOW;
+	//	if(!strcmp(argv[arg], "/p")) {
+	//		
+	//		if(argv[arg+1]) {
 
-				std::cout << "[*] Spawning " << (char*)argv[arg + 1] << " ..." << std::endl;
+	//			_p_ = TRUE;
+	//			_inherited_p_ = TRUE;
+	//			
+	//			ZeroMemory(&startupInfo, sizeof(startupInfo));
+	//			ZeroMemory(&processInfo, sizeof(processInfo));
+	//			startupInfo.cb = sizeof(startupInfo);
+	//			startupInfo.dwFlags = STARTF_USESHOWWINDOW;
+	//			startupInfo.wShowWindow = SW_SHOW;
 
-				LPWSTR converted = ConvertCharToLPWSTR(argv[arg + 1]);
+	//			std::cout << "[*] Spawning " << (char*)argv[arg + 1] << " ..." << std::endl;
 
-				if (!CreateProcess(
-					NULL,                     
-					converted,
-					NULL,                      
-					NULL,                      
-					FALSE,                     
-				    CREATE_NEW_CONSOLE,
-					NULL,                      
-					NULL,                      
-					&startupInfo,              
-					&processInfo               
-				)) {
-					std::cerr << "[X] Failed to spawn process. Error code: " << GetLastError() << std::endl;
-					
-					printLastError();
-					
-					//_p_ = FALSE;
-					startup(); // Si ça casse ça vient de là
-					exit(-1);
-				}
+	//			LPWSTR converted = ConvertCharToLPWSTR(argv[arg + 1]);
 
-				arg += 1;
-				
-				Sleep(100);
+	//			if (!CreateProcess(
+	//				NULL,                     
+	//				converted,
+	//				NULL,                      
+	//				NULL,                      
+	//				FALSE,                     
+	//			    CREATE_NEW_CONSOLE,
+	//				NULL,                      
+	//				NULL,                      
+	//				&startupInfo,              
+	//				&processInfo               
+	//			)) {
+	//				std::cerr << "[X] Failed to spawn process. Error code: " << GetLastError() << std::endl;
+	//				
+	//				printLastError();
+	//				
+	//				//_p_ = FALSE;
+	//				startup(); 
+	//				exit(-1);
+	//			}
 
-				targetProcId = processInfo.dwProcessId;
-			}
-		}
+	//			arg += 1;
+	//			
+	//			Sleep(100);
 
-	}
+	//			targetProcId = processInfo.dwProcessId;
+	//		}
+	//	}
 
-	startup();
+	//}
+
+	//startup();
 
 	return 0;
 }

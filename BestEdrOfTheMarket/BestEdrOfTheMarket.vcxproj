@@ -26,13 +26,13 @@
     <None Include="..\Docs\Setup.md" />
     <None Include="..\README.md" />
     <None Include="MsfvenomWho.yara" />
-    <None Include="rockk.yara" />
     <None Include="YaroRules.json" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BytesSequencesUtils.h" />
     <ClInclude Include="ColorsUtils.h" />
     <ClInclude Include="ConversionUtils.h" />
+    <ClInclude Include="DriverComUtils.h" />
     <ClInclude Include="ErrorsReportingUtils.h" />
     <ClInclude Include="IPCUtils.h" />
     <ClInclude Include="HeapUtils.h" />
@@ -96,6 +96,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\vcpkg\installed\x64-windows\lib</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -146,7 +149,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\km;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\ucrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\winrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\km;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\ucrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\winrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared;C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -155,7 +158,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\km\x64;C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\ucrt\x64;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\vcpkg\installed\x64-windows\lib</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
       <Command>

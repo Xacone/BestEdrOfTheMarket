@@ -67,7 +67,7 @@ VOID ProcessUtils::CreateProcessNotifyEx(
 	
 	if (CreateInfo) {
 
-		SyscallsUtils::SetInformationAltSystemCall(PsGetCurrentProcessId());
+		//SyscallsUtils::SetInformationAltSystemCall(PsGetCurrentProcessId());
 	
 		if (procUtils.isProcessParentPidSpoofed(CreateInfo)) {
 			DbgPrint("Ppid Spoofing !\n");
@@ -106,7 +106,7 @@ VOID ProcessUtils::unsetProcessNotificationCallback() {
 	if (!NT_SUCCESS(status)) {
 		DbgPrint("[-] PsSetCreateProcessNotifyRoutineEx failed\n");
 	}
-	else {
+	else {	
 		DbgPrint("[+] PsSetCreateProcessNotifyRoutineEx success\n");
 	}
 

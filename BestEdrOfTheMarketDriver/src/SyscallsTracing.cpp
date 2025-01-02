@@ -165,16 +165,19 @@ BOOLEAN SyscallsUtils::InitAltSyscallHandler() {
 
 	UNICODE_STRING usPsRegisterAltSystemCallHandler;
 	RtlInitUnicodeString(&usPsRegisterAltSystemCallHandler, L"PsRegisterAltSystemCallHandler");
+	
 	pPsRegisterAltSystemCallHandler = (PsRegisterAltSystemCallHandler)MmGetSystemRoutineAddress(&usPsRegisterAltSystemCallHandler);
 
 	UNICODE_STRING usZwSetInformationProcess;
 	RtlInitUnicodeString(&usZwSetInformationProcess, L"ZwSetInformationProcess");
+
 	pZwSetInformationProcess = (ZwSetInformationProcess)MmGetSystemRoutineAddress(&usZwSetInformationProcess);
 
 	if (MmIsAddressValid(pPsRegisterAltSystemCallHandler)) {
 
 		UNICODE_STRING usPsRegisterAltSystemCallHandler;
 		RtlInitUnicodeString(&usPsRegisterAltSystemCallHandler, L"PsRegisterAltSystemCallHandler");
+
 		pPsRegisterAltSystemCallHandler = (PsRegisterAltSystemCallHandler)MmGetSystemRoutineAddress(&usPsRegisterAltSystemCallHandler);
 
 		ULONGLONG pPspAltSystemCallHandlers = LeakPspAltSystemCallHandlers((ULONGLONG)pPsRegisterAltSystemCallHandler);
@@ -185,6 +188,7 @@ BOOLEAN SyscallsUtils::InitAltSyscallHandler() {
 			NTSTATUS status = pPsRegisterAltSystemCallHandler((PVOID)SyscallsUtils::SyscallHandler, 1);
 
 			if (NT_SUCCESS(status)) {
+
 				this->enableTracing();
 				DbgPrint("[+] Altsyscall handler registered !\n");
 				return STATUS_SUCCESS;
@@ -314,16 +318,16 @@ VOID SyscallsUtils::NtAllocHandler(
 ) {
 	if (Protect == PAGE_EXECUTE_READWRITE) {
 
-		stackUtils->forceCETOnCallingProcess();
-		stackUtils->isStackCorruptedRtlCET();
+		//stackUtils->forceCETOnCallingProcess();
+		//stackUtils->isStackCorruptedRtlCET();
 
-		CHAR* message = (CHAR*)ExAllocatePool2(POOL_FLAG_NON_PAGED, 256, 'tag');
+		char* message = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, 512, 'tag');
 
 		if (message != NULL) {
 			NTSTATUS status = RtlStringCbPrintfA(
 				message,
-				256,
-				"[*] NtAlloc(0x%p, 0x%p, 0x%p, %zu, 0x%x, 0x%x)",
+				512,
+				"NtAlloc(0x%p, 0x%p, 0x%p, %zu, 0x%x, 0x%x)",
 				ProcessHandle,
 				*BaseAddress,
 				(VOID*)ZeroBits,
@@ -333,8 +337,7 @@ VOID SyscallsUtils::NtAllocHandler(
 			);
 
 			if (NT_SUCCESS(status)) {
-				auto* queue = getBufQueue();
-				if (queue != nullptr && !queue->Enqueue(message)) {
+				if (!SyscallsUtils::getBufQueue()->Enqueue(message)) {
 					ExFreePoolWithTag(message, 'tag');
 				}
 			}
@@ -342,8 +345,48 @@ VOID SyscallsUtils::NtAllocHandler(
 				ExFreePoolWithTag(message, 'tag');
 			}
 		}
+		else {
+			DbgPrint("Failed to allocate memory for message\n");
+		}
 	}
 }
+
+//VOID SyscallsUtils::NtAllocHandler(
+//	HANDLE ProcessHandle,
+//	PVOID* BaseAddress,
+//	ULONG_PTR ZeroBits,
+//	PSIZE_T RegionSize,
+//	ULONG AllocationType,
+//	ULONG Protect
+//) {
+//	if (Protect == PAGE_EXECUTE_READWRITE) {
+//
+//		//stackUtils->forceCETOnCallingProcess();
+//		//stackUtils->isStackCorruptedRtlCET();
+//
+//		CHAR* message = (CHAR*)ExAllocatePool2(POOL_FLAG_NON_PAGED, 256, 'tag');
+//
+//		if (message != NULL) {
+//			NTSTATUS status = RtlStringCbPrintfA(
+//				message,
+//				256,
+//				"NtAlloc(0x%p, 0x%p, 0x%p, %zu, 0x%x, 0x%x)",
+//				ProcessHandle,
+//				*BaseAddress,
+//				(VOID*)ZeroBits,
+//				*RegionSize,
+//				AllocationType,
+//				Protect
+//			);
+//
+//			if (NT_SUCCESS(status)) {
+//				if (SyscallsUtils::getBufQueue()->Enqueue((char*)message)) {
+//					ExFreePoolWithTag(message, 'tag');
+//				}
+//			}
+//		}
+//	}
+//}
 
 VOID SyscallsUtils::NtProtectHandler(
 	HANDLE ProcessHandle,
@@ -354,17 +397,17 @@ VOID SyscallsUtils::NtProtectHandler(
 ) {
 	if (NewAccessProtection & PAGE_EXECUTE) {
 
-		stackUtils->forceCETOnCallingProcess();
-		stackUtils->isStackCorruptedRtlCET();
+		//stackUtils->forceCETOnCallingProcess();
+		//stackUtils->isStackCorruptedRtlCET();
 
-		CHAR* message = (CHAR*)ExAllocatePool2(POOL_FLAG_NON_PAGED, 256, 'tag');
+		CHAR* message = (CHAR*)ExAllocatePool2(POOL_FLAG_NON_PAGED, 256, 'msg');
 
 		if (message != NULL) {
 
 			NTSTATUS status = RtlStringCbPrintfA(
 				message,
 				256,
-				"[*] NtProtect(0x%p, 0x%p, %zu, 0x%x, 0x%p)",
+				"NtProtect(0x%p, 0x%p, %zu, 0x%x, 0x%p)",
 				BaseAddress,
 				ProcessHandle,
 				*NumberOfBytesToProtect,
@@ -373,12 +416,12 @@ VOID SyscallsUtils::NtProtectHandler(
 			);
 
 			if (NT_SUCCESS(status)) {
-				if (!getBufQueue()->Enqueue(message)) {
-					ExFreePoolWithTag(message, 'tag');
+				if (SyscallsUtils::getBufQueue()->Enqueue((char*)"NtProtect")) {
+					ExFreePool(message);
 				}
 			}
 			else {
-				ExFreePoolWithTag(message, 'tag');
+				ExFreePool(message);
 			}
 		}
 	}
@@ -398,7 +441,7 @@ VOID SyscallsUtils::NtWriteHandler(
 		NTSTATUS status = RtlStringCbPrintfA(
 			message,
 			256,
-			"[*] NtWrite(0x%p, 0x%p, 0x%p, %zu, 0x%p)",
+			"NtWrite(0x%p, 0x%p, 0x%p, %zu, 0x%p)",
 			ProcessHandle,
 			BaseAddress,
 			Buffer,
@@ -408,7 +451,7 @@ VOID SyscallsUtils::NtWriteHandler(
 
 		if (NT_SUCCESS(status)) {
 			auto* queue = getBufQueue();
-			if (queue != nullptr && !queue->Enqueue(message)) {
+			if (queue != nullptr && !SyscallsUtils::getBufQueue()->Enqueue((char*)"NtWrite")) {
 				ExFreePoolWithTag(message, 'tag');
 			}
 		}
@@ -418,8 +461,130 @@ VOID SyscallsUtils::NtWriteHandler(
 	}
 }
 
-
 VOID SyscallsUtils::DisableAltSyscallFromThreads2() {
+	NTSTATUS status;
+	ULONG bufferSize = 0x10000;
+	PVOID buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED | POOL_FLAG_RAISE_ON_FAILURE, bufferSize, 'prlc');
+
+	if (!buffer) {
+		DbgPrint("[-] Failed to allocate memory for process buffer\n");
+		return;
+	}
+
+	do {
+		status = ZwQuerySystemInformation(0x05, buffer, bufferSize, &bufferSize);
+
+		if (status == STATUS_INFO_LENGTH_MISMATCH) {
+			ExFreePool(buffer);
+			buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED | POOL_FLAG_RAISE_ON_FAILURE, bufferSize, 'proc');
+			if (!buffer) {
+				DbgPrint("[-] Failed to allocate memory for process buffer\n");
+				return;
+			}
+		}
+	} while (status == STATUS_INFO_LENGTH_MISMATCH);
+
+	if (NT_SUCCESS(status)) {
+		PSYSTEM_PROCESS_INFORMATION processInfo = (PSYSTEM_PROCESS_INFORMATION)buffer;
+
+		do {
+			for (ULONG j = 0; j < processInfo->NumberOfThreads; j++) {
+
+				PETHREAD eThread;
+				status = PsLookupThreadByThreadId(processInfo->Threads[j].ClientId.UniqueThread, &eThread);
+
+				if (!NT_SUCCESS(status)) {
+					DbgPrint("[-] PsLookupThreadByThreadId failed for ThreadId: %d\n", processInfo->Threads[j].ClientId.UniqueThread);
+					continue;
+				}
+
+				_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + KTHREAD_HEADER_OFFSET);
+
+				if (header->DebugActive >= 0x20) {
+					header->DebugActive = 0x0;
+				}
+			}
+
+			UnsetInformationAltSystemCall(processInfo->UniqueProcessId);
+			processInfo = (PSYSTEM_PROCESS_INFORMATION)((PUCHAR)processInfo + processInfo->NextEntryOffset);
+
+		} while (processInfo->NextEntryOffset);
+	}
+	else {
+		DbgPrint("[-] ZwQuerySystemInformation failed with status: %x\n", status);
+	}
+
+	ExFreePool(buffer);
+}
+
+VOID SyscallsUtils::DisableAltSyscallFromThreads3() {
+
+	__try {
+
+		PEPROCESS currentProcess = PsInitialSystemProcess;
+		PLIST_ENTRY listEntry = (PLIST_ENTRY)((PUCHAR)currentProcess + EPROCESS_ACTIVEPROCESSLINK_OFFSET);
+
+		do
+		{
+			currentProcess = (PEPROCESS)((PUCHAR)listEntry - EPROCESS_ACTIVEPROCESSLINK_OFFSET);
+
+			if (!currentProcess) {
+				DbgPrint("[-] Failed to get current process\n");
+				break;
+			}
+
+			HANDLE pid = PsGetProcessId(currentProcess);
+			UnsetInformationAltSystemCall(pid);
+
+			PLIST_ENTRY listEntryThreads = (PLIST_ENTRY)((PUCHAR)currentProcess + EPROCESS_THREAD_LIST_HEAD);
+			PLIST_ENTRY threadListEntry = listEntryThreads->Flink;
+
+			PULONG flags3 = (PULONG)((DWORD64)currentProcess + EPROCESS_FLAGS3);
+
+			if (!flags3) {
+				DbgPrint("[-] Failed to get flags3\n");
+				break;
+			}
+
+			*flags3 = *flags3 & 0xFDFFFFFF;
+
+			do {
+				__try {
+
+					PETHREAD eThread = (PETHREAD)((PUCHAR)threadListEntry - ETHREAD_THREADLISTENTRY_OFFSET);
+
+					if (eThread) {
+
+						_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + KTHREAD_HEADER_OFFSET);
+						
+						if (!header || !MmIsAddressValid(header)) {
+							break;
+						}
+
+						if (header->DebugActive >= 0x20) {
+
+							header->DebugActive = 0x0;
+						}
+
+						threadListEntry = threadListEntry->Flink;
+					}
+				}
+				__except (EXCEPTION_EXECUTE_HANDLER) {
+					DbgPrint("[-] Exception in DisableAltSyscallFromThreads3\n");
+				}
+
+			} while (threadListEntry != listEntryThreads);
+
+			listEntry = listEntry->Flink;
+
+		} while (listEntry != (PLIST_ENTRY)((PUCHAR)PsInitialSystemProcess + EPROCESS_ACTIVEPROCESSLINK_OFFSET));
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		DbgPrint("[-] Exception in DisableAltSyscallFromThreads3\n");
+	}
+}
+
+VOID SyscallsUtils::DestroyAltSyscallThreads() {
 
 	NTSTATUS status;
 	ULONG bufferSize = 0x10000;
@@ -463,8 +628,9 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads2() {
 				}
 
 				_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + KTHREAD_HEADER_OFFSET);
+
 				if (header->DebugActive >= 0x20) {
-					header->DebugActive = 0x0;
+					
 				}
 			}
 
@@ -472,7 +638,7 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads2() {
 
 			processInfo = (PSYSTEM_PROCESS_INFORMATION)((PUCHAR)processInfo + processInfo->NextEntryOffset);
 
-		} while (processInfo->NextEntryOffset); 
+		} while (processInfo->NextEntryOffset);
 
 	}
 	else {
@@ -480,6 +646,7 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads2() {
 	}
 
 	ExFreePool(buffer);
+
 }
 
 VOID SyscallsUtils::InitVadUtils() {

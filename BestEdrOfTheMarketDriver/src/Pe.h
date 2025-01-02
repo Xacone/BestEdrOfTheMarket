@@ -9,8 +9,12 @@ typedef unsigned long long QWORD;
 
 struct _ACTIVATION_CONTEXT;
 
+#define IMAGE_FIRST_SECTION(ntheader) ((PIMAGE_SECTION_HEADER) ((ULONG_PTR)ntheader + FIELD_OFFSET(IMAGE_NT_HEADERS64, OptionalHeader) + ((PIMAGE_NT_HEADERS64)(ntheader))->FileHeader.SizeOfOptionalHeader))
+
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
 #define IMAGE_DOS_SIGNATURE 0x5A4D
+
+#define IMAGE_SIZEOF_SHORT_NAME 8
 
 typedef struct _RTL_PROCESS_MODULE_INFORMATION
 {
@@ -25,7 +29,6 @@ typedef struct _RTL_PROCESS_MODULE_INFORMATION
     USHORT OffsetToFileName;
     CHAR FullPathName[256];
 } RTL_PROCESS_MODULE_INFORMATION, * PRTL_PROCESS_MODULE_INFORMATION;
-
 
 typedef struct _IMAGE_EXPORT_DIRECTORY {
     ULONG   Characteristics;
@@ -116,3 +119,17 @@ typedef struct _IMAGE_NT_HEADERS64 {
     IMAGE_FILE_HEADER FileHeader;
     IMAGE_OPTIONAL_HEADER64 OptionalHeader;
 } IMAGE_NT_HEADERS64, * PIMAGE_NT_HEADERS64;
+
+typedef struct _IMAGE_SECTION_HEADER
+{
+    UCHAR Name[8];
+    ULONG Misc;
+    ULONG VirtualAddress;
+    ULONG SizeOfRawData;
+    ULONG PointerToRawData;
+    ULONG PointerToRelocations;
+    ULONG PointerToLinenumbers;
+    WORD NumberOfRelocations;
+    WORD NumberOfLinenumbers;
+    ULONG Characteristics;
+} IMAGE_SECTION_HEADER, * PIMAGE_SECTION_HEADER;

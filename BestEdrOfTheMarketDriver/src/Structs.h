@@ -627,3 +627,14 @@ typedef struct _PEB2 {
     PVOID SystemAssemblyStorageMap;
     SIZE_T MinimumStackCommit;
 } PEB2, * PPEB2;
+
+typedef struct {
+    UINT32 state[8];
+    UINT32 count[2];
+    BYTE buffer[64];
+} SHA256_CTX;
+
+struct RAW_BUFFER {
+    BYTE* buffer;
+    SIZE_T size;
+};
