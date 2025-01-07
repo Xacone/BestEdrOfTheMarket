@@ -1,9 +1,0 @@
-Inf2Cat Tool Output:
-........................
-Signability test failed.
-
-Errors:
-22.9.7: DriverVer set to a date in the future (postdated DriverVer not allowed) in BestEdrOfTheMarketDriver\bestedrofthemarketdriver.inf.
-
-Warnings:
-None
