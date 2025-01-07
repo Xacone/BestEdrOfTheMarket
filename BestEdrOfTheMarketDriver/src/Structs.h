@@ -29,6 +29,22 @@
 
 #define GDI_HANDLE_BUFFER_SIZE 34
 
+#define SET_CRITICAL(notification) ((notification).Critical = 1)
+#define SET_WARNING(notification)  ((notification).Warning = 1)
+#define SET_INFO(notification)     ((notification).Info = 1)
+#define CLEAR_CRITICAL(notification) ((notification).Critical = 0)
+
+#define SET_PROC_VAD_CHECK(notification) ((notification).ProcVadCheck = 1)
+#define SET_STACK_BASE_VAD_CHECK(notification) ((notification).StackBaseVadCheck = 1)
+#define SET_CALLING_PROC_PID_CHECK(notification) ((notification).CallingProcPidCheck = 1)
+#define SET_SE_AUDIT_INFO_CHECK(notification) ((notification).SeAuditInfoCheck = 1)
+#define SET_IMAGE_LOAD_PATH_CHECK(notification) ((notification).ImageLoadPathCheck = 1)
+#define SET_OBJECT_CHECK(notification) ((notification).ObjectCheck = 1)
+#define SET_REG_CHECK(notification) ((notification).RegCheck = 1)
+#define SET_SYSCALL_CHECK(notification) ((notification).SyscallCheck = 1)
+
+#define SET_SHADOW_STACK_CHECK(notification) ((notification).ShadowStackCheck = 1)
+
 typedef unsigned short WORD;
 typedef unsigned char BYTE;
 typedef unsigned long DWORD;
@@ -451,17 +467,6 @@ typedef struct _PS_PROTECTION {
     };
 } PS_PROTECTION, * PPS_PROTECTION;
 
-//typedef struct _FUNCTION_MAP_ENTRY {
-//    PVOID FunctionAddress;
-//    UNICODE_STRING FunctionName;
-//    struct _FUNCTION_MAP_ENTRY* Next;
-//} FUNCTION_MAP_ENTRY, * PFUNCTION_MAP_ENTRY;
-//
-//typedef struct _FUNCTION_MAP {
-//    PFUNCTION_MAP_ENTRY Head;
-//    KSPIN_LOCK Lock;
-//} FUNCTION_MAP, * PFUNCTION_MAP;
-
 typedef struct _SERVICE_DESCRIPTOR_TABLE {
     PULONG ServiceTableBase;
     PULONG ServiceCounterTableBase;
@@ -637,4 +642,66 @@ typedef struct {
 struct RAW_BUFFER {
     BYTE* buffer;
     SIZE_T size;
+    HANDLE pid;
 };
+
+typedef struct _KERNEL_STRUCTURED_BUFFER {
+    ULONG bufSize;
+    UINT32 pid;
+    BYTE* buffer;
+} KERNEL_STRUCTURED_BUFFER, *PKERNEL_STRUCTURED_BUFFER;
+
+typedef struct _KERNEL_STRUCTURED_NOTIFICATION {
+
+    union {
+        struct {
+            unsigned char ProcVadCheck : 1;
+            unsigned char StackBaseVadCheck : 1;
+            unsigned char CallingProcPidCheck : 1;
+			unsigned char SeAuditInfoCheck : 1;
+            unsigned char ImageLoadPathCheck : 1;
+            unsigned char ObjectCheck : 1;
+            unsigned char RegCheck : 1;
+            unsigned char SyscallCheck : 1;
+        };
+        unsigned char method;
+    };
+
+    union {
+        struct {
+            unsigned char ShadowStackCheck : 1;
+            unsigned char Reserved : 7; // Align
+        };
+        unsigned char method2;
+    };
+
+    ULONG64 scoopedAddress;
+    BOOLEAN isPath;
+    HANDLE pid;
+    ULONG bufSize;
+    
+    union {
+        struct {
+            unsigned char Critical : 1;
+            unsigned char Warning : 1;
+            unsigned char Info : 1;
+            unsigned char Reserved : 5; // Align
+        };
+        unsigned char Level;
+    };
+
+    char* msg;
+} KERNEL_STRUCTURED_NOTIFICATION, * PKERNEL_STRUCTURED_NOTIFICATION;
+
+typedef struct _REGION_INFO {
+    PVOID address;
+    ULONG size;
+    ULONG Protect;
+    BOOLEAN remote;
+} REGION_INFO, * PREGION_INFO;
+
+typedef struct _HASH_ENTRY {
+    HANDLE ProcessId;
+    REGION_INFO RegionInfo;
+    LIST_ENTRY ListEntry;
+} HASH_ENTRY, * PHASH_ENTRY;

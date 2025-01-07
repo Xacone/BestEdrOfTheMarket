@@ -107,7 +107,8 @@ NTSTATUS DriverIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 			}
 
 			if (g_bufferQueue->GetSize() > 0) {
-				char* resp = g_bufferQueue->Dequeue();
+
+				PKERNEL_STRUCTURED_NOTIFICATION resp = g_bufferQueue->Dequeue();
 				KeReleaseSpinLock(&g_spinLock, oldIrql);
 
 				if (!resp || !MmIsAddressValid(resp)) {
@@ -118,53 +119,7 @@ NTSTATUS DriverIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 				size_t respLen = 0;
 
 				__try {
-					respLen = SafeStringLength(resp, 64) + 1;
-				}
-				__except (EXCEPTION_EXECUTE_HANDLER) {
-					DbgPrint("[!] Invalid memory access while calculating resp length\n");
-					status = STATUS_INVALID_PARAMETER;
-					__leave;
-				}
-
-				if (stack->Parameters.DeviceIoControl.OutputBufferLength < respLen) {
-					DbgPrint("[!] Output buffer is too small\n");
-					status = STATUS_BUFFER_TOO_SMALL;
-					__leave;
-				}
-
-				RtlCopyMemory(Irp->AssociatedIrp.SystemBuffer, resp, respLen);
-				Irp->IoStatus.Information = respLen;
-			}
-			else {
-				KeReleaseSpinLock(&g_spinLock, oldIrql);
-				status = STATUS_NO_MORE_ENTRIES;
-			}
-		}  
-
-		else if (stack->Parameters.DeviceIoControl.IoControlCode == BEOTM_RETRIEVE_DATA_HASH) {
-
-			KeAcquireSpinLock(&g_spinLock, &oldIrql);
-
-			if (!g_hashQueue) {
-				KeReleaseSpinLock(&g_spinLock, oldIrql);
-				DbgPrint("[-] HashQueue is NULL\n");
-				status = STATUS_UNSUCCESSFUL;
-				__leave;
-			}
-
-			if (g_hashQueue->GetSize() > 0) {
-				char* resp = g_hashQueue->Dequeue();
-				KeReleaseSpinLock(&g_spinLock, oldIrql);
-
-				if (!resp || !MmIsAddressValid(resp)) {
-					status = STATUS_NO_MORE_ENTRIES;
-					__leave;
-				}
-
-				size_t respLen = 0;
-
-				__try {
-					respLen = SafeStringLength(resp, 64) + 1;
+					respLen = SafeStringLength(resp->msg, 64) + 1;
 				}
 				__except (EXCEPTION_EXECUTE_HANDLER) {
 					DbgPrint("[!] Invalid memory access while calculating resp length\n");
@@ -187,9 +142,63 @@ NTSTATUS DriverIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 			}
 		}
 
+		else if (stack->Parameters.DeviceIoControl.IoControlCode == BEOTM_RETRIEVE_DATA_HASH) {
+
+			KeAcquireSpinLock(&g_spinLock, &oldIrql);
+
+			if (!g_hashQueue) {
+				KeReleaseSpinLock(&g_spinLock, oldIrql);
+				DbgPrint("[-] HashQueue is NULL\n");
+				status = STATUS_UNSUCCESSFUL;
+				__leave;
+			}
+
+			if (CallbackObjects::GetHashQueue()->GetSize() > 0) {
+
+				PKERNEL_STRUCTURED_NOTIFICATION resp = CallbackObjects::GetHashQueue()->Dequeue();
+				KeReleaseSpinLock(&g_spinLock, oldIrql);
+
+				if (!resp || !MmIsAddressValid(resp)) {
+					status = STATUS_NO_MORE_ENTRIES;
+					__leave;
+				}
+
+				size_t respLen = 0;
+
+				__try {
+					respLen = SafeStringLength(resp->msg, 64) + 1;
+				}
+				__except (EXCEPTION_EXECUTE_HANDLER) {
+					DbgPrint("[!] Invalid memory access while calculating resp length\n");
+					status = STATUS_INVALID_PARAMETER;
+					__leave;
+				}
+
+				if (stack->Parameters.DeviceIoControl.OutputBufferLength < respLen) {
+					DbgPrint("[!] Output buffer is too small\n");
+					status = STATUS_BUFFER_TOO_SMALL;
+					__leave;
+				}
+
+				ULONG totalSize = sizeof(KERNEL_STRUCTURED_NOTIFICATION) + respLen;
+
+				RtlZeroMemory(Irp->AssociatedIrp.SystemBuffer, totalSize);
+				RtlCopyMemory(Irp->AssociatedIrp.SystemBuffer, resp, sizeof(KERNEL_STRUCTURED_NOTIFICATION));
+				RtlCopyMemory((BYTE*)Irp->AssociatedIrp.SystemBuffer + sizeof(KERNEL_STRUCTURED_NOTIFICATION), resp->msg, respLen);
+
+				Irp->IoStatus.Information = totalSize;
+				status = STATUS_SUCCESS;
+
+			}
+			else {
+				KeReleaseSpinLock(&g_spinLock, oldIrql);
+				status = STATUS_NO_MORE_ENTRIES;
+			}
+		}
+
 		else if (stack->Parameters.DeviceIoControl.IoControlCode == BEOTM_RETRIEVE_DATA_BYTE) {
 
-			KeAcquireSpinLockAtDpcLevel(&g_spinLock); 
+			KeAcquireSpinLockAtDpcLevel(&g_spinLock);
 
 			if (!g_bytesQueue) {
 				KeReleaseSpinLockFromDpcLevel(&g_spinLock);
@@ -207,7 +216,7 @@ NTSTATUS DriverIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 				resp = rawBuffer.buffer;
 				bytesBufSize = rawBuffer.size;
 
-				KeReleaseSpinLockFromDpcLevel(&g_spinLock); 
+				KeReleaseSpinLockFromDpcLevel(&g_spinLock);
 
 				if (resp == NULL || !MmIsAddressValid(resp)) {
 					status = STATUS_NO_MORE_ENTRIES;
@@ -250,9 +259,41 @@ NTSTATUS DriverIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 						__leave;
 					}
 
-					RtlZeroMemory(Irp->AssociatedIrp.SystemBuffer, stack->Parameters.DeviceIoControl.OutputBufferLength);
-					RtlCopyMemory(Irp->AssociatedIrp.SystemBuffer, resp, bytesBufSize);
-					Irp->IoStatus.Information = bytesBufSize;
+					PKERNEL_STRUCTURED_BUFFER pKsb = (PKERNEL_STRUCTURED_BUFFER)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_BUFFER), 'ksb');
+
+					if (!pKsb) {
+						DbgPrint("[-] Failed to allocate memory for KERNEL_STRUCTURED_BUFFER\n");
+						status = STATUS_INSUFFICIENT_RESOURCES;
+						__leave;
+					}
+
+					pKsb->buffer = (BYTE*)ExAllocatePool2(POOL_FLAG_NON_PAGED, bytesBufSize, 'bufr');
+					if (!pKsb->buffer) {
+						DbgPrint("[-] Failed to allocate memory for buffer\n");
+						ExFreePool(pKsb);
+						status = STATUS_INSUFFICIENT_RESOURCES;
+						__leave;
+					}
+
+					RtlCopyMemory(pKsb->buffer, resp, bytesBufSize);
+					pKsb->bufSize = bytesBufSize;
+					pKsb->pid = static_cast<UINT32>(reinterpret_cast<uintptr_t>(rawBuffer.pid));
+
+					ULONG totalSize = sizeof(KERNEL_STRUCTURED_BUFFER) + bytesBufSize;
+
+					if (stack->Parameters.DeviceIoControl.OutputBufferLength < totalSize) {
+						DbgPrint("[-] Output buffer too small\n");
+						ExFreePool(pKsb->buffer);
+						ExFreePool(pKsb);
+						status = STATUS_BUFFER_TOO_SMALL;
+						__leave;
+					}
+
+					RtlZeroMemory(Irp->AssociatedIrp.SystemBuffer, totalSize);
+					RtlCopyMemory(Irp->AssociatedIrp.SystemBuffer, pKsb, sizeof(KERNEL_STRUCTURED_BUFFER));
+					RtlCopyMemory((BYTE*)Irp->AssociatedIrp.SystemBuffer + sizeof(KERNEL_STRUCTURED_BUFFER), pKsb->buffer, bytesBufSize);
+
+					Irp->IoStatus.Information = totalSize;
 
 					status = STATUS_SUCCESS;
 				}
@@ -269,19 +310,23 @@ NTSTATUS DriverIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 				status = STATUS_NO_MORE_ENTRIES;
 			}
 		}
-		else if (stack->Parameters.DeviceIoControl.IoControlCode == BEOTM_END_ALT_SYSCALL) {
+		else if (stack->Parameters.DeviceIoControl.IoControlCode == END_THAT_PROCESS) {
 
-			g_callbackObjects->unsetNotificationsGlobal();
+			if (stack->Parameters.DeviceIoControl.InputBufferLength < sizeof(UINT32)) {
+				status = STATUS_INVALID_PARAMETER;
+				__leave;
+			}
 
-			g_syscallsUtils->DisableAltSyscallFromThreads3();
+			NTSTATUS termStatus = TerminateProcess((HANDLE)* (UINT32*)Irp->AssociatedIrp.SystemBuffer);
 
-			g_syscallsUtils->UnInitAltSyscallHandler();
-
-			//g_callbackObjects->unsetNotificationsGlobal();
-
-			//g_syscallsUtils->DisableAltSyscallFromThreads3();
-
-			//g_syscallsUtils->UnInitAltSyscallHandler();
+			if (!NT_SUCCESS(termStatus)) {
+				DbgPrint("[-] Failed to terminate process\n");
+				status = STATUS_UNSUCCESSFUL;
+			}
+			else {
+				DbgPrint("[+] Process terminated\n");
+				status = STATUS_SUCCESS;
+			}
 		}
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
@@ -415,6 +460,8 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 		}
 	}
 
+	g_syscallsUtils->NtVersionPreCheck();
+	//g_syscallsUtils->InitVmRegionTracker();
 	g_syscallsUtils->InitSsdtTable(pSsdtTable);
 	g_syscallsUtils->InitIds();
 	g_syscallsUtils->InitAltSyscallHandler();

@@ -193,3 +193,60 @@ const char* GetProtectionString(ULONG protection)
         return "UNKNOWN PROTECTION";
     }
 }
+
+NTSTATUS TerminateProcess(HANDLE ProcessId) {
+
+    PEPROCESS Process;
+    NTSTATUS Status = PsLookupProcessByProcessId(ProcessId, &Process);
+
+    if (NT_SUCCESS(Status)) {
+
+        HANDLE ProcessHandle;
+
+        Status = ObOpenObjectByPointer(
+            Process,
+            OBJ_KERNEL_HANDLE,
+            NULL,
+            PROCESS_TERMINATE,
+            *PsProcessType,
+            KernelMode,
+            &ProcessHandle
+        );
+
+        if (NT_SUCCESS(Status)) {
+            Status = ZwTerminateProcess(ProcessHandle, 0);
+            ZwClose(ProcessHandle);
+        }
+
+        ObDereferenceObject(Process);
+    }
+    return Status;
+}
+
+char* FetchNtVersion(DWORD buildNumber) {
+
+    switch (buildNumber)
+    {
+        case 10240: return "Windows 10 Version 1507";
+        case 10586: return "Windows 10 Version 1511";
+        case 14393: return "Windows 10 Version 1607";
+        case 15063: return "Windows 10 Version 1703";
+        case 16299: return "Windows 10 Version 1709";
+        case 17134: return "Windows 10 Version 1803";
+        case 17763: return "Windows 10 Version 1809";
+        case 18362: return "Windows 10 Version 1903";
+        case 18363: return "Windows 10 Version 1909";
+        case 19041: return "Windows 10 Version 2004";
+        case 19042: return "Windows 10 Version 20H2";
+        case 19043: return "Windows 10 Version 21H1";
+        case 19044: return "Windows 10 Version 21H2";
+        case 19045: return "Windows 10 Version 22H2";
+        case 20348: return "Windows Server 2022";
+        case 22000: return "Windows 11 Version 21H2";
+        case 22621: return "Windows 11 Version 22H2";
+        case 22631: return "Windows 11 Version 23H2";
+        case 25000: return "Windows Server 23H2";
+        case 26000: return "Windows 11 Version 24H2";
+        default: return "Unknown Windows Version";
+    }
+}

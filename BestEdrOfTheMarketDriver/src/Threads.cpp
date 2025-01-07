@@ -81,17 +81,59 @@ VOID ThreadUtils::CreateThreadNotifyRoutine(
 		);
 
 		if (threadUtils.isProcessImageTampered()) {
-			DbgPrint("Process Image Tampered !\n");
-			CallbackObjects::GetBufferQueue()->Enqueue(
-				"Process Image Tampered !"
-			);
+
+			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
+
+			if (kernelNotif) {
+
+				char* msg = "Process Image Tampering";
+
+				SET_CRITICAL(*kernelNotif);
+				kernelNotif->bufSize = sizeof(msg);
+				kernelNotif->isPath = FALSE;
+				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
+				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+
+				if (kernelNotif->msg) {
+					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg)+1);
+					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+						ExFreePool(kernelNotif->msg);
+						ExFreePool(kernelNotif);
+					}
+				}
+				else {
+					ExFreePool(kernelNotif);
+				}
+
+			}
 		}
 
 		if (threadUtils.isThreadInjected()) {
-			DbgPrint("Thread is injected !\n");
-			CallbackObjects::GetBufferQueue()->Enqueue(
-				"Thread is Injected wazzaaaaaa !"
-			);
+
+			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
+
+			if (kernelNotif) {
+
+				char* msg = "Thread is Injected";
+
+				SET_CRITICAL(*kernelNotif);
+				kernelNotif->bufSize = sizeof(msg);
+				kernelNotif->isPath = FALSE;
+				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
+				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+
+				if (kernelNotif->msg) {
+					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
+					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+						ExFreePool(kernelNotif->msg);
+						ExFreePool(kernelNotif);
+					}
+				}
+				else {
+					ExFreePool(kernelNotif);
+				}
+
+			}
 		}
 	}
 	else {

@@ -1,7 +1,5 @@
 #include <ntifs.h>
 
-extern "C" ULONGLONG __readmsr(ULONG);
-
 typedef NTSTATUS(NTAPI* PsRegisterAltSystemCallHandler)(PVOID HandlerFunction, LONG HandlerIndex);
 
 typedef NTSTATUS(*ZwSetInformationProcess)(
@@ -9,6 +7,8 @@ typedef NTSTATUS(*ZwSetInformationProcess)(
 	ULONG, 
 	PVOID, 
 	ULONG);
+
+extern "C" ULONGLONG __readmsr(ULONG);
 
 extern "C" NTKERNELAPI PLIST_ENTRY PsLoadedModuleList;
 
@@ -53,4 +53,25 @@ extern "C" NTSTATUS ZwQueryInformationProcess(
 	PULONG ReturnLength
 );
 
+extern "C" NTSTATUS ZwOpenThread(
+	PHANDLE ThreadHandle,
+	ACCESS_MASK DesiredAccess,
+	POBJECT_ATTRIBUTES ObjectAttributes,
+	PCLIENT_ID ClientId
+);
 
+// PsGetContextThread 
+extern "C" NTSTATUS PsGetContextThread(
+	PETHREAD Thread,
+	PCONTEXT ThreadContext,
+	KPROCESSOR_MODE PreviousMode
+);
+
+//extern "C" NTSTATUS ZwQueryVirtualMemory(
+//	HANDLE ProcessHandle,
+//	PVOID BaseAddress,
+//	MEMORY_INFORMATION_CLASS MemoryInformationClass,
+//	PVOID MemoryInformation,
+//	SIZE_T MemoryInformationLength,
+//	PSIZE_T ReturnLength
+//);

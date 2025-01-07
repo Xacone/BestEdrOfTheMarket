@@ -30,18 +30,8 @@ VOID ImageUtils::ImageLoadNotifyRoutine(
 
         KeStackAttachProcess(targetProcess, &apcState);
         attached = TRUE;
-
+    
         __try {
-            RAW_BUFFER rawBuffer = { 0 };
-            rawBuffer.buffer = (BYTE*)ExAllocatePool2(POOL_FLAG_NON_PAGED, ImageInfo->ImageSize, 'txet');
-            rawBuffer.size = ImageInfo->ImageSize;
-
-            if (rawBuffer.buffer) {
-                RtlCopyMemory(rawBuffer.buffer, ImageInfo->ImageBase, ImageInfo->ImageSize);
-
-                if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuffer)) {
-                    ExFreePool(rawBuffer.buffer);
-                }
 
                 if (FullImageName && FullImageName->Buffer && FullImageName->Length > 0) {
                     ULONG charBufferSize = FullImageName->Length / sizeof(WCHAR) + 1;
@@ -53,40 +43,42 @@ VOID ImageUtils::ImageLoadNotifyRoutine(
 
                         RtlInitUnicodeString(&unicodeString, FullImageName->Buffer);
                         if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&ansiString, &unicodeString, TRUE))) {
+
                             RtlCopyMemory(charBuffer, ansiString.Buffer, ansiString.Length);
                             charBuffer[ansiString.Length] = '\0';
 
-                            if (!CallbackObjects::GetHashQueue()->Enqueue(charBuffer)) {
-                                ExFreePool(charBuffer);
-                            }
+							PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
 
+                            if (kernelNotif) {
+
+                                SET_INFO(*kernelNotif);
+
+                                kernelNotif->pid = PsGetProcessId(targetProcess);
+                                kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, ansiString.Length + 1, 'msg');
+								kernelNotif->bufSize = ansiString.Length + 1;
+
+                                if (kernelNotif->msg) {
+
+                                    RtlCopyMemory(kernelNotif->msg, charBuffer, ansiString.Length + 1);
+                                    kernelNotif->isPath = TRUE;
+
+                                    if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+                                        ExFreePool(kernelNotif->msg);
+                                        ExFreePool(kernelNotif);
+                                    }
+                                }
+                                else {
+                                    ExFreePool(kernelNotif);
+                                }
+                            }
+                           
                             RtlFreeAnsiString(&ansiString);
                         }
                         else {
                             ExFreePool(charBuffer);
                         }
                     }
-                }
-
-              /*  char* charBuffer = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, FullImageName->Length + 1, 'jedb');
-
-                if (charBuffer) {
-                    RtlCopyMemory(charBuffer, FullImageName->Buffer, FullImageName->Length);
-                    charBuffer[FullImageName->Length] = '\0';
-
-                    CallbackObjects::GetHashQueue()->Enqueue(charBuffer);
-                    
-					ExFreePool(charBuffer);
-                }*/
-
-			/*	char* buffer = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, FullImageName->Length + 1, 'txet');
-                if (buffer) {
-                    RtlCopyMemory(buffer, FullImageName->Buffer, FullImageName->Length);
-                    buffer[FullImageName->Length] = '\0';
-                }*/
-
-                //CallbackObjects::GetHashQueue()->Enqueue(charBuffer);
-
+                
             }
             else {
                 DbgPrint("[-] Failed to allocate memory for section data\n");

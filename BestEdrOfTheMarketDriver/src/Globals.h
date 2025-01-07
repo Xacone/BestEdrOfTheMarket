@@ -25,6 +25,7 @@
 #pragma warning(disable: 4244)
 
 #define MAX_BUFFER_COUNT 512
+#define HASH_TABLE_SIZE 256
 
 #define BEOTM_RETRIEVE_DATA_BUFFER CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
@@ -32,8 +33,7 @@
 
 #define BEOTM_RETRIEVE_DATA_BYTE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
-#define BEOTM_END_ALT_SYSCALL CTL_CODE(FILE_DEVICE_UNKNOWN, 0x216, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
+#define END_THAT_PROCESS CTL_CODE(FILE_DEVICE_UNKNOWN, 0x216, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 #define ProcessAltSystemCallInformation 0x64
 
@@ -147,8 +147,11 @@ ULONG64 GetUserModeAddressVpn(
 	ULONG64
 );
 
-class SsdtUtils;
+NTSTATUS TerminateProcess(HANDLE);
 
+char* FetchNtVersion(DWORD);
+
+class SsdtUtils;
 class ComUtils {
 
 public:
@@ -423,12 +426,94 @@ public:
 	//	Cleanup();
 	//}
 };
+//
+//class BufferQueue {
+//
+//private:
+//
+//	char** bufferArray;
+//	ULONG capacity;
+//	ULONG size;
+//	ULONG head;
+//	ULONG tail;
+//	KSPIN_LOCK spinLock;
+//
+//public:
+//
+//	BufferQueue() {}
+//
+//	VOID Init(ULONG maxBuf) {
+//
+//		capacity = maxBuf;
+//		size = 0;
+//		head = 0;
+//		tail = 0;
+//
+//		bufferArray = (char**)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(char*) * capacity, 'qBuf');
+//		
+//		if (!bufferArray) {
+//			DbgPrint("Failed to allocate buffer array\n");
+//			capacity = 0;
+//		}
+//
+//		KeInitializeSpinLock(&spinLock);
+//	}
+//
+//	BOOLEAN Enqueue(char* buffer) {
+//		KIRQL oldIrql;
+//		KeAcquireSpinLock(&spinLock, &oldIrql);
+//
+//		if (size == capacity) {
+//			KeReleaseSpinLock(&spinLock, oldIrql);
+//			return FALSE;
+//		}
+//
+//		bufferArray[tail] = buffer;
+//		tail = (tail + 1) % capacity;
+//		size++;
+//
+//		KeReleaseSpinLock(&spinLock, oldIrql);
+//		return TRUE;
+//	}
+//
+//	char* Dequeue() {
+//		KIRQL oldIrql;
+//		KeAcquireSpinLock(&spinLock, &oldIrql);
+//
+//		if (!bufferArray) {
+//			KeReleaseSpinLock(&spinLock, oldIrql);
+//			DbgPrint("Buffer array is null\n");
+//			return nullptr;
+//		}
+//
+//		if (size == 0) {
+//			KeReleaseSpinLock(&spinLock, oldIrql);
+//			return nullptr;
+//		}
+//
+//		char* buffer = bufferArray[head];
+//		head = (head + 1) % capacity;
+//		size--;
+//
+//		KeReleaseSpinLock(&spinLock, oldIrql);
+//		return buffer;
+//	}
+//
+//	ULONG GetSize() {
+//		KIRQL oldIrql;
+//		KeAcquireSpinLockAtDpcLevel(&spinLock);
+//		ULONG currentSize = size;
+//		KeReleaseSpinLockFromDpcLevel(&spinLock);
+//		return currentSize;
+//	}
+//};
+
 
 class BufferQueue {
 
 private:
 
-	char** bufferArray;
+	PKERNEL_STRUCTURED_NOTIFICATION* bufferArray;
 	ULONG capacity;
 	ULONG size;
 	ULONG head;
@@ -446,8 +531,8 @@ public:
 		head = 0;
 		tail = 0;
 
-		bufferArray = (char**)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(char*) * capacity, 'qBuf');
-		
+		bufferArray = (PKERNEL_STRUCTURED_NOTIFICATION*)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(PKERNEL_STRUCTURED_NOTIFICATION) * capacity, 'qBuf');
+
 		if (!bufferArray) {
 			DbgPrint("Failed to allocate buffer array\n");
 			capacity = 0;
@@ -456,7 +541,7 @@ public:
 		KeInitializeSpinLock(&spinLock);
 	}
 
-	BOOLEAN Enqueue(char* buffer) {
+	BOOLEAN Enqueue(PKERNEL_STRUCTURED_NOTIFICATION buffer) {
 		KIRQL oldIrql;
 		KeAcquireSpinLock(&spinLock, &oldIrql);
 
@@ -473,7 +558,7 @@ public:
 		return TRUE;
 	}
 
-	char* Dequeue() {
+	PKERNEL_STRUCTURED_NOTIFICATION Dequeue() {
 		KIRQL oldIrql;
 		KeAcquireSpinLock(&spinLock, &oldIrql);
 
@@ -488,7 +573,7 @@ public:
 			return nullptr;
 		}
 
-		char* buffer = bufferArray[head];
+		PKERNEL_STRUCTURED_NOTIFICATION buffer = bufferArray[head];
 		head = (head + 1) % capacity;
 		size--;
 
@@ -503,7 +588,6 @@ public:
 		KeReleaseSpinLockFromDpcLevel(&spinLock);
 		return currentSize;
 	}
-
 };
 
 class HashQueue : public BufferQueue {
@@ -514,12 +598,87 @@ public:
 
 };
 
+class RegionTracker {
+private:
+	LIST_ENTRY HashTable[HASH_TABLE_SIZE];
+
+	ULONG HashFunction(HANDLE ProcessId) {
+		return ((ULONG)(ULONG_PTR)ProcessId) % HASH_TABLE_SIZE;
+	}
+
+public:
+
+	RegionTracker() {
+		for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+			InitializeListHead(&HashTable[i]);
+		}
+	}
+
+	VOID Init() {
+		for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+			InitializeListHead(&HashTable[i]);
+		}
+	}
+
+	~RegionTracker() {
+		for (int i = 0; i < HASH_TABLE_SIZE; i++) {
+			PLIST_ENTRY listHead = &HashTable[i];
+			PLIST_ENTRY currentEntry = listHead->Flink;
+
+			while (currentEntry != listHead) {
+				PHASH_ENTRY entry = CONTAINING_RECORD(currentEntry, HASH_ENTRY, ListEntry);
+				currentEntry = currentEntry->Flink;
+				ExFreePoolWithTag(entry, 'tag1');
+			}
+		}
+	}
+
+	VOID AddEntry(HANDLE ProcessId, PVOID address, ULONG size, ULONG Protect, BOOLEAN remote) {
+		ULONG hashIndex = HashFunction(ProcessId);
+		PHASH_ENTRY newEntry = (PHASH_ENTRY)ExAllocatePool2(NonPagedPool, sizeof(HASH_ENTRY), 'tag1');
+
+		if (newEntry) {
+			newEntry->ProcessId = ProcessId;
+			newEntry->RegionInfo.address = address;
+			newEntry->RegionInfo.size = size;
+			newEntry->RegionInfo.Protect = Protect;
+			newEntry->RegionInfo.remote = remote;
+			InsertHeadList(&HashTable[hashIndex], &newEntry->ListEntry);
+			DbgPrint("[+] Added entry for process %p\n", ProcessId);
+		}
+	}
+
+	PHASH_ENTRY FindEntry(HANDLE ProcessId) {
+		ULONG hashIndex = HashFunction(ProcessId);
+		PLIST_ENTRY listHead = &HashTable[hashIndex];
+		PLIST_ENTRY currentEntry = listHead->Flink;
+
+		while (currentEntry != listHead) {
+			PHASH_ENTRY entry = CONTAINING_RECORD(currentEntry, HASH_ENTRY, ListEntry);
+			if (entry->ProcessId == ProcessId) {
+				return entry;
+			}
+			currentEntry = currentEntry->Flink;
+		}
+		return NULL;
+	}
+
+	VOID RemoveEntry(HANDLE ProcessId) {
+		PHASH_ENTRY entry = FindEntry(ProcessId);
+		if (entry) {
+			RemoveEntryList(&entry->ListEntry);
+			ExFreePoolWithTag(entry, 'tag1');
+		}
+	}
+};
+
 
 class SyscallsUtils {
 
 	UNICODE_STRING traced[5];
-	PsRegisterAltSystemCallHandler pPsRegisterAltSystemCallHandler;
 	BOOLEAN isTracingEnabled;
+
+	PsRegisterAltSystemCallHandler pPsRegisterAltSystemCallHandler;
 
 	static ZwSetInformationProcess pZwSetInformationProcess;
 
@@ -529,10 +688,20 @@ class SyscallsUtils {
 	static ULONG NtAllocId;
 	static ULONG NtWriteId;
 	static ULONG NtProtectId;
+	static ULONG NtFreeId;
+	static ULONG NtReadId;
+	static ULONG NtWriteFileId;
+	static ULONG NtQueueApcThreadId;
+	static ULONG NtQueueApcThreadExId;
+	static ULONG NtSetContextThreadId;
+	static ULONG NtMapViewOfSectionId;
+	static ULONG NtResumeThreadId;
+	static ULONG NtContinueId;
+	static ULONG NtContinueEx;
 
 	static BufferQueue* bufQueue;
-
 	static StackUtils* stackUtils;
+	static RegionTracker* vmRegionTracker;
 
 	VadUtils* vadUtils;
 	
@@ -548,6 +717,7 @@ public:
 		PETHREAD
 	);
 	
+
 	BOOLEAN InitAltSyscallHandler();
 
 	VOID InitStackUtils();
@@ -582,7 +752,15 @@ public:
 		return vadUtils;
 	}
 
-	static VOID NtAllocHandler(
+	VOID NtVersionPreCheck();
+
+	typedef VOID(NTAPI* PPS_APC_ROUTINE)(
+		_In_opt_ PVOID ApcArgument1,
+		_In_opt_ PVOID ApcArgument2,
+		_In_opt_ PVOID ApcArgument3
+		);
+
+	static VOID NtAllocVmHandler(
 		HANDLE,
 		PVOID*,
 		ULONG_PTR,
@@ -591,7 +769,7 @@ public:
 		ULONG
 	);
 
-	static VOID NtProtectHandler(
+	static VOID NtProtectVmHandler(
 		HANDLE,
 		PVOID,
 		SIZE_T*,
@@ -599,12 +777,84 @@ public:
 		PULONG
 	);
 
-	static VOID NtWriteHandler(
+	static VOID NtWriteVmHandler(
 		HANDLE,
 		PVOID,
 		PVOID,
 		SIZE_T,
 		PSIZE_T
+	);
+
+	static VOID NtFreeVmHandler(
+		HANDLE,
+		PVOID*,
+		PSIZE_T,
+		ULONG
+	);
+
+	static VOID NtReadVmHandler(
+		HANDLE,
+		PVOID,
+		PVOID,
+		SIZE_T,
+		PSIZE_T
+	);
+
+	static VOID NtWriteFileHandler(
+		HANDLE,
+		HANDLE,
+		PIO_APC_ROUTINE,
+		PVOID,
+		PIO_STATUS_BLOCK,
+		PVOID,
+		ULONG,
+		PLARGE_INTEGER,
+		PULONG
+	);
+
+	static VOID NtQueueApcThreadHandler(
+		HANDLE,
+		PPS_APC_ROUTINE,
+		PVOID,
+		PVOID,
+		PVOID
+	);
+
+	static VOID NtQueueApcThreadExHandler(
+		HANDLE,
+		HANDLE,
+		PPS_APC_ROUTINE,
+		PVOID,
+		PVOID,
+		PVOID
+	);
+
+	static VOID NtSetContextThreadHandler(
+		HANDLE,
+		PVOID
+	);
+
+	static VOID NtMapViewOfSectionHandler(
+		HANDLE,
+		HANDLE,
+		PVOID*,
+		ULONG_PTR,
+		SIZE_T,
+		PLARGE_INTEGER,
+		PSIZE_T,
+		SECTION_INHERIT,
+		ULONG,
+		ULONG
+	);
+
+	static VOID NtResumeThreadHandler(
+		HANDLE,
+		PULONG
+	);
+
+	static VOID NtContinueHandler(
+		PCONTEXT,
+		BOOLEAN
 	);
 
 	static BOOLEAN SetInformationAltSystemCall(
@@ -650,6 +900,22 @@ public:
 	static BufferQueue* getBufQueue() {
 		return bufQueue;
 	}
+
+	static VOID InitVmRegionTracker() {
+
+		vmRegionTracker = (RegionTracker*)ExAllocatePool2(POOL_FLAG_NON_PAGED | POOL_FLAG_RAISE_ON_FAILURE, sizeof(RegionTracker), 'vmrt');
+
+		if (!vmRegionTracker) {
+			DbgPrint("Failed to allocate memory for vmRegionTracker\n");
+		}
+
+		vmRegionTracker->Init();
+	}
+
+	static RegionTracker* getVmRegionTracker() {
+		return vmRegionTracker;
+	}
+
 };
 
 class Controller {
