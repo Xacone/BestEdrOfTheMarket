@@ -22,7 +22,6 @@ PSSDT_TABLE g_ssdtTable;
 SsdtUtils* g_ssdtUtils;
 SyscallsUtils* g_syscallsUtils;
 CallbackObjects* g_callbackObjects;
-Controller* g_controller;
 
 BufferQueue* g_bufferQueue; 
 HashQueue* g_hashQueue;
@@ -375,9 +374,6 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 
 	g_bytesQueue->Init(MAX_BUFFER_COUNT);
 
-	//Controller controller = Controller();
-	//g_controller = &controller;
-
 	DriverObject->DriverUnload = UnloadDriver;
 	DriverObject->MajorFunction[IRP_MJ_CREATE] = DriverCreateClose;
 	DriverObject->MajorFunction[IRP_MJ_CLOSE] = DriverCreateClose;
@@ -401,13 +397,12 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 
 	if (isCpuVTxEptSupported()) {
 		
-		keServiceDescriptorTable = g_ssdtUtils->LeakKeServiceDescriptorTableVPT();
+		keServiceDescriptorTable = g_ssdtUtils->LeakKeServiceDescriptorTableEptRvi();
 	
 	}
 	else {
 	
 		ULONG64 kiSystemServiceUser = SsdtUtils::LeakKiSystemServiceUser();
-
 		keServiceDescriptorTable = SsdtUtils::LeakKeServiceDescriptorTable((ULONG64)kiSystemServiceUser);
 	}
 
@@ -460,8 +455,9 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 		}
 	}
 
-	g_syscallsUtils->NtVersionPreCheck();
 	//g_syscallsUtils->InitVmRegionTracker();
+
+	g_syscallsUtils->NtVersionPreCheck(); 
 	g_syscallsUtils->InitSsdtTable(pSsdtTable);
 	g_syscallsUtils->InitIds();
 	g_syscallsUtils->InitAltSyscallHandler();
@@ -477,8 +473,8 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING Reg
 		return STATUS_INSUFFICIENT_RESOURCES;
 	}
 
+	g_callbackObjects->InitDriverObject(DriverObject);
 	g_callbackObjects->InitializeHashQueueMutex();
-	
 	g_callbackObjects->InitHashQueue(g_hashQueue);
 	g_callbackObjects->InitBytesQueue(g_bytesQueue);
 	g_callbackObjects->InitBufferQueue(g_bufferQueue);

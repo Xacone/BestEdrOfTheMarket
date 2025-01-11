@@ -24,7 +24,9 @@
 #pragma warning(disable:4245)
 #pragma warning(disable: 4244)
 
-#define MAX_BUFFER_COUNT 512
+#define ALTITUDE L"300021"
+
+#define MAX_BUFFER_COUNT 1024
 #define HASH_TABLE_SIZE 256
 
 #define BEOTM_RETRIEVE_DATA_BUFFER CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
@@ -70,6 +72,12 @@ int starts_with_signature(
 
 const char* GetProtectionString(
 	ULONG
+);
+
+NTSTATUS getProcessBaseAddr(
+	HANDLE,
+	PVOID*,
+	PSIZE_T
 );
 
 VOID InitializeFunctionMap(
@@ -164,6 +172,8 @@ class VadUtils {
 
 	PEPROCESS process;
 	RTL_AVL_TREE* root;
+	VAD_RANGE ntdllVadRange;
+	VAD_RANGE procVadRange;
 
 public:
 	
@@ -177,14 +187,41 @@ public:
 
 	VOID addressLookup();
 
-	BOOLEAN isAddressOutOfNtdll(
+	static BOOLEAN isAddressOutOfNtdll(
 		RTL_BALANCED_NODE*, 
 		ULONG64,
 		BOOLEAN*,
 		BOOLEAN*,
 		BOOLEAN*
 	);
+
+	static BOOLEAN isAddressOutOfKernelBase(
+		RTL_BALANCED_NODE*,
+		ULONG64,
+		BOOLEAN*,
+		BOOLEAN*,
+		BOOLEAN*
+	);
+
+	static BOOLEAN isAddressOutOfSpecificDll(
+		RTL_BALANCED_NODE*,
+		ULONG64,
+		BOOLEAN*,
+		BOOLEAN*,
+		BOOLEAN*,
+		unsigned short*,
+		unsigned short*
+	);
+
+	static BOOLEAN isAddressOutOfGdi32(
+		RTL_BALANCED_NODE*,
+		ULONG64,
+		BOOLEAN*,
+		BOOLEAN*,
+		BOOLEAN*
+	);
 	
+
 	VOID exploreVadTreeAndVerifyLdrIngtegrity(
 		RTL_BALANCED_NODE*,
 		UNICODE_STRING*,
@@ -210,9 +247,13 @@ protected:
 public:
 
 	ULONG64 getStackStartRtl();
+	
 	ULONG64 getSSP();
-	BOOLEAN isStackCorruptedRtlCET();
-	PVOID forceCETOnCallingProcess();
+
+	BOOLEAN isStackCorruptedRtlCET(
+		PVOID*
+	);
+
 };
 
 
@@ -304,7 +345,7 @@ public:
 	
 	VOID ParseSSDT();
 
-	ULONGLONG LeakKeServiceDescriptorTableVPT();
+	ULONGLONG LeakKeServiceDescriptorTableEptRvi();
 
 	static ULONGLONG LeakKiSystemServiceUser();
 
@@ -421,92 +462,11 @@ public:
 		KeReleaseSpinLockFromDpcLevel(&spinLock);
 	}
 
-
 	//~BytesQueue() {
 	//	Cleanup();
 	//}
 };
-//
-//class BufferQueue {
-//
-//private:
-//
-//	char** bufferArray;
-//	ULONG capacity;
-//	ULONG size;
-//	ULONG head;
-//	ULONG tail;
-//	KSPIN_LOCK spinLock;
-//
-//public:
-//
-//	BufferQueue() {}
-//
-//	VOID Init(ULONG maxBuf) {
-//
-//		capacity = maxBuf;
-//		size = 0;
-//		head = 0;
-//		tail = 0;
-//
-//		bufferArray = (char**)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(char*) * capacity, 'qBuf');
-//		
-//		if (!bufferArray) {
-//			DbgPrint("Failed to allocate buffer array\n");
-//			capacity = 0;
-//		}
-//
-//		KeInitializeSpinLock(&spinLock);
-//	}
-//
-//	BOOLEAN Enqueue(char* buffer) {
-//		KIRQL oldIrql;
-//		KeAcquireSpinLock(&spinLock, &oldIrql);
-//
-//		if (size == capacity) {
-//			KeReleaseSpinLock(&spinLock, oldIrql);
-//			return FALSE;
-//		}
-//
-//		bufferArray[tail] = buffer;
-//		tail = (tail + 1) % capacity;
-//		size++;
-//
-//		KeReleaseSpinLock(&spinLock, oldIrql);
-//		return TRUE;
-//	}
-//
-//	char* Dequeue() {
-//		KIRQL oldIrql;
-//		KeAcquireSpinLock(&spinLock, &oldIrql);
-//
-//		if (!bufferArray) {
-//			KeReleaseSpinLock(&spinLock, oldIrql);
-//			DbgPrint("Buffer array is null\n");
-//			return nullptr;
-//		}
-//
-//		if (size == 0) {
-//			KeReleaseSpinLock(&spinLock, oldIrql);
-//			return nullptr;
-//		}
-//
-//		char* buffer = bufferArray[head];
-//		head = (head + 1) % capacity;
-//		size--;
-//
-//		KeReleaseSpinLock(&spinLock, oldIrql);
-//		return buffer;
-//	}
-//
-//	ULONG GetSize() {
-//		KIRQL oldIrql;
-//		KeAcquireSpinLockAtDpcLevel(&spinLock);
-//		ULONG currentSize = size;
-//		KeReleaseSpinLockFromDpcLevel(&spinLock);
-//		return currentSize;
-//	}
-//};
+
 
 
 class BufferQueue {
@@ -717,7 +677,6 @@ public:
 		PETHREAD
 	);
 	
-
 	BOOLEAN InitAltSyscallHandler();
 
 	VOID InitStackUtils();
@@ -734,8 +693,9 @@ public:
 
 	VOID DisableAltSyscallFromThreads3();
 	
-	BOOLEAN isSyscallDirect(
-		ULONG64
+	static BOOLEAN isSyscallDirect(
+		ULONG64,
+		char*
 	);
 
 	BOOLEAN isSyscallIndirect(
@@ -754,13 +714,8 @@ public:
 
 	VOID NtVersionPreCheck();
 
-	typedef VOID(NTAPI* PPS_APC_ROUTINE)(
-		_In_opt_ PVOID ApcArgument1,
-		_In_opt_ PVOID ApcArgument2,
-		_In_opt_ PVOID ApcArgument3
-		);
 
-	static VOID NtAllocVmHandler(
+	static VOID NtAllocVmHandler(	// Ok
 		HANDLE,
 		PVOID*,
 		ULONG_PTR,
@@ -769,7 +724,7 @@ public:
 		ULONG
 	);
 
-	static VOID NtProtectVmHandler(
+	static VOID NtProtectVmHandler(		// Ok
 		HANDLE,
 		PVOID,
 		SIZE_T*,
@@ -777,7 +732,7 @@ public:
 		PULONG
 	);
 
-	static VOID NtWriteVmHandler(
+	static VOID NtWriteVmHandler(	// Ok
 		HANDLE,
 		PVOID,
 		PVOID,
@@ -785,14 +740,7 @@ public:
 		PSIZE_T
 	);
 
-	static VOID NtFreeVmHandler(
-		HANDLE,
-		PVOID*,
-		PSIZE_T,
-		ULONG
-	);
-
-	static VOID NtReadVmHandler(
+	static VOID NtReadVmHandler(	// Ok
 		HANDLE,
 		PVOID,
 		PVOID,
@@ -800,7 +748,7 @@ public:
 		PSIZE_T
 	);
 
-	static VOID NtWriteFileHandler(
+	static VOID NtWriteFileHandler(		// Ok
 		HANDLE,
 		HANDLE,
 		PIO_APC_ROUTINE,
@@ -832,19 +780,6 @@ public:
 	static VOID NtSetContextThreadHandler(
 		HANDLE,
 		PVOID
-	);
-
-	static VOID NtMapViewOfSectionHandler(
-		HANDLE,
-		HANDLE,
-		PVOID*,
-		ULONG_PTR,
-		SIZE_T,
-		PLARGE_INTEGER,
-		PSIZE_T,
-		SECTION_INHERIT,
-		ULONG,
-		ULONG
 	);
 
 	static VOID NtResumeThreadHandler(
@@ -918,48 +853,50 @@ public:
 
 };
 
-class Controller {
-
-public:
-
-	Controller();
-
-	VOID GrantAntiMalwareProtectionToProc(
-		PEPROCESS
-	);
-};
-
-class BehaviorScoring {
-
-	ULONG scoringLevel = 0;
-
-public:
-
-};
-
-
 class ObjectUtils {
 
 private:
 	
-	BufferQueue* queue;
+	UNICODE_STRING altitude;
+	
+	PVOID regHandle1;
+	PVOID regHandle2;
+
+	OB_CALLBACK_REGISTRATION objOpCallbackRegistration1;
+	OB_CALLBACK_REGISTRATION objOpCallbackRegistration2;
+
+	OB_OPERATION_REGISTRATION regPreOpRegistration;
+	OB_OPERATION_REGISTRATION setThreadContextPostOpOperation;
 
 public:
-
-	BOOLEAN isHandleOnLsass();
-
-	BOOLEAN isCredentialDumpingAttempt();
 
 	VOID setObjectNotificationCallback();
 	
 	VOID unsetObjectNotificationCallback();
+
+	static OB_PREOP_CALLBACK_STATUS PreOperationCallback(
+		PVOID,
+		POB_PRE_OPERATION_INFORMATION
+	);
+
+	static POB_POST_OPERATION_CALLBACK PostOperationCallback(
+		PVOID,
+		POB_POST_OPERATION_INFORMATION
+	);
+
+	static BOOLEAN isCredentialDumpAttempt(
+		POB_PRE_OPERATION_INFORMATION
+	);
+
+	static BOOLEAN isRemoteContextMapipulation(
+		POB_POST_OPERATION_INFORMATION
+	);
+
 };
 
 class ProcessUtils {
 
 private:
-
-	BufferQueue* queue;
 
 	PEPROCESS process;
 	VadUtils vadUtils;
@@ -976,23 +913,8 @@ public:
 	BOOLEAN isProcessParentPidSpoofed(
 		PPS_CREATE_NOTIFY_INFO
 	);
-	
-	BOOLEAN isProcessProtected();
-	
-	BOOLEAN isProcessSigned();
-	
-	BOOLEAN InspectPebLdr(
-		PEPROCESS, 
-		ULONG64
-	);
-	
+		
 	BOOLEAN isProcessGhosted();
-
-	static VOID CreateProcessNotifyEx(
-		PEPROCESS,
-		HANDLE,
-		PPS_CREATE_NOTIFY_INFO
-	);
 
 	VOID setProcessNotificationCallback();
 
@@ -1001,6 +923,12 @@ public:
 	VadUtils* getVadUtils() {
 		return &vadUtils;
 	}
+
+	static VOID CreateProcessNotifyEx(
+		PEPROCESS,
+		HANDLE,
+		PPS_CREATE_NOTIFY_INFO
+	);
 };
 
 class ImageUtils {
@@ -1039,7 +967,6 @@ private:
 
 	PETHREAD thread;
 	StackUtils stackUtils;
-	BufferQueue* queue;
 
 public:
 
@@ -1052,7 +979,9 @@ public:
 		this->thread = pEthread;
 	}
 
-	BOOLEAN isThreadInjected();
+	BOOLEAN isThreadInjected(
+		ULONG64*
+	);
 	
 	BOOLEAN isThreadStackCorruptedCET(
 		PETHREAD
@@ -1075,23 +1004,31 @@ public:
 	VOID setThreadNotificationCallback();
 	
 	VOID unsetThreadNotificationCallback();
+	
 };
 
 class RegistryUtils {
 
 private:
 	
-	BufferQueue* queue;
+	static LARGE_INTEGER cookie;
 
 public:
-
-	BOOLEAN isRegistryPersistenceBehavior();
 	
-	BOOLEAN isSuspiciousInfoQuuery();
-	
-	BOOLEAN isSuspiciousKeyEntry();
-
 	VOID setRegistryNotificationCallback();
+
+	VOID unsetRegistryNotificationCallback();
+
+	static NTSTATUS RegOpNotifyCallback(
+		PVOID,
+		PVOID,
+		PVOID
+	);
+
+	static BOOLEAN isRegistryPersistenceBehavior(
+		PUNICODE_STRING
+	);
+
 };
 
 class CallbackObjects :
@@ -1107,6 +1044,8 @@ class CallbackObjects :
 	static HashQueue* hashQueue;
 	static BytesQueue* bytesQueue;
 
+	static PVOID DriverObject;
+
 public:
 
 	CallbackObjects() {}
@@ -1114,6 +1053,14 @@ public:
 	CallbackObjects(
 		PEPROCESS
 	) {}
+
+	static VOID InitDriverObject(PVOID drvObj) {
+		DriverObject = drvObj;
+	}
+
+	static PVOID GetDriverObject() {
+		return DriverObject;
+	}
 
 	static VOID InitBufferQueue(
 		BufferQueue* bufQueue

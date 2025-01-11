@@ -250,3 +250,45 @@ char* FetchNtVersion(DWORD buildNumber) {
         default: return "Unknown Windows Version";
     }
 }
+
+
+NTSTATUS getProcessBaseAddr(HANDLE procId, PVOID* baseAddr, PSIZE_T size) {
+
+    PEPROCESS process;
+    NTSTATUS status;
+    PROCESS_BASIC_INFORMATION processInfo;
+    ULONG returnLength;
+
+    status = PsLookupProcessByProcessId(procId, &process);
+    if (!NT_SUCCESS(status)) {
+        return status;
+    }
+
+    status = ZwQueryInformationProcess(NtCurrentProcess(), ProcessBasicInformation, &processInfo, sizeof(processInfo), &returnLength);
+
+    if (!NT_SUCCESS(status)) {
+        ObDereferenceObject(process);
+        return status;
+    }
+
+    __try {
+
+        *baseAddr = ((PPEB2)processInfo.PebBaseAddress)->ImageBaseAddress;
+
+        IMAGE_DOS_HEADER dosHeader;
+        IMAGE_NT_HEADERS64 ntHeader;
+
+        RtlCopyMemory(&dosHeader, *baseAddr, sizeof(IMAGE_DOS_HEADER));
+        RtlCopyMemory(&ntHeader, (PVOID)((ULONG64)*baseAddr + dosHeader.e_lfanew), sizeof(IMAGE_NT_HEADERS64));
+
+        *size = ntHeader.OptionalHeader.SizeOfImage;
+
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        status = GetExceptionCode();
+        ObDereferenceObject(process);
+        return status;
+    }
+
+    return STATUS_SUCCESS;
+}

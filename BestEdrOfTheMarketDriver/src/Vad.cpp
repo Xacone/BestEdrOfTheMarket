@@ -10,7 +10,7 @@ VadUtils::VadUtils(PEPROCESS pEprocess) {
 	
 	process = pEprocess;
 	
-	root = (_RTL_AVL_TREE*)((PUCHAR)pEprocess + EPROCESS_VAD_ROOT_OFFSET);
+	root = (PRTL_AVL_TREE)((PUCHAR)pEprocess + EPROCESS_VAD_ROOT_OFFSET);
 
 	if (!MmIsAddressValid(root)) {
 
@@ -99,6 +99,104 @@ BOOLEAN VadUtils::isAddressOutOfNtdll(
 			isWow64,
 			isOutOfSys32Ntdll,
 			isOutOfWow64Ntdll
+		);
+
+		return FALSE;
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		DbgPrint("[Exception] isAddressOutOfNtdll\n");
+		//DbgBreakPoint();
+	}
+
+	return FALSE;
+}
+
+BOOLEAN VadUtils::isAddressOutOfSpecificDll(
+	RTL_BALANCED_NODE* node,
+	ULONG64 targetAddress,
+	BOOLEAN* isWow64,
+	BOOLEAN* isOutOfSys32Dll,
+	BOOLEAN* isOutOfWow64Dll,
+	unsigned short* sys32DllPath,
+	unsigned short* wow64DllPath
+) {
+	if (node == NULL) {
+		return FALSE;
+	}
+
+	PMMVAD Vad = (PMMVAD)node;
+	if (Vad == NULL || !MmIsAddressValid(Vad))
+	{
+		return FALSE;
+	}
+
+	__try {
+		_SUBSECTION* subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + VAD_SUBSECTION_OFFSET);
+
+		if (MmIsAddressValid(subsectionAddr)) {
+			PVOID ControlAreaAddr = *(PVOID*)(((PUCHAR)subsectionAddr + VAD_CONTROL_AREA_OFFSET));
+
+			if (MmIsAddressValid(ControlAreaAddr))
+			{
+				_SEGMENT* segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + VAD_SEGMENT_OFFSET));
+
+				if (MmIsAddressValid(segmentAddr)) {
+
+					PVOID filePointer = (PVOID*)((PUCHAR)ControlAreaAddr + VAD_FILE_POINTER_OFFSET);
+					PVOID fileObjectPointer = *(PVOID*)filePointer;
+
+					FILE_OBJECT* fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)fileObjectPointer);
+
+					if (MmIsAddressValid(fileObject)) {
+
+						if (!*isWow64 && UnicodeStringContains(&fileObject->FileName, sys32DllPath)) {
+
+							ULONG64 targetVpn = GetUserModeAddressVpn(targetAddress);
+							ULONG64 vadStartingVpn = Vad->StartingVpn;
+							ULONG64 vadEndingVpn = Vad->EndingVpn;
+
+							if (!(targetVpn > vadStartingVpn && targetVpn < vadEndingVpn)) {
+								*isOutOfSys32Dll = TRUE;
+							}
+
+						}
+						else if (*isWow64 && UnicodeStringContains(&fileObject->FileName, wow64DllPath)) {
+
+							ULONG32 targetVpn = (ULONG32)GetWow64UserModeAddressVpn(targetAddress);
+							ULONG32 vadStartingVpn = (ULONG32)Vad->StartingVpn;
+							ULONG32 vadEndingVpn = (ULONG32)Vad->EndingVpn;
+
+							if (!(targetVpn > vadStartingVpn && targetVpn < vadEndingVpn)) {
+								*isOutOfWow64Dll = TRUE;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (*isOutOfSys32Dll && *isOutOfWow64Dll) {
+			return TRUE;
+		}
+
+		isAddressOutOfSpecificDll(
+			node->Left,
+			targetAddress,
+			isWow64,
+			isOutOfSys32Dll,
+			isOutOfWow64Dll,
+			sys32DllPath,
+			wow64DllPath
+		);
+
+		isAddressOutOfSpecificDll(
+			node->Right,
+			targetAddress,
+			isWow64,
+			isOutOfSys32Dll,
+			isOutOfWow64Dll,
+			sys32DllPath,
+			wow64DllPath
 		);
 
 		return FALSE;
@@ -204,12 +302,13 @@ VOID VadUtils::exploreVadTreeAndVerifyLdrIngtegrity(
 			}
 		}
 
-		exploreVadTreeAndVerifyLdrIngtegrity(node->Left, searchStr, isTampered);
-		exploreVadTreeAndVerifyLdrIngtegrity(node->Right, searchStr, isTampered);
-	
+		if (!*isTampered) {
+			exploreVadTreeAndVerifyLdrIngtegrity(node->Left, searchStr, isTampered);
+			exploreVadTreeAndVerifyLdrIngtegrity(node->Right, searchStr, isTampered);
+		}
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
-		DbgPrint("[Exception] exploreVadTreeAndVerifyLdrIngtegrity\n");
+		DbgPrint("Exception in exploreVadTreeAndVerifyLdrIngtegrity\n");
 		//DbgBreakPoint();
 	}
 

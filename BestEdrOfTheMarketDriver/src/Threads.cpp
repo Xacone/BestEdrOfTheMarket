@@ -9,7 +9,7 @@ BOOLEAN ThreadUtils::isThreadRemotelyCreated(HANDLE procId) {
 	return FALSE;
 }
 
-BOOLEAN ThreadUtils::isThreadInjected() {
+BOOLEAN ThreadUtils::isThreadInjected(ULONG64* addr) {
 
 	BOOLEAN isAddressOutOfSystem32Ntdll = FALSE;
 	BOOLEAN isAddressOutOfWow64Ntdll = FALSE;
@@ -24,8 +24,6 @@ BOOLEAN ThreadUtils::isThreadInjected() {
 
 		if (PsGetProcessWow64Process(PsGetCurrentProcess()) != NULL) {
 			isWow64 = TRUE;
-		} else {
-			isWow64 = FALSE;
 		}
 
 		this->getVadUtils()->isAddressOutOfNtdll(
@@ -35,6 +33,8 @@ BOOLEAN ThreadUtils::isThreadInjected() {
 			&isAddressOutOfSystem32Ntdll,
 			&isAddressOutOfWow64Ntdll
 		);
+
+		*addr = stackStart;
 
 		if (isWow64) {
 			if (isAddressOutOfSystem32Ntdll ^ isAddressOutOfWow64Ntdll) {
@@ -57,6 +57,8 @@ VOID ThreadUtils::CreateThreadNotifyRoutine(
 	
 	if (Create) {
 	
+		ULONG64 outAddr;
+
 		SyscallsUtils::SetInformationAltSystemCall(PsGetCurrentProcessId());
 			
 		SyscallsUtils::EnableAltSycallForThread(PsGetCurrentThread());
@@ -89,10 +91,16 @@ VOID ThreadUtils::CreateThreadNotifyRoutine(
 				char* msg = "Process Image Tampering";
 
 				SET_CRITICAL(*kernelNotif);
+				SET_PROC_VAD_CHECK(*kernelNotif);
+
 				kernelNotif->bufSize = sizeof(msg);
 				kernelNotif->isPath = FALSE;
 				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
 				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+
+				char procName[15];
+				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
+				RtlCopyMemory(kernelNotif->procName, procName, 15);
 
 				if (kernelNotif->msg) {
 					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg)+1);
@@ -108,19 +116,27 @@ VOID ThreadUtils::CreateThreadNotifyRoutine(
 			}
 		}
 
-		if (threadUtils.isThreadInjected()) {
+		if (threadUtils.isThreadInjected(&outAddr)) {
 
 			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
 
 			if (kernelNotif) {
 
-				char* msg = "Thread is Injected";
+				char* msg = "Injected Thread";
 
 				SET_CRITICAL(*kernelNotif);
+				SET_STACK_BASE_VAD_CHECK(*kernelNotif);
+				
 				kernelNotif->bufSize = sizeof(msg);
 				kernelNotif->isPath = FALSE;
 				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
 				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+				kernelNotif->scoopedAddress = outAddr;
+
+				char procName[15];
+				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
+				RtlCopyMemory(kernelNotif->procName, procName, 15);
+
 
 				if (kernelNotif->msg) {
 					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
@@ -135,6 +151,7 @@ VOID ThreadUtils::CreateThreadNotifyRoutine(
 
 			}
 		}
+
 	}
 	else {
 		SyscallsUtils::DisableAltSycallForThread(PsGetCurrentThread());
@@ -147,7 +164,7 @@ VOID ThreadUtils::setThreadNotificationCallback() {
 	if (!NT_SUCCESS(status)) {
 		DbgPrint("[-] PsSetCreateThreadNotifyRoutine failed\n");
 	}
-	else {
+	else {	
 
 		DbgPrint("[+] PsSetCreateThreadNotifyRoutine success\n");
 	}

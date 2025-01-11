@@ -1,5 +1,11 @@
 #include <ntifs.h>
 
+typedef VOID(NTAPI* PPS_APC_ROUTINE)(
+	_In_opt_ PVOID ApcArgument1,
+	_In_opt_ PVOID ApcArgument2,
+	_In_opt_ PVOID ApcArgument3
+	);
+
 typedef NTSTATUS(NTAPI* PsRegisterAltSystemCallHandler)(PVOID HandlerFunction, LONG HandlerIndex);
 
 typedef NTSTATUS(*ZwSetInformationProcess)(
@@ -60,18 +66,16 @@ extern "C" NTSTATUS ZwOpenThread(
 	PCLIENT_ID ClientId
 );
 
-// PsGetContextThread 
 extern "C" NTSTATUS PsGetContextThread(
 	PETHREAD Thread,
 	PCONTEXT ThreadContext,
 	KPROCESSOR_MODE PreviousMode
 );
 
-//extern "C" NTSTATUS ZwQueryVirtualMemory(
-//	HANDLE ProcessHandle,
-//	PVOID BaseAddress,
-//	MEMORY_INFORMATION_CLASS MemoryInformationClass,
-//	PVOID MemoryInformation,
-//	SIZE_T MemoryInformationLength,
-//	PSIZE_T ReturnLength
-//);
+extern "C" PPS_PROTECTION PsGetProcessProtection(
+	PEPROCESS Process
+);
+
+extern "C" HANDLE PsGetProcessInheritedFromUniqueProcessId(
+	PEPROCESS Process
+);

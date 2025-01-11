@@ -66,15 +66,74 @@ VOID ProcessUtils::CreateProcessNotifyEx(
 	ProcessUtils procUtils = ProcessUtils(Process);
 	
 	if (CreateInfo) {
-
-		//SyscallsUtils::SetInformationAltSystemCall(PsGetCurrentProcessId());
 	
 		if (procUtils.isProcessParentPidSpoofed(CreateInfo)) {
-			DbgPrint("Ppid Spoofing !\n");
+
+			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
+
+			if (kernelNotif) {
+
+				char* msg = "Parent Process PID (PPID) Spoofed";
+
+				SET_WARNING(*kernelNotif);
+				SET_CALLING_PROC_PID_CHECK(*kernelNotif);
+
+				kernelNotif->bufSize = sizeof(msg);
+				kernelNotif->isPath = FALSE;
+				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
+				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+
+				char procName[15];
+				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
+				RtlCopyMemory(kernelNotif->procName, procName, 15);
+
+
+				if (kernelNotif->msg) {
+					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
+					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+						ExFreePool(kernelNotif->msg);
+						ExFreePool(kernelNotif);
+					}
+				}
+				else {
+					ExFreePool(kernelNotif);
+				}
+
+			}
 		}
 
 		if (procUtils.isProcessGhosted()) {
-			DbgPrint("Ghosted Process !\n");
+
+			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
+
+			if (kernelNotif) {
+
+				char* msg = "Process is Ghosted !";
+
+				SET_CRITICAL(*kernelNotif);
+				SET_SE_AUDIT_INFO_CHECK(*kernelNotif);
+
+				kernelNotif->bufSize = sizeof(msg);
+				kernelNotif->isPath = FALSE;
+				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
+				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+
+				char procName[15];
+				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
+				RtlCopyMemory(kernelNotif->procName, procName, 15);
+
+				if (kernelNotif->msg) {
+					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
+					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+						ExFreePool(kernelNotif->msg);
+						ExFreePool(kernelNotif);
+					}
+				}
+				else {
+					ExFreePool(kernelNotif);
+				}
+
+			}
 		}
 	
 	}

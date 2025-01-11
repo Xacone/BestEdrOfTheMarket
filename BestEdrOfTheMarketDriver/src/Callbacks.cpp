@@ -4,6 +4,8 @@ BufferQueue* CallbackObjects::bufferQueue = nullptr;
 HashQueue* CallbackObjects::hashQueue = nullptr;
 BytesQueue* CallbackObjects::bytesQueue = nullptr;
 
+PVOID CallbackObjects::DriverObject = nullptr;
+
 VOID CallbackObjects::setupNotificationsGlobal() {
 
 	this->setThreadNotificationCallback();
@@ -11,6 +13,10 @@ VOID CallbackObjects::setupNotificationsGlobal() {
 	this->setProcessNotificationCallback();
 
 	this->setImageNotificationCallback();
+
+	this->setObjectNotificationCallback();
+
+	this->setRegistryNotificationCallback();
 }
 
 VOID CallbackObjects::unsetNotificationsGlobal() {
@@ -20,4 +26,8 @@ VOID CallbackObjects::unsetNotificationsGlobal() {
 	this->unsetProcessNotificationCallback();
 
 	this->unsetImageNotificationCallback();
+
+	this->unsetObjectNotificationCallback();
+
+	this->unsetRegistryNotificationCallback();
 }

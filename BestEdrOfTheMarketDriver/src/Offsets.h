@@ -1,6 +1,6 @@
 // Regular Stack / Shadow Stack
 #define MSR_IA32_PL3_SSP			0x000006A7U
-#define MAX_STACK_FRAMES 64
+#define MAX_STACK_FRAMES 512
 #define RTL_WALK_KERNEL_MODE_STACK		0x00000000
 #define RTL_WALK_USER_MODE_STACK 0x00000001
 
@@ -29,10 +29,9 @@
 #define VAD_ENTRY_POINT_OFFSET 0x48
 #define VAD_MITIGATION_FLAGS2_VALUES_OFFSET 0x9d4
 
-// Others
-#define PROCESS_TERMINATE 0x0001 
-
 // VM
+#define PROCESS_VM_READ 0x0010
+
 #define MM_ZERO_ACCESS         0x0  
 #define MM_READONLY            0x1  
 #define MM_EXECUTE             0x2  
@@ -49,3 +48,6 @@
 #define MM_EXECUTE_WRITECOMBINE 0xD 
 #define MM_EXECUTE_GUARD_PAGE  0xE 
 #define MM_EXECUTE_NOACCESS    0xF 
+
+// Others
+#define PROCESS_TERMINATE 0x0001 

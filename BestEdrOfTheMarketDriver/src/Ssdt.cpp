@@ -4,7 +4,7 @@ VOID SsdtUtils::InitExportsMap() {
 	InitializeFunctionMap(&exportsMap);
 }
 
-ULONGLONG SsdtUtils::LeakKeServiceDescriptorTableVPT() {
+ULONGLONG SsdtUtils::LeakKeServiceDescriptorTableEptRvi() {
 
 	ULONG64 kiSystemCall64 = (ULONG64)__readmsr(MSR_IA32_LSTAR);
 

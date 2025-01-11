@@ -42,7 +42,6 @@
 #define SET_OBJECT_CHECK(notification) ((notification).ObjectCheck = 1)
 #define SET_REG_CHECK(notification) ((notification).RegCheck = 1)
 #define SET_SYSCALL_CHECK(notification) ((notification).SyscallCheck = 1)
-
 #define SET_SHADOW_STACK_CHECK(notification) ((notification).ShadowStackCheck = 1)
 
 typedef unsigned short WORD;
@@ -658,7 +657,7 @@ typedef struct _KERNEL_STRUCTURED_NOTIFICATION {
             unsigned char ProcVadCheck : 1;
             unsigned char StackBaseVadCheck : 1;
             unsigned char CallingProcPidCheck : 1;
-			unsigned char SeAuditInfoCheck : 1;
+            unsigned char SeAuditInfoCheck : 1;
             unsigned char ImageLoadPathCheck : 1;
             unsigned char ObjectCheck : 1;
             unsigned char RegCheck : 1;
@@ -679,7 +678,9 @@ typedef struct _KERNEL_STRUCTURED_NOTIFICATION {
     BOOLEAN isPath;
     HANDLE pid;
     ULONG bufSize;
-    
+    char procName[15];
+    char targetProcName[15];
+
     union {
         struct {
             unsigned char Critical : 1;
@@ -705,3 +706,8 @@ typedef struct _HASH_ENTRY {
     REGION_INFO RegionInfo;
     LIST_ENTRY ListEntry;
 } HASH_ENTRY, * PHASH_ENTRY;
+
+struct VAD_RANGE {
+    ULONG64 start;
+    ULONG64 end;
+};

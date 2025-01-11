@@ -22,7 +22,7 @@ ULONG SyscallsUtils::NtContinueId = 0x0043;
 // Variable Syscalls IDs within the same Win versions range
 
 ULONG SyscallsUtils::NtQueueApcThreadExId = 0;				
-ULONG SyscallsUtils::NtSetContextThreadId = 0;			    
+ULONG SyscallsUtils::NtSetContextThreadId = 0;		    
 ULONG SyscallsUtils::NtContinueEx = 0;						
 
 BufferQueue* SyscallsUtils::bufQueue = nullptr;
@@ -220,6 +220,12 @@ VOID SyscallsUtils::NtVersionPreCheck() {
 
 BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 
+	PVOID spoofedAddr;
+
+	if (stackUtils->isStackCorruptedRtlCET(&spoofedAddr)) {
+		DbgPrint("oui ya spoof\n");
+	}
+
 	PULONGLONG pArg5 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x28);
 	PULONGLONG pArg6 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x30);
 
@@ -236,9 +242,9 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 
 	ULONG id = (ULONG)trapFrame->Rax;
 
-	if ((ULONG)id == NtAllocId) {
+	if ((ULONG)id == NtAllocId) {		// NtAllocateVirtualMemory
 
-		NtAllocVmHandler(				// NtAllocateVirtualMemory
+		NtAllocVmHandler(				
 			(HANDLE)trapFrame->Rcx,
 			(PVOID*)trapFrame->Rdx,
 			trapFrame->R8,
@@ -247,35 +253,31 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 			(ULONG)arg6
 		);
 	}
-	else if (id == NtResumeThreadId) {
+	else if (id == NtResumeThreadId) {   // NtResumeThread
 
 		NtResumeThreadHandler(
 			(HANDLE)trapFrame->Rcx,
 			(PULONG)trapFrame->Rdx
 		);
 	}
-	else if (id == NtContinueId) {
+	else if (id == NtContinueId) {		// NtContinue
 
 		NtContinueHandler(
 			(PCONTEXT)trapFrame->Rcx,
 			(BOOLEAN)trapFrame->Rdx
 		);
 	}
-	else if (id == NtSetContextThreadId) {  // NtSetContextThread
+	//else if (id == NtSetContextThreadId) {		// NtSetContextThread
 
-		//DbgPrint("ProcessId: %d\n", PsGetProcessId(PsGetCurrentProcess()));
+	//	NtSetContextThreadHandler(
+	//		(HANDLE)trapFrame->Rcx,
+	//		(PVOID)trapFrame->Rdx
+	//	);
 
-		NtSetContextThreadHandler(
-			(HANDLE)trapFrame->Rcx,
-			(PVOID)trapFrame->Rdx
-		);
-
-		//DbgPrint("Rcx: %llx\n", trapFrame->Rcx);
-		//DbgPrint("r8: %llx\n", trapFrame->R8);		
-		//DbgPrint("r9: %llx\n", trapFrame->R9);
-
-	}
+	//}
 	else if (id == 0x0050) {			// NtProtectVirtualMemory | Win 10 -> Win11 24H2
+
+		isSyscallDirect(trapFrame->Rip, "NtProtectVirtualMemory");
 
 		NtProtectVmHandler(
 			(HANDLE)trapFrame->Rcx,
@@ -285,9 +287,11 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 			(PULONG)arg5
 		);
 	}
-	else if (id == 0x003a) {
+	else if (id == 0x003a) {			// NtWriteVirtualMemory | Win 10 -> Win11 24H2
 
-		NtWriteVmHandler(				// NtWriteVirtualMemory | Win 10 -> Win11 24H2
+		isSyscallDirect(trapFrame->Rip, "NtWriteVirtualMemory");
+
+		NtWriteVmHandler(				
 			(HANDLE)trapFrame->Rcx,
 			(PVOID)trapFrame->Rdx,
 			(PVOID)trapFrame->R8,
@@ -317,7 +321,19 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 		);
 
 	}
-	else if (id == 0x0008) {
+	else if (id == 0x0054) {			// NtReadVirtualMemory | Win 10 -> Win11 24H2
+
+		isSyscallDirect(trapFrame->Rip, "NtReadVirtualMemory");
+
+		NtReadVmHandler(			
+			(HANDLE)trapFrame->Rcx,
+			(PVOID)trapFrame->Rdx,
+			(PVOID)trapFrame->R8,
+			(SIZE_T)trapFrame->R9,
+			(PSIZE_T)arg6
+		);
+	}
+	else if (id == 0x0008) {		// NtWriteFile
 
 		PULONGLONG pArg7 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x38);
 		PULONGLONG pArg8 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x40);
@@ -361,24 +377,86 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 		);
 	}
 
-
 	return TRUE;
 }
 
-BOOLEAN SyscallsUtils::isSyscallDirect(ULONG64 Rip) 
+BOOLEAN SyscallsUtils::isSyscallDirect(ULONG64 Rip, char* syscallName) 
 {
+	PEPROCESS curproc = IoGetCurrentProcess();
 
-	//BOOLEAN isAddressOutOfSystem32Ntdll = FALSE;
-	//BOOLEAN isAddressOutOfWow64Ntdll = FALSE;
-	//BOOLEAN isWow64 = FALSE;
+	PPS_PROTECTION procProtection = PsGetProcessProtection(curproc);
 
-	//this->getVadutils()->isAddressOutOfNtdll(
-	//	(PRTL_BALANCED_NODE)this->getVadutils()->getVadRoot(),
-	//	Rip,
-	//	&isWow64,
-	//	&isAddressOutOfSystem32Ntdll,
-	//	&isAddressOutOfWow64Ntdll
-	//);
+	if (procProtection->Level == 0x0) {
+
+		KAPC_STATE apcState;
+
+		KeStackAttachProcess(curproc, &apcState);
+
+		BYTE op = *(BYTE*)Rip;
+
+		BOOLEAN isWow64 = FALSE;
+		BOOLEAN isAddressOutOfSystem32Ntdll = FALSE;
+		BOOLEAN isAddressOutOfWow64Ntdll = FALSE;
+
+		RTL_AVL_TREE* root = (RTL_AVL_TREE*)((PUCHAR)IoGetCurrentProcess() + EPROCESS_VAD_ROOT_OFFSET);
+
+		VadUtils::isAddressOutOfSpecificDll(
+			(PRTL_BALANCED_NODE)root,
+			(ULONG64)Rip,
+			&isWow64,
+			&isAddressOutOfSystem32Ntdll,
+			&isAddressOutOfWow64Ntdll,
+			L"\\Windows\\System32\\ntdll.dll",
+			L"\\Windows\\SysWOW64\\ntdll.dll"
+		);
+
+		BOOL isSyscallDirect = FALSE;
+
+		if (isWow64) {
+			if (isAddressOutOfSystem32Ntdll ^ isAddressOutOfWow64Ntdll) {
+				isSyscallDirect = TRUE;
+			}
+		}
+
+		else {
+			isSyscallDirect = isAddressOutOfSystem32Ntdll;
+		}
+
+		if (isSyscallDirect && op == 0xC3) {
+
+			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
+
+			if (kernelNotif) {
+
+				char* msg = "NT Syscall did not came from Ntdll";
+
+				SET_WARNING(*kernelNotif);
+				SET_SYSCALL_CHECK(*kernelNotif);
+
+				kernelNotif->bufSize = sizeof(msg);
+				kernelNotif->isPath = FALSE;
+				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
+				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+
+				char procName[15];
+				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
+				RtlCopyMemory(kernelNotif->procName, procName, 15);
+
+				if (kernelNotif->msg) {
+					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
+					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+						ExFreePool(kernelNotif->msg);
+						ExFreePool(kernelNotif);
+					}
+				}
+				else {
+					ExFreePool(kernelNotif);
+				}
+			}
+		}
+
+		KeUnstackDetachProcess(&apcState);
+	}
 
 	return FALSE;
 }
@@ -393,7 +471,7 @@ VOID SyscallsUtils::UnInitAltSyscallHandler() {
 
 	ULONGLONG pPspAltSystemCallHandlers = LeakPspAltSystemCallHandlers((ULONGLONG)pPsRegisterAltSystemCallHandler);
 
-	DbgPrint("PspAltSystemCallHandlers: %llx\n", pPspAltSystemCallHandlers);
+	DbgPrint("[*] PspAltSystemCallHandlers: %llx\n", pPspAltSystemCallHandlers);
 
 	LONGLONG* pAltSystemCallHandlers = (LONGLONG*)pPspAltSystemCallHandlers;
 
@@ -543,10 +621,16 @@ VOID SyscallsUtils::InitIds() {
 
 	UNICODE_STRING usNtAllocateVirtualMemory;
 	RtlInitUnicodeString(&usNtAllocateVirtualMemory, L"NtAllocateVirtualMemory");
-	ULONG ssn = getSSNByName(ssdtTable, &usNtAllocateVirtualMemory, exportsMap);
-	DbgPrint("[*] NtAllocateVirtualMemory Id: %lu\n", ssn);
+	ULONG ntAllocSsn = getSSNByName(ssdtTable, &usNtAllocateVirtualMemory, exportsMap);
 
-	NtAllocId = ssn;
+	NtAllocId = ntAllocSsn;
+
+	UNICODE_STRING usNtFreeVirtualMemory;
+	RtlInitUnicodeString(&usNtFreeVirtualMemory, L"NtFreeVirtualMemory");
+	ULONG ntFreeSsn = getSSNByName(ssdtTable, &usNtFreeVirtualMemory, exportsMap);
+
+	NtFreeId = ntFreeSsn;
+
 }
 
 VOID SyscallsUtils::NtAllocVmHandler(
@@ -562,13 +646,10 @@ VOID SyscallsUtils::NtAllocVmHandler(
 
 	if (Protect == 0x40) {
 
+		Remote = TRUE;
+
 		if (ProcessHandle == (HANDLE)-1) {
-			//DbgPrint("Current Process\n");
 			Remote = FALSE;
-		}
-		else {
-			//DbgPrint("Not Current Process\n");
-			Remote = TRUE;
 		}
 
 		SyscallsUtils::getVmRegionTracker()->AddEntry(
@@ -579,62 +660,8 @@ VOID SyscallsUtils::NtAllocVmHandler(
 			Protect
 		);
 
-		//BYTE* buffer = (BYTE*)ExAllocatePool2(POOL_FLAG_NON_PAGED | POOL_FLAG_RAISE_ON_FAILURE, *RegionSize, 'kzoe');
-
-		//// base address est generalement vide donc tracking inutile via address,
-		//if (buffer) {
-
-		//	RtlCopyMemory(buffer, *BaseAddress, *RegionSize);
-
-		//	RAW_BUFFER rawBuf;
-
-		//	rawBuf.buffer = buffer;
-		//	rawBuf.size = *RegionSize;
-
-		//	if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuf)) {
-		//		ExFreePool(rawBuf.buffer);
-		//	}
-
-		//}
 	}
 }
-
-//VOID SyscallsUtils::NtAllocHandler(
-//	HANDLE ProcessHandle,
-//	PVOID* BaseAddress,
-//	ULONG_PTR ZeroBits,
-//	PSIZE_T RegionSize,
-//	ULONG AllocationType,
-//	ULONG Protect
-//) {
-//	if (Protect == PAGE_EXECUTE_READWRITE) {
-//
-//		//stackUtils->forceCETOnCallingProcess();
-//		//stackUtils->isStackCorruptedRtlCET();
-//
-//		CHAR* message = (CHAR*)ExAllocatePool2(POOL_FLAG_NON_PAGED, 256, 'tag');
-//
-//		if (message != NULL) {
-//			NTSTATUS status = RtlStringCbPrintfA(
-//				message,
-//				256,
-//				"NtAlloc(0x%p, 0x%p, 0x%p, %zu, 0x%x, 0x%x)",
-//				ProcessHandle,
-//				*BaseAddress,
-//				(VOID*)ZeroBits,
-//				*RegionSize,
-//				AllocationType,
-//				Protect
-//			);
-//
-//			if (NT_SUCCESS(status)) {
-//				if (SyscallsUtils::getBufQueue()->Enqueue((char*)message)) {
-//					ExFreePoolWithTag(message, 'tag');
-//				}
-//			}
-//		}
-//	}
-//}
 
 VOID SyscallsUtils::NtProtectVmHandler(
 	HANDLE ProcessHandle,
@@ -643,9 +670,8 @@ VOID SyscallsUtils::NtProtectVmHandler(
 	ULONG NewAccessProtection,
 	PULONG OldAccessProtection
 ) {
-	if (NewAccessProtection & PAGE_EXECUTE) {
 
-		DbgPrint("NtProtect PAGE_EXECUTE\n");
+	if (NewAccessProtection & PAGE_EXECUTE) {
 
 		PVOID buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, *NumberOfBytesToProtect, 'msg');
 
@@ -688,36 +714,6 @@ VOID SyscallsUtils::NtWriteVmHandler(
 
 		if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuf)) {
 			ExFreePool(rawBuf.buffer);
-		}
-	}
-}
-
-VOID SyscallsUtils::NtFreeVmHandler(
-	HANDLE ProcessHandle,
-	PVOID* BaseAddress,
-	PSIZE_T RegionSize,
-	ULONG FreeType
-) {
-	if (FreeType == MEM_RELEASE) {
-
-		if (*RegionSize && BaseAddress) {
-		
-			PVOID buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, *RegionSize, 'msg');
-
-			if (buffer) {
-
-				RtlCopyMemory(buffer, BaseAddress, *RegionSize);
-
-				RAW_BUFFER rawBuf;
-
-				rawBuf.buffer = (BYTE*)buffer;
-				rawBuf.size = *RegionSize;
-				rawBuf.pid = PsGetProcessId(PsGetCurrentProcess());
-
-				if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuf)) {
-					ExFreePool(rawBuf.buffer);
-				}
-			}
 		}
 	}
 }
@@ -786,7 +782,6 @@ VOID SyscallsUtils::NtWriteFileHandler(
 	}
 }
 
-
 VOID SyscallsUtils::NtQueueApcThreadHandler(
 	HANDLE ThreadHandle,
 	PPS_APC_ROUTINE ApcRoutine,
@@ -795,31 +790,6 @@ VOID SyscallsUtils::NtQueueApcThreadHandler(
 	PVOID ApcArgument3
 ) {
 
-	//PVOID apcRoutineAddr = (PVOID)ApcRoutine;
-	//PSIZE_T RegionSize;
-
-	//NTSTATUS status;
-	//MEMORY_BASIC_INFORMATION mbi;
-
-	//HANDLE callingProc = PsGetProcessId(PsGetCurrentProcess());
-
-	//status = ZwQueryVirtualMemory(
-	//	ThreadHandle,
-	//	apcRoutineAddr,
-	//	MemoryBasicInformation,
-	//	&mbi,
-	//	sizeof(mbi),
-	//	NULL
-	//);
-
-	//if (NT_SUCCESS(status))
-	//{
-	//	DbgPrint("[+] ZwQueryVirtualMemory success\n");
-	//	DbgPrint("[+] Size: %p\n", mbi.RegionSize);
-	//}
-	//else {
-	//	DbgPrint("[-] ZwQueryVirtualMemory failed with status: %x\n", status);
-	//}
 
 }
 
@@ -833,41 +803,6 @@ VOID SyscallsUtils::NtQueueApcThreadExHandler(
 )
 {
 
-	//DbgPrint("ApcEx\n");
-
-	/*PVOID apcRoutineAddr = (PVOID)ApcRoutine;
-	PSIZE_T RegionSize;
-
-	NTSTATUS status;
-	MEMORY_BASIC_INFORMATION mbi;
-
-	status = ZwQueryVirtualMemory(
-		ThreadHandle,
-		apcRoutineAddr,
-		MemoryBasicInformation,
-		&mbi,
-		sizeof(mbi),
-		NULL
-	);
-
-	if (NT_SUCCESS(status))
-	{
-		DbgPrint("[+] ZwQueryVirtualMemory success\n");
-		DbgPrint("[+] Size: %p\n", mbi.RegionSize);
-	}
-	else {
-		DbgPrint("[-] ZwQueryVirtualMemory failed with status: %x\n", status);
-	}*/
-
-
-}
-
-VOID SyscallsUtils::NtSetContextThreadHandler(
-	HANDLE ThreadHandle,
-	PVOID Context
-) {
-
-	//DbgPrint("address of context %p\n", &Context);
 
 }
 
@@ -876,82 +811,14 @@ VOID SyscallsUtils::NtContinueHandler(
 	BOOLEAN TestAlert
 ) {
 
-	// print context rip
-	//DbgPrint("RIP: %p\n", (ULONG64)Context->Rip);
-
-	//KTRAP_FRAME* trapFrame = *(KTRAP_FRAME**)(((PUCHAR)PsGetCurrentThread() + KTHREAD_TRAPFRAME_OFFSET));
-
-	//if (MmIsAddressValid(Context)) {
-
-	//	//DbgPrint("RIP %p\n", (ULONG64)Context->Rip);
-
-	//	//DbgPrint("ProcId: %d\n", PsGetCurrentProcessId());
-	//	//DbgPrint("RIP: %p\n", (ULONG64)trapFrame->Rip);
-
-	//}
-	
-	//CONTEXT context;
-	//context.ContextFlags = CONTEXT_FULL;
-	//NTSTATUS status;
-
-	////PETHREAD eThread;
-	////status = PsLookupThreadByThreadId(PsGet, &eThread);
-	////if (NT_SUCCESS(status)) {
-	////	DbgPrint("Thread found\n");
-	////}
-	////else {
-	////	DbgPrint("Thread not found\n");
-	////}
-
-	//status = PsGetContextThread(PsGetCurrentThread(), &context, UserMode);
-
-	//if (NT_SUCCESS(status)) {
-	//	DbgPrint("RIP: %p\n", (ULONG64)context.Rip);
-	//}
-	//else {
-	//	DbgPrint("[-] PsGetContextThread user failed with status: %x\n", status);
-	//}
-
 }
-
 
 VOID SyscallsUtils::NtResumeThreadHandler(
 	HANDLE ThreadHandle,
 	PULONG SuspendCount
 ) {
 
-	//CONTEXT context;
-	//context.ContextFlags = CONTEXT_FULL;
-	//NTSTATUS status;
-
-	//PETHREAD eThread;
-	//status = PsLookupThreadByThreadId(ThreadHandle, &eThread);
-	//if (NT_SUCCESS(status)) {
-	//	DbgPrint("Thread found\n");
-	//}
-	//else {
-	//	DbgPrint("Thread not found\n");
-	//}
-
-	//status = PsGetContextThread( (), &context, KernelMode);
 }
-
-
-VOID SyscallsUtils::NtMapViewOfSectionHandler(
-	HANDLE SectionHandle,
-	HANDLE ProcessHandle,
-	PVOID* BaseAddress,
-	ULONG_PTR ZeroBits,
-	SIZE_T CommitSize,
-	PLARGE_INTEGER SectionOffset,
-	PSIZE_T ViewSize,
-	SECTION_INHERIT InheritDisposition,
-	ULONG AllocationType,
-	ULONG Win32Protect
-) {
-
-}
-
 
 VOID SyscallsUtils::DisableAltSyscallFromThreads2() {
 

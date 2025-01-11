@@ -1,0 +1,29 @@
+﻿C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(65,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.props" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.Shared.props (364,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(151,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets (2008,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
+  Building 'BestEdrOfTheMarketDriver' with toolset 'WindowsKernelModeDriver10.0' and the 'Universal' target platform.
+  Stamping x64\Release\BestEdrOfTheMarketDriver.inf
+  Stamping [Version] section with DriverVer=01/11/2025,15.30.25.229
+  Stack.cpp
+  BestEdrOfTheMarketDriver.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarketDriver.sys
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(65,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.props" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.Shared.props (364,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(151,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets (2008,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
+  Done Adding Additional Store
+  Successfully signed: C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarketDriver.sys
+  
+  Driver is 'Universal'.
+  .........................
+  Signability test complete.
+  
+  Errors:
+  None
+  
+  Warnings:
+  None
+  
+  Catalog generation complete.
+  C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarketDriver\bestedrofthemarketdriver.cat
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(65,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.props" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.Shared.props (364,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarketDriver\BestEdrOfTheMarketDriver.vcxproj(151,5): warning MSB4011: "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets" ne peut pas être réimporté car il a déjà été importé à "C:\Program Files (x86)\Windows Kits\10\build\10.0.26100.0\WindowsDriver.common.targets (2008,3)". Il s'agit probablement d'une erreur de création de build. Cette importation est ignorée. 
+  Done Adding Additional Store
+  Successfully signed: C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\BestEdrOfTheMarketDriver\bestedrofthemarketdriver.cat
+  

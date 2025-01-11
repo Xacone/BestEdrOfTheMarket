@@ -107,7 +107,11 @@ VOID ImageUtils::setImageNotificationCallback() {
 
 	if (!NT_SUCCESS(status)) {
 		DbgPrint("[-] PsSetLoadImageNotifyRoutine failed\n");
-	}
+    }
+    else {
+		DbgPrint("[+] PsSetLoadImageNotifyRoutine success\n");
+
+    }
 
 }
 
@@ -117,6 +121,9 @@ VOID ImageUtils::unsetImageNotificationCallback() {
 
 	if (!NT_SUCCESS(status)) {
 		DbgPrint("[-] PsRemoveLoadImageNotifyRoutine failed\n");
-	}
+    }
+    else {
+		DbgPrint("[+] PsRemoveLoadImageNotifyRoutine success\n");
+    }
 
 }

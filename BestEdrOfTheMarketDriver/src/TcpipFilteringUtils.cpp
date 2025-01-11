@@ -25,7 +25,6 @@ VOID WdfTcpipUtils::TcpipFlowDeleteCallback(
 	DbgPrint("WFP: Flow deleted.\n");
 }
 
-
 VOID WdfTcpipUtils::TcpipFilteringCallback(
 	const FWPS_INCOMING_VALUES* values,
 	const FWPS_INCOMING_METADATA_VALUES0* metadata,
@@ -50,7 +49,7 @@ VOID WdfTcpipUtils::TcpipFilteringCallback(
 	UINT16 remote_port = values->incomingValue[FWPS_FIELD_OUTBOUND_TRANSPORT_V4_IP_REMOTE_PORT].value.uint16;
 
 	if (remote_port == 1234) {
-		classifyOut->actionType = FWP_ACTION_BLOCK;
+		classifyOut->actionType = FWP_ACTION_BLOCK; // Deny the traffic
 	}
 	else {
 		classifyOut->actionType = FWP_ACTION_PERMIT;
@@ -100,10 +99,8 @@ NTSTATUS WdfTcpipUtils::WfpRegisterCallout() {
 
 	NTSTATUS status = STATUS_SUCCESS;
 
-	// defines the data that is required for a callout driver to register
 	FWPS_CALLOUT s_callout = { 0 };		
 
-	// stores the state associated with a callout
 	FWPM_CALLOUT m_callout = { 0 };				
 
 	FWPM_DISPLAY_DATA display_data = { 0 };

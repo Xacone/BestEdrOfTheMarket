@@ -1,48 +1,5 @@
 #include "Globals.h"
 
-
-NTSTATUS getProcessBaseAddr(HANDLE procId, PVOID* baseAddr, PSIZE_T size) {
-	
-	PEPROCESS process;
-	NTSTATUS status;
-	PROCESS_BASIC_INFORMATION processInfo;
-	ULONG returnLength;
-
-	status = PsLookupProcessByProcessId(procId, &process);
-	if (!NT_SUCCESS(status)) {
-		return status;
-	}
-
-	status = ZwQueryInformationProcess(NtCurrentProcess(), ProcessBasicInformation, &processInfo, sizeof(processInfo), &returnLength);
-	
-	if (!NT_SUCCESS(status)) {
-		ObDereferenceObject(process);
-		return status;
-	}
-
-	__try {
-		
-		*baseAddr = ((PPEB2)processInfo.PebBaseAddress)->ImageBaseAddress;
-
-		IMAGE_DOS_HEADER dosHeader;
-		IMAGE_NT_HEADERS64 ntHeader;
-
-		RtlCopyMemory(&dosHeader, *baseAddr, sizeof(IMAGE_DOS_HEADER));
-		RtlCopyMemory(&ntHeader, (PVOID)((ULONG64)*baseAddr + dosHeader.e_lfanew), sizeof(IMAGE_NT_HEADERS64));
-
-		*size = ntHeader.OptionalHeader.SizeOfImage;
-
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER) {
-		status = GetExceptionCode();
-		ObDereferenceObject(process);
-		return status;
-	}
-
-	return STATUS_SUCCESS;
-}
-
-
 ULONG64 StackUtils::getStackStartRtl() {
 
 	PVOID stackFrames[MAX_STACK_FRAMES];
@@ -61,93 +18,158 @@ ULONG64 StackUtils::getSSP() {
 	return __readmsr(MSR_IA32_PL3_SSP);
 }
 
-BOOLEAN StackUtils::isStackCorruptedRtlCET() {
+BOOLEAN StackUtils::isStackCorruptedRtlCET(
+	PVOID* SpoofedAddr
+) {
+
+	NTSTATUS status;
+
+	PPS_PROTECTION curProcProtection = PsGetProcessProtection(PsGetCurrentProcess());
+
+	if (curProcProtection->Level != 0x0) {
+		return FALSE;
+	}
+
+	HANDLE parentCid = PsGetProcessInheritedFromUniqueProcessId(PsGetCurrentProcess());
+	PEPROCESS parentProc;
+
+	status = PsLookupProcessByProcessId(parentCid, &parentProc);
+
+	if (!NT_SUCCESS(status)) {
+		return FALSE;
+	}
+
+	PPS_PROTECTION parentProcProtection = PsGetProcessProtection(parentProc);
+
+	if ((DWORD_PTR)parentProcProtection == (BYTE)0x61) {
+		return FALSE;
+	}
 
 	__try {
 
 		PVOID ssp = (PVOID)this->getSSP();
-		PVOID stackFrames[MAX_STACK_FRAMES];
-		ULONG framesCaptured = RtlWalkFrameChain(stackFrames, MAX_STACK_FRAMES, RTL_WALK_USER_MODE_STACK);
-		PVOID shadowStackFrames[MAX_STACK_FRAMES];
+
+		if (ssp == nullptr || ssp == 0x0) {
+			return FALSE;
+		}
+
+		PVOID stackFrames[MAX_STACK_FRAMES] = { 0 };
+		ULONG capturedFramesCount = RtlWalkFrameChain(stackFrames, MAX_STACK_FRAMES, RTL_WALK_USER_MODE_STACK);
+		
+		if (capturedFramesCount == 0) {
+			return FALSE;
+		}
+
+		PVOID shadowStackFrames[MAX_STACK_FRAMES] = { 0 };
 		ULONG shadowStackFramesCount = 0;
 
-		DbgPrint("[+] Process: %s\n", PsGetProcessImageFileName(IoGetCurrentProcess()));
-		DbgPrint("[+] SSP: %p\n", ssp);
+		DWORD_PTR actual = (DWORD_PTR)ssp;
+		DWORD_PTR lastShadowFrame = NULL;
 
-		if ((ssp != 0x0) && (ssp != NULL)) {
+		if (!MmIsAddressValid((PVOID)actual)) {
+			return FALSE;
+		}
 
-			DWORD_PTR actual = (DWORD_PTR)ssp;
-			DWORD_PTR lastFrame = NULL;
+		while (shadowStackFramesCount < MAX_STACK_FRAMES) {
+			__try {
+				if (!MmIsAddressValid((PVOID)actual)) {
+					break;
+				}
 
-			if (MmIsAddressValid((PVOID)actual)) {
-				do {
-					__try {
+				PVOID frame = *(PVOID*)actual;
+				if (frame == nullptr) {
+					break;
+				}
 
-						if (*(PVOID*)actual == NULL) {
-							break;
+				lastShadowFrame = (DWORD_PTR)(*(PVOID*)actual);
+				shadowStackFrames[shadowStackFramesCount] = frame;
+				shadowStackFramesCount += 1;
+				actual += sizeof(PVOID);
+			}
+			__except (EXCEPTION_EXECUTE_HANDLER) {
+				DbgPrint("[-] Exception while traversing shadow stack.\n");
+				break;
+			}
+		}
+
+		PVOID capturedStackFramesUser[MAX_STACK_FRAMES] = { 0 };
+
+		for (ULONG i = 0; i < capturedFramesCount; i++) {
+
+			if((((ULONG64)stackFrames[i]) & (ULONG64)0xFFFF000000000000) != 0xffff000000000000) {	
+				capturedStackFramesUser[i] = stackFrames[i];
+			}
+		}
+
+		if (shadowStackFramesCount > 0 && capturedFramesCount > 0) {
+
+			for (ULONG i = 1; i < shadowStackFramesCount; i++) {		// Checking only return addresses, not RIP
+
+				PVOID frame = capturedStackFramesUser[i];
+				PVOID shadowFrame = shadowStackFrames[i-1];
+
+				if (frame == nullptr && shadowFrame == nullptr) {
+					break;
+				}
+
+				if (frame == nullptr) {
+					break;
+				}
+
+				if ((ULONG64)frame != (ULONG64)shadowFrame) {
+
+					if (frame == 0x0000000000000000) {
+
+						PRTL_AVL_TREE root = (PRTL_AVL_TREE)((PUCHAR)PsGetCurrentProcess() + EPROCESS_VAD_ROOT_OFFSET);
+
+						BOOLEAN isAddressOutOfSys32Ntdll = FALSE;
+						BOOLEAN isAddressOutOfWow64Ntdll = FALSE;
+						BOOLEAN isWow64 = FALSE;
+
+						if (PsGetProcessWow64Process(PsGetCurrentProcess()) != NULL) {
+							isWow64 = TRUE;
 						}
 
-						lastFrame = (DWORD_PTR)(*(PVOID*)actual);
-						shadowStackFrames[shadowStackFramesCount] = (PVOID)(*(PVOID*)actual);
-						shadowStackFramesCount += 1;
-						actual += sizeof(PVOID);
+						VadUtils::isAddressOutOfNtdll(
+							(PRTL_BALANCED_NODE)root,
+							(ULONG64)shadowFrame,
+							&isWow64,
+							&isAddressOutOfSys32Ntdll,
+							&isAddressOutOfWow64Ntdll
+						);
 
+						if (isWow64) {
+
+							if (isAddressOutOfSys32Ntdll ^ isAddressOutOfWow64Ntdll) {
+
+								*SpoofedAddr = shadowFrame;
+
+								return TRUE;
+							}
+							else {
+
+								*SpoofedAddr = shadowFrame;
+
+								return isAddressOutOfSys32Ntdll;
+							}
+						}
 					}
-					__except (EXCEPTION_EXECUTE_HANDLER) {
-						DbgPrint("[-] Exception\n");
-						break;
-					}
+					else {
 
-				} while (MmIsAddressValid((PVOID)actual));
+						*SpoofedAddr = shadowFrame;
 
-				if (framesCaptured > 0) {
-
-					if (shadowStackFramesCount != (framesCaptured - 1)) {
-						DbgPrint("Il y'a un probleme avc la pile !!!");
-					}
-
-					/*	if ((DWORD_PTR)(stackFrames[framesCaptured - 1]) != (DWORD_PTR)lastFrame) {
-							return TRUE;
-						}*/
-				}
+						return TRUE;
+					}	
+				}	
 			}
 		}
 	}
+
 	__except (EXCEPTION_EXECUTE_HANDLER) {
-		DbgPrint("[-] Exception\n");
+		DbgPrint("[-] General exception caught in isStackCorruptedRtlCET.\n");
 		return FALSE;
 	}
 
 	return FALSE;
-}
 
-PVOID StackUtils::forceCETOnCallingProcess() {
-
-	if (PsGetProcessWow64Process(IoGetCurrentProcess()) == NULL) {
-
-		ULONG* flagsPointer = (ULONG*)((ULONG64)IoGetCurrentProcess() + EPROCESS_MITIGATION_FLAGS2_VALUES_OFFSET);
-
-		__try {
-
-			if (MmIsAddressValid(flagsPointer) && MmIsNonPagedSystemAddressValid(flagsPointer)) {
-
-				ULONG currentFlags = *flagsPointer;
-				ULONG mask = currentFlags | 0x4000;
-				*flagsPointer = mask;
-			}
-			else {
-				DbgPrint("[!] Invalid or paged address\n");
-			}
-		
-
-		}
-		__except (EXCEPTION_EXECUTE_HANDLER) {
-
-			DbgPrint("[-] Exception\n");
-			return NULL;
-		}
-
-	}
-
-	return NULL;
 }
