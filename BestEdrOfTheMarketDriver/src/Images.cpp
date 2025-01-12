@@ -62,7 +62,7 @@ VOID ImageUtils::ImageLoadNotifyRoutine(
                                     RtlCopyMemory(kernelNotif->msg, charBuffer, ansiString.Length + 1);
                                     kernelNotif->isPath = TRUE;
 
-                                    if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+                                    if (!CallbackObjects::GetNotifQueue()->Enqueue(kernelNotif)) {
                                         ExFreePool(kernelNotif->msg);
                                         ExFreePool(kernelNotif);
                                     }

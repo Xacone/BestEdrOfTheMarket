@@ -8,21 +8,25 @@ BOOLEAN ObjectUtils::isCredentialDumpAttempt(
 	PUNICODE_STRING targetImageFileName;
 	SeLocateProcessImageName(targetProc, &targetImageFileName);
 
-	if (UnicodeStringContains(targetImageFileName, L"lsass.exe") || UnicodeStringContains(targetImageFileName, L"LSASS.exe")) {
+	if ( PsGetProcessId(targetProc) != PsGetProcessId(IoGetCurrentProcess()) ) {
 
-		if (OpInfo->Operation == OB_OPERATION_HANDLE_CREATE) {
+		if (UnicodeStringContains(targetImageFileName, L"lsass.exe") || UnicodeStringContains(targetImageFileName, L"LSASS.exe")) {
 
-			PEPROCESS callingProcess = IoGetCurrentProcess();
-			PUNICODE_STRING callingProcessPath;
-			SeLocateProcessImageName(callingProcess, &callingProcessPath);
+			if (OpInfo->Operation == OB_OPERATION_HANDLE_CREATE) {
 
-			int accessMask = OpInfo->Parameters->CreateHandleInformation.DesiredAccess;
-			char* callingProc = PsGetProcessImageFileName(callingProcess);
+				PEPROCESS callingProc = PsGetCurrentProcess();
+				PPS_PROTECTION callingProcProtection = PsGetProcessProtection(callingProc);
 
-			if (accessMask & PROCESS_VM_READ) {
+				int accessMask = OpInfo->Parameters->CreateHandleInformation.DesiredAccess;
 
-				OpInfo->Parameters->CreateHandleInformation.DesiredAccess = PROCESS_TERMINATE;
-				return TRUE;
+				if (callingProcProtection->Level == 0x0) {
+
+					if (accessMask & PROCESS_VM_READ) {
+
+						OpInfo->Parameters->CreateHandleInformation.DesiredAccess = PROCESS_TERMINATE;
+						return TRUE;
+					}
+				}
 			}
 		}
 	}
@@ -57,7 +61,7 @@ OB_PREOP_CALLBACK_STATUS ObjectUtils::PreOperationCallback(
 
 			if (kernelNotif->msg) {
 				RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
-				if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+				if (!CallbackObjects::GetNotifQueue()->Enqueue(kernelNotif)) {
 					ExFreePool(kernelNotif->msg);
 					ExFreePool(kernelNotif);
 				}
@@ -74,6 +78,7 @@ OB_PREOP_CALLBACK_STATUS ObjectUtils::PreOperationCallback(
 
 BOOLEAN ObjectUtils::isRemoteContextMapipulation(
 	POB_POST_OPERATION_INFORMATION OpInfo
+	// todo
 ) {
 	NTSTATUS status;
 
@@ -111,8 +116,6 @@ BOOLEAN ObjectUtils::isRemoteContextMapipulation(
 				if (OpInfo->Operation == OB_OPERATION_HANDLE_CREATE) {
 
 					if (OpInfo->Parameters->CreateHandleInformation.GrantedAccess & THREAD_SET_CONTEXT) {
-
-						//DbgPrint("[+] %s -> %s\n", curprocname, targprocname);
 
 						return TRUE;
 					}

@@ -4,6 +4,7 @@ PSSDT_TABLE SyscallsUtils::ssdtTable = nullptr;
 PFUNCTION_MAP SyscallsUtils::exportsMap = nullptr;
 ZwSetInformationProcess SyscallsUtils::pZwSetInformationProcess = nullptr;
 RegionTracker* SyscallsUtils::vmRegionTracker = nullptr;
+HANDLE SyscallsUtils::lastNotifedCidStackCorrupt = 0;
 
 // Fixed Syscall IDs from Win10 1507 to Win11 24H2
 // Sourced from: https://j00ru.vexillium.org/syscalls/nt/64/
@@ -222,9 +223,50 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 
 	PVOID spoofedAddr;
 
-	if (stackUtils->isStackCorruptedRtlCET(&spoofedAddr)) {
-		DbgPrint("oui ya spoof\n");
+	if (lastNotifedCidStackCorrupt == PsGetCurrentProcessId()) {
+		return FALSE;
 	}
+
+	if (stackUtils->isCETEnabled()) {
+
+		if (stackUtils->isStackCorruptedRtlCET(&spoofedAddr)) {
+
+			lastNotifedCidStackCorrupt = PsGetCurrentProcessId();
+
+			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
+
+			if (kernelNotif) {
+
+				char* msg = "Corrupted Thread Call Stack";
+
+				SET_WARNING(*kernelNotif);
+				SET_SHADOW_STACK_CHECK(*kernelNotif);
+
+				kernelNotif->scoopedAddress = (ULONG64)spoofedAddr;
+				kernelNotif->bufSize = sizeof(msg);
+				kernelNotif->isPath = FALSE;
+				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
+				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
+
+				char procName[15];
+				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
+				RtlCopyMemory(kernelNotif->procName, procName, 15);
+
+				if (kernelNotif->msg) {
+					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
+					if (!CallbackObjects::GetNotifQueue()->Enqueue(kernelNotif)) {
+						ExFreePool(kernelNotif->msg);
+						ExFreePool(kernelNotif);
+					}
+				}
+				else {
+					ExFreePool(kernelNotif);
+				}
+			}
+			return FALSE;
+		}
+	}
+	
 
 	PULONGLONG pArg5 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x28);
 	PULONGLONG pArg6 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x30);
@@ -267,14 +309,6 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 			(BOOLEAN)trapFrame->Rdx
 		);
 	}
-	//else if (id == NtSetContextThreadId) {		// NtSetContextThread
-
-	//	NtSetContextThreadHandler(
-	//		(HANDLE)trapFrame->Rcx,
-	//		(PVOID)trapFrame->Rdx
-	//	);
-
-	//}
 	else if (id == 0x0050) {			// NtProtectVirtualMemory | Win 10 -> Win11 24H2
 
 		isSyscallDirect(trapFrame->Rip, "NtProtectVirtualMemory");
@@ -321,17 +355,9 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 		);
 
 	}
-	else if (id == 0x0054) {			// NtReadVirtualMemory | Win 10 -> Win11 24H2
+	else if (id == 0x0054) {	        // NtReadVirtualMemory | Win 10 -> Win11 24H2
 
 		isSyscallDirect(trapFrame->Rip, "NtReadVirtualMemory");
-
-		NtReadVmHandler(			
-			(HANDLE)trapFrame->Rcx,
-			(PVOID)trapFrame->Rdx,
-			(PVOID)trapFrame->R8,
-			(SIZE_T)trapFrame->R9,
-			(PSIZE_T)arg6
-		);
 	}
 	else if (id == 0x0008) {		// NtWriteFile
 
@@ -398,7 +424,7 @@ BOOLEAN SyscallsUtils::isSyscallDirect(ULONG64 Rip, char* syscallName)
 		BOOLEAN isAddressOutOfSystem32Ntdll = FALSE;
 		BOOLEAN isAddressOutOfWow64Ntdll = FALSE;
 
-		RTL_AVL_TREE* root = (RTL_AVL_TREE*)((PUCHAR)IoGetCurrentProcess() + EPROCESS_VAD_ROOT_OFFSET);
+		RTL_AVL_TREE* root = (RTL_AVL_TREE*)((PUCHAR)IoGetCurrentProcess() + OffsetsMgt::GetOffsets()->VadRoot);
 
 		VadUtils::isAddressOutOfSpecificDll(
 			(PRTL_BALANCED_NODE)root,
@@ -444,12 +470,11 @@ BOOLEAN SyscallsUtils::isSyscallDirect(ULONG64 Rip, char* syscallName)
 
 				if (kernelNotif->msg) {
 					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
-					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+					if (!CallbackObjects::GetNotifQueue()->Enqueue(kernelNotif)) {
 						ExFreePool(kernelNotif->msg);
 						ExFreePool(kernelNotif);
 					}
-				}
-				else {
+				} else {
 					ExFreePool(kernelNotif);
 				}
 			}
@@ -462,8 +487,6 @@ BOOLEAN SyscallsUtils::isSyscallDirect(ULONG64 Rip, char* syscallName)
 }
 
 VOID SyscallsUtils::UnInitAltSyscallHandler() {
-
-	this->disableTracing();
 
 	UNICODE_STRING usPsRegisterAltSystemCallHandler;
 	RtlInitUnicodeString(&usPsRegisterAltSystemCallHandler, L"PsRegisterAltSystemCallHandler");
@@ -591,19 +614,20 @@ BOOLEAN SyscallsUtils::UnsetInformationAltSystemCall(HANDLE pid) {
 
 VOID SyscallsUtils::EnableAltSycallForThread(PETHREAD pEthread) {
 
-	_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)pEthread + KTHREAD_HEADER_OFFSET);
+	_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)pEthread + OffsetsMgt::GetOffsets()->Header);
 	header->DebugActive = 0x20;
 }
 
 VOID SyscallsUtils::DisableAltSycallForThread(PETHREAD pEthread) {
 
-	_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)pEthread + KTHREAD_HEADER_OFFSET);
+	_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)pEthread + 
+		OffsetsMgt::GetOffsets()->Header);
 	header->DebugActive = 0x0;
 }
 
 UCHAR SyscallsUtils::GetAltSyscallStateForThread(PETHREAD pEthrad) {
 
-	_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)pEthrad + KTHREAD_HEADER_OFFSET);
+	_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)pEthrad + OffsetsMgt::GetOffsets()->Header);
 	return header->DebugActive;
 }
 
@@ -617,8 +641,6 @@ VOID SyscallsUtils::InitSsdtTable(PSSDT_TABLE table) {
 
 VOID SyscallsUtils::InitIds() {
 
-	// TODO : Handle if not exported -> Fixed or -1
-
 	UNICODE_STRING usNtAllocateVirtualMemory;
 	RtlInitUnicodeString(&usNtAllocateVirtualMemory, L"NtAllocateVirtualMemory");
 	ULONG ntAllocSsn = getSSNByName(ssdtTable, &usNtAllocateVirtualMemory, exportsMap);
@@ -630,9 +652,9 @@ VOID SyscallsUtils::InitIds() {
 	ULONG ntFreeSsn = getSSNByName(ssdtTable, &usNtFreeVirtualMemory, exportsMap);
 
 	NtFreeId = ntFreeSsn;
-
 }
 
+// Example Handler
 VOID SyscallsUtils::NtAllocVmHandler(
 	HANDLE ProcessHandle,
 	PVOID* BaseAddress,
@@ -644,7 +666,7 @@ VOID SyscallsUtils::NtAllocVmHandler(
 
 	BOOLEAN Remote;
 
-	if (Protect == 0x40) {
+	if (Protect == 0x40) {  // RWX
 
 		Remote = TRUE;
 
@@ -652,14 +674,7 @@ VOID SyscallsUtils::NtAllocVmHandler(
 			Remote = FALSE;
 		}
 
-		SyscallsUtils::getVmRegionTracker()->AddEntry(
-			PsGetCurrentProcessId(),
-			*BaseAddress,
-			*RegionSize,
-			AllocationType,
-			Protect
-		);
-
+		// For future use
 	}
 }
 
@@ -684,6 +699,7 @@ VOID SyscallsUtils::NtProtectVmHandler(
 			rawBuf.buffer = (BYTE*)buffer;
 			rawBuf.size = *NumberOfBytesToProtect;
 			rawBuf.pid = PsGetProcessId(PsGetCurrentProcess());
+			RtlCopyMemory(rawBuf.procName, PsGetProcessImageFileName(PsGetCurrentProcess()), 15);
 
 			if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuf)) {
 				ExFreePool(rawBuf.buffer);
@@ -711,43 +727,10 @@ VOID SyscallsUtils::NtWriteVmHandler(
 		rawBuf.buffer = (BYTE*)buffer;
 		rawBuf.size = NumberOfBytesToWrite;
 		rawBuf.pid = PsGetProcessId(PsGetCurrentProcess());
+		RtlCopyMemory(rawBuf.procName, PsGetProcessImageFileName(PsGetCurrentProcess()), 15);
 
 		if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuf)) {
 			ExFreePool(rawBuf.buffer);
-		}
-	}
-}
-
-VOID SyscallsUtils::NtReadVmHandler(
-	HANDLE ProcessHandle,
-	PVOID BaseAddress,
-	PVOID Buffer,
-	SIZE_T NumberOfBytesToRead,
-	PSIZE_T NumberOfBytesRead
-) {
-
-	PVOID buffer = ExAllocatePool2(POOL_FLAG_NON_PAGED, NumberOfBytesToRead, 'msg');
-
-	if (buffer && BaseAddress != 0x0) {
-
-		__try {
-
-			ProbeForRead(BaseAddress, NumberOfBytesToRead, sizeof(UCHAR));
-
-			RtlCopyMemory(buffer, BaseAddress, NumberOfBytesToRead);
-
-			RAW_BUFFER rawBuf;
-
-			rawBuf.buffer = (BYTE*)buffer;
-			rawBuf.size = NumberOfBytesToRead;
-			rawBuf.pid = PsGetProcessId(PsGetCurrentProcess());
-
-			if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuf)) {
-				ExFreePool(rawBuf.buffer);
-			}
-		}
-		__except (EXCEPTION_EXECUTE_HANDLER) {
-			DbgPrint("[-] Exception in NtReadVmHandler\n");
 		}
 	}
 }
@@ -775,11 +758,24 @@ VOID SyscallsUtils::NtWriteFileHandler(
 		rawBuf.buffer = (BYTE*)buffer;
 		rawBuf.size = Length;
 		rawBuf.pid = PsGetProcessId(PsGetCurrentProcess());
+		RtlCopyMemory(rawBuf.procName, PsGetProcessImageFileName(PsGetCurrentProcess()), 15);
 
 		if (!CallbackObjects::GetBytesQueue()->Enqueue(rawBuf)) {
 			ExFreePool(rawBuf.buffer);
 		}
 	}
+}
+
+VOID SyscallsUtils::NtReadVmHandler(
+	HANDLE ProcessHandle,
+	PVOID BaseAddress,
+	PVOID Buffer,
+	SIZE_T NumberOfBytesToRead,
+	PSIZE_T NumberOfBytesRead
+) {
+
+	// For future use
+
 }
 
 VOID SyscallsUtils::NtQueueApcThreadHandler(
@@ -790,6 +786,7 @@ VOID SyscallsUtils::NtQueueApcThreadHandler(
 	PVOID ApcArgument3
 ) {
 
+	// For future use
 
 }
 
@@ -803,6 +800,7 @@ VOID SyscallsUtils::NtQueueApcThreadExHandler(
 )
 {
 
+	// For future use
 
 }
 
@@ -811,12 +809,18 @@ VOID SyscallsUtils::NtContinueHandler(
 	BOOLEAN TestAlert
 ) {
 
+	// For future use
+
 }
 
 VOID SyscallsUtils::NtResumeThreadHandler(
 	HANDLE ThreadHandle,
 	PULONG SuspendCount
 ) {
+
+
+
+	// For future use
 
 }
 
@@ -858,7 +862,7 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads2() {
 					continue;
 				}
 
-				_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + KTHREAD_HEADER_OFFSET);
+				_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + OffsetsMgt::GetOffsets()->Header);
 
 				if (header->DebugActive >= 0x20) {
 					header->DebugActive = 0x0;
@@ -882,11 +886,11 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads3() {
 	__try {
 
 		PEPROCESS currentProcess = PsInitialSystemProcess;
-		PLIST_ENTRY listEntry = (PLIST_ENTRY)((PUCHAR)currentProcess + EPROCESS_ACTIVEPROCESSLINK_OFFSET);
+		PLIST_ENTRY listEntry = (PLIST_ENTRY)((PUCHAR)currentProcess + OffsetsMgt::GetOffsets()->ActiveProcessLinks);
 
 		do
 		{
-			currentProcess = (PEPROCESS)((PUCHAR)listEntry - EPROCESS_ACTIVEPROCESSLINK_OFFSET);
+			currentProcess = (PEPROCESS)((PUCHAR)listEntry - OffsetsMgt::GetOffsets()->ActiveProcessLinks);
 
 			if (!currentProcess) {
 				DbgPrint("[-] Failed to get current process\n");
@@ -896,10 +900,10 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads3() {
 			HANDLE pid = PsGetProcessId(currentProcess);
 			UnsetInformationAltSystemCall(pid);
 
-			PLIST_ENTRY listEntryThreads = (PLIST_ENTRY)((PUCHAR)currentProcess + EPROCESS_THREAD_LIST_HEAD);
+			PLIST_ENTRY listEntryThreads = (PLIST_ENTRY)((PUCHAR)currentProcess + OffsetsMgt::GetOffsets()->ThreadListHead);
 			PLIST_ENTRY threadListEntry = listEntryThreads->Flink;
 
-			PULONG flags3 = (PULONG)((DWORD64)currentProcess + EPROCESS_FLAGS3);
+			PULONG flags3 = (PULONG)((DWORD64)currentProcess + OffsetsMgt::GetOffsets()->Flags3);
 
 			if (!flags3) {
 				DbgPrint("[-] Failed to get flags3\n");
@@ -911,11 +915,11 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads3() {
 			do {
 				__try {
 
-					PETHREAD eThread = (PETHREAD)((PUCHAR)threadListEntry - ETHREAD_THREADLISTENTRY_OFFSET);
+					PETHREAD eThread = (PETHREAD)((PUCHAR)threadListEntry - OffsetsMgt::GetOffsets()->ThreadListEntry);
 
-					if (eThread) {
+					if (eThread) {	
 
-						_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + KTHREAD_HEADER_OFFSET);
+						_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + OffsetsMgt::GetOffsets()->Header);
 						
 						if (!header || !MmIsAddressValid(header)) {
 							break;
@@ -937,7 +941,7 @@ VOID SyscallsUtils::DisableAltSyscallFromThreads3() {
 
 			listEntry = listEntry->Flink;
 
-		} while (listEntry != (PLIST_ENTRY)((PUCHAR)PsInitialSystemProcess + EPROCESS_ACTIVEPROCESSLINK_OFFSET));
+		} while (listEntry != (PLIST_ENTRY)((PUCHAR)PsInitialSystemProcess + OffsetsMgt::GetOffsets()->ActiveProcessLinks));
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
 		DbgPrint("[-] Exception in DisableAltSyscallFromThreads3\n");
@@ -987,7 +991,7 @@ VOID SyscallsUtils::DestroyAltSyscallThreads() {
 					continue;
 				}
 
-				_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + KTHREAD_HEADER_OFFSET);
+				_DISPATCHER_HEADER* header = (_DISPATCHER_HEADER*)((DWORD64)eThread + OffsetsMgt::GetOffsets()->Header);
 
 				if (header->DebugActive >= 0x20) {
 					

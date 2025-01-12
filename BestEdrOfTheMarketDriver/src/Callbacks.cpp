@@ -1,7 +1,7 @@
 #include "Globals.h"
 
 BufferQueue* CallbackObjects::bufferQueue = nullptr;
-HashQueue* CallbackObjects::hashQueue = nullptr;
+NotifQueue* CallbackObjects::notifQueue = nullptr;
 BytesQueue* CallbackObjects::bytesQueue = nullptr;
 
 PVOID CallbackObjects::DriverObject = nullptr;

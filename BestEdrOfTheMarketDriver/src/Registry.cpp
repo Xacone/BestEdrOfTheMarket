@@ -80,7 +80,7 @@ NTSTATUS RegistryUtils::RegOpNotifyCallback(
 
 					if (kernelNotif->msg) {
 						RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
-						if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+						if (!CallbackObjects::GetNotifQueue()->Enqueue(kernelNotif)) {
 							ExFreePool(kernelNotif->msg);
 							ExFreePool(kernelNotif);
 						}

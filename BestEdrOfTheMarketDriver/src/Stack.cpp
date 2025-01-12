@@ -15,161 +15,184 @@ ULONG64 StackUtils::getStackStartRtl() {
 
 ULONG64 StackUtils::getSSP() {
 
-	return __readmsr(MSR_IA32_PL3_SSP);
+	__try {
+		return __readmsr(MSR_IA32_PL3_SSP);
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		return NULL;
+	}
+}
+
+BOOLEAN StackUtils::isCETEnabled() {
+
+	ULONG64 cr4 = __readcr4();
+
+	return (cr4 & (1 << 23)) != 0;
+}
+
+BOOLEAN StackUtils::isCETSupported() {
+
+	int cpuInfo[4] = { 0 };
+
+	__cpuidex(cpuInfo, 0x7, 0x0);
+
+	if (!(cpuInfo[1] & (1 << 11))) {
+		return FALSE;
+	}
+
+	if (!(cpuInfo[2] & (1 << 23))) {
+		return FALSE;
+	}
+
+	return TRUE;
 }
 
 BOOLEAN StackUtils::isStackCorruptedRtlCET(
-	PVOID* SpoofedAddr
+    PVOID* SpoofedAddr
 ) {
+    NTSTATUS status;
+    PPS_PROTECTION curProcProtection = PsGetProcessProtection(PsGetCurrentProcess());
 
-	NTSTATUS status;
+    if (curProcProtection->Level != 0x0) {
+        return FALSE;
+    }
 
-	PPS_PROTECTION curProcProtection = PsGetProcessProtection(PsGetCurrentProcess());
+    HANDLE parentCid = PsGetProcessInheritedFromUniqueProcessId(PsGetCurrentProcess());
+    PEPROCESS parentProc;
 
-	if (curProcProtection->Level != 0x0) {
-		return FALSE;
-	}
+    status = PsLookupProcessByProcessId(parentCid, &parentProc);
 
-	HANDLE parentCid = PsGetProcessInheritedFromUniqueProcessId(PsGetCurrentProcess());
-	PEPROCESS parentProc;
+    if (!NT_SUCCESS(status)) {
+        return FALSE;
+    }
 
-	status = PsLookupProcessByProcessId(parentCid, &parentProc);
+    PPS_PROTECTION parentProcProtection = PsGetProcessProtection(parentProc);
 
-	if (!NT_SUCCESS(status)) {
-		return FALSE;
-	}
+    if ((DWORD_PTR)parentProcProtection > (BYTE)0x0) {
+        return FALSE;
+    }
 
-	PPS_PROTECTION parentProcProtection = PsGetProcessProtection(parentProc);
+    KIRQL oldIrql;
+    KeRaiseIrql(DISPATCH_LEVEL, &oldIrql); 
 
-	if ((DWORD_PTR)parentProcProtection == (BYTE)0x61) {
-		return FALSE;
-	}
+    __try {
+        PVOID ssp = (PVOID)this->getSSP();
 
-	__try {
+        if (ssp == nullptr || ssp == 0x0) {
+            KeLowerIrql(oldIrql); 
+            return FALSE;
+        }
 
-		PVOID ssp = (PVOID)this->getSSP();
+        PVOID stackFrames[MAX_STACK_FRAMES] = { 0 };
+        ULONG capturedFramesCount = RtlWalkFrameChain(stackFrames, MAX_STACK_FRAMES, RTL_WALK_USER_MODE_STACK);
 
-		if (ssp == nullptr || ssp == 0x0) {
-			return FALSE;
-		}
+        if (capturedFramesCount == 0) {
+            KeLowerIrql(oldIrql); 
+            return FALSE;
+        }
 
-		PVOID stackFrames[MAX_STACK_FRAMES] = { 0 };
-		ULONG capturedFramesCount = RtlWalkFrameChain(stackFrames, MAX_STACK_FRAMES, RTL_WALK_USER_MODE_STACK);
-		
-		if (capturedFramesCount == 0) {
-			return FALSE;
-		}
+        PVOID shadowStackFrames[MAX_STACK_FRAMES] = { 0 };
+        ULONG shadowStackFramesCount = 0;
 
-		PVOID shadowStackFrames[MAX_STACK_FRAMES] = { 0 };
-		ULONG shadowStackFramesCount = 0;
+        DWORD_PTR actual = (DWORD_PTR)ssp;
+        DWORD_PTR lastShadowFrame = NULL;
 
-		DWORD_PTR actual = (DWORD_PTR)ssp;
-		DWORD_PTR lastShadowFrame = NULL;
+        if (!MmIsAddressValid((PVOID)actual)) {
+            KeLowerIrql(oldIrql);
+            return FALSE;
+        }
 
-		if (!MmIsAddressValid((PVOID)actual)) {
-			return FALSE;
-		}
+        while (shadowStackFramesCount < MAX_STACK_FRAMES) {
+            __try {
+                if (!MmIsAddressValid((PVOID)actual)) {
+                    break;
+                }
 
-		while (shadowStackFramesCount < MAX_STACK_FRAMES) {
-			__try {
-				if (!MmIsAddressValid((PVOID)actual)) {
-					break;
-				}
+                PVOID frame = *(PVOID*)actual;
+                if (frame == nullptr) {
+                    break;
+                }
 
-				PVOID frame = *(PVOID*)actual;
-				if (frame == nullptr) {
-					break;
-				}
+                lastShadowFrame = (DWORD_PTR)(*(PVOID*)actual);
+                shadowStackFrames[shadowStackFramesCount] = frame;
+                shadowStackFramesCount += 1;
+                actual += sizeof(PVOID);
+            }
+            __except (EXCEPTION_EXECUTE_HANDLER) {
+                DbgPrint("[-] Exception while traversing shadow stack.\n");
+                break;
+            }
+        }
 
-				lastShadowFrame = (DWORD_PTR)(*(PVOID*)actual);
-				shadowStackFrames[shadowStackFramesCount] = frame;
-				shadowStackFramesCount += 1;
-				actual += sizeof(PVOID);
-			}
-			__except (EXCEPTION_EXECUTE_HANDLER) {
-				DbgPrint("[-] Exception while traversing shadow stack.\n");
-				break;
-			}
-		}
+        PVOID capturedStackFramesUser[MAX_STACK_FRAMES] = { 0 };
 
-		PVOID capturedStackFramesUser[MAX_STACK_FRAMES] = { 0 };
+        for (ULONG i = 0; i < capturedFramesCount; i++) {
+            if ((((ULONG64)stackFrames[i]) & (ULONG64)0xFFFF000000000000) != 0xffff000000000000) {
+                capturedStackFramesUser[i] = stackFrames[i];
+            }
+        }
 
-		for (ULONG i = 0; i < capturedFramesCount; i++) {
+        if (shadowStackFramesCount > 0 && capturedFramesCount > 0) {
+            for (ULONG i = 1; i < shadowStackFramesCount; i++) {
+                PVOID frame = capturedStackFramesUser[i];
+                PVOID shadowFrame = shadowStackFrames[i - 1];
 
-			if((((ULONG64)stackFrames[i]) & (ULONG64)0xFFFF000000000000) != 0xffff000000000000) {	
-				capturedStackFramesUser[i] = stackFrames[i];
-			}
-		}
+                if (frame == nullptr && shadowFrame == nullptr) {
+                    break;
+                }
 
-		if (shadowStackFramesCount > 0 && capturedFramesCount > 0) {
+                if (frame == nullptr) {
+                    break;
+                }
 
-			for (ULONG i = 1; i < shadowStackFramesCount; i++) {		// Checking only return addresses, not RIP
+                if ((ULONG64)frame != (ULONG64)shadowFrame) {
+                    if (frame == 0x0000000000000000) {
+                        PRTL_AVL_TREE root = (PRTL_AVL_TREE)((PUCHAR)PsGetCurrentProcess() + OffsetsMgt::GetOffsets()->VadRoot);
 
-				PVOID frame = capturedStackFramesUser[i];
-				PVOID shadowFrame = shadowStackFrames[i-1];
+                        BOOLEAN isAddressOutOfSys32Ntdll = FALSE;
+                        BOOLEAN isAddressOutOfWow64Ntdll = FALSE;
+                        BOOLEAN isWow64 = FALSE;
 
-				if (frame == nullptr && shadowFrame == nullptr) {
-					break;
-				}
+                        if (PsGetProcessWow64Process(PsGetCurrentProcess()) != NULL) {
+                            isWow64 = TRUE;
+                        }
 
-				if (frame == nullptr) {
-					break;
-				}
+                        VadUtils::isAddressOutOfNtdll(
+                            (PRTL_BALANCED_NODE)root,
+                            (ULONG64)shadowFrame,
+                            &isWow64,
+                            &isAddressOutOfSys32Ntdll,
+                            &isAddressOutOfWow64Ntdll
+                        );
 
-				if ((ULONG64)frame != (ULONG64)shadowFrame) {
+                        if (isWow64) {
+                            if (isAddressOutOfSys32Ntdll ^ isAddressOutOfWow64Ntdll) {
+                                *SpoofedAddr = shadowFrame;
+                                KeLowerIrql(oldIrql);
+                                return TRUE;
+                            }
+                            else {
+                                *SpoofedAddr = shadowFrame;
+                                KeLowerIrql(oldIrql);
+                                return isAddressOutOfSys32Ntdll;
+                            }
+                        }
+                    }
+                    else {
+                        *SpoofedAddr = shadowFrame;
+                        KeLowerIrql(oldIrql); 
+                        return TRUE;
+                    }
+                }
+            }
+        }
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) {
+        DbgPrint("[-] General exception caught in isStackCorruptedRtlCET.\n");
+        KeLowerIrql(oldIrql); 
+        return FALSE;
+    }
 
-					if (frame == 0x0000000000000000) {
-
-						PRTL_AVL_TREE root = (PRTL_AVL_TREE)((PUCHAR)PsGetCurrentProcess() + EPROCESS_VAD_ROOT_OFFSET);
-
-						BOOLEAN isAddressOutOfSys32Ntdll = FALSE;
-						BOOLEAN isAddressOutOfWow64Ntdll = FALSE;
-						BOOLEAN isWow64 = FALSE;
-
-						if (PsGetProcessWow64Process(PsGetCurrentProcess()) != NULL) {
-							isWow64 = TRUE;
-						}
-
-						VadUtils::isAddressOutOfNtdll(
-							(PRTL_BALANCED_NODE)root,
-							(ULONG64)shadowFrame,
-							&isWow64,
-							&isAddressOutOfSys32Ntdll,
-							&isAddressOutOfWow64Ntdll
-						);
-
-						if (isWow64) {
-
-							if (isAddressOutOfSys32Ntdll ^ isAddressOutOfWow64Ntdll) {
-
-								*SpoofedAddr = shadowFrame;
-
-								return TRUE;
-							}
-							else {
-
-								*SpoofedAddr = shadowFrame;
-
-								return isAddressOutOfSys32Ntdll;
-							}
-						}
-					}
-					else {
-
-						*SpoofedAddr = shadowFrame;
-
-						return TRUE;
-					}	
-				}	
-			}
-		}
-	}
-
-	__except (EXCEPTION_EXECUTE_HANDLER) {
-		DbgPrint("[-] General exception caught in isStackCorruptedRtlCET.\n");
-		return FALSE;
-	}
-
-	return FALSE;
-
+    KeLowerIrql(oldIrql); 
+    return FALSE;
 }

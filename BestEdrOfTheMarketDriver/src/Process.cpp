@@ -46,7 +46,7 @@ BOOLEAN ProcessUtils::isProcessParentPidSpoofed(
 
 BOOLEAN ProcessUtils::isProcessGhosted() {
 
-	SE_AUDIT_PROCESS_CREATION_INFO* SeAuditProcessCreationInfo = (SE_AUDIT_PROCESS_CREATION_INFO*)((PUCHAR)this->process + EPROCESS_SE_AUDIT_PROCESS_CREATION_INFO_OFFSET);
+	SE_AUDIT_PROCESS_CREATION_INFO* SeAuditProcessCreationInfo = (SE_AUDIT_PROCESS_CREATION_INFO*)((PUCHAR)this->process + OffsetsMgt::GetOffsets()->SeAuditProcessCreationInfo);
 
 	if (MmIsAddressValid(SeAuditProcessCreationInfo) && SeAuditProcessCreationInfo->ImageFileName != NULL) {	
 		if (SeAuditProcessCreationInfo->ImageFileName->Name.Buffer == NULL) {
@@ -73,7 +73,7 @@ VOID ProcessUtils::CreateProcessNotifyEx(
 
 			if (kernelNotif) {
 
-				char* msg = "Parent Process PID (PPID) Spoofed";
+				char* msg = "Parent Process PID (PPID) Seems Spoofed";
 
 				SET_WARNING(*kernelNotif);
 				SET_CALLING_PROC_PID_CHECK(*kernelNotif);
@@ -90,7 +90,7 @@ VOID ProcessUtils::CreateProcessNotifyEx(
 
 				if (kernelNotif->msg) {
 					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
-					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+					if (!CallbackObjects::GetNotifQueue()->Enqueue(kernelNotif)) {
 						ExFreePool(kernelNotif->msg);
 						ExFreePool(kernelNotif);
 					}
@@ -124,7 +124,7 @@ VOID ProcessUtils::CreateProcessNotifyEx(
 
 				if (kernelNotif->msg) {
 					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
-					if (!CallbackObjects::GetHashQueue()->Enqueue(kernelNotif)) {
+					if (!CallbackObjects::GetNotifQueue()->Enqueue(kernelNotif)) {
 						ExFreePool(kernelNotif->msg);
 						ExFreePool(kernelNotif);
 					}

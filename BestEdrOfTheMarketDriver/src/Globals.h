@@ -29,9 +29,7 @@
 #define MAX_BUFFER_COUNT 1024
 #define HASH_TABLE_SIZE 256
 
-#define BEOTM_RETRIEVE_DATA_BUFFER CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
-
-#define BEOTM_RETRIEVE_DATA_HASH CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define BEOTM_RETRIEVE_DATA_NOTIF CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 #define BEOTM_RETRIEVE_DATA_BYTE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
@@ -50,6 +48,11 @@ DEFINE_GUID(BEOTM_SUBLAYER_GUID,
 	0xe1d364e8, 0xcd84, 0x4a48, 0xab, 0xa4, 0x60, 0x8c, 0xe8, 0x3e, 0x31, 0xee);
 
 BOOLEAN isCpuVTxEptSupported();
+
+size_t SafeStringLength(
+	const char*, 
+	size_t
+);
 
 int contains_bytes_bitwise(
 	UINT64, 
@@ -159,6 +162,16 @@ NTSTATUS TerminateProcess(HANDLE);
 
 char* FetchNtVersion(DWORD);
 
+class OffsetsMgt {
+	static KERNEL_STRUCTURES_OFFSET* offsets;
+
+public:
+	static BOOLEAN InitWinStructsOffsets();
+	static KERNEL_STRUCTURES_OFFSET* GetOffsets() {
+		return offsets;
+	}
+};
+
 class SsdtUtils;
 class ComUtils {
 
@@ -249,6 +262,10 @@ public:
 	ULONG64 getStackStartRtl();
 	
 	ULONG64 getSSP();
+
+	BOOLEAN isCETEnabled();
+
+	BOOLEAN isCETSupported();
 
 	BOOLEAN isStackCorruptedRtlCET(
 		PVOID*
@@ -343,8 +360,6 @@ public:
 		PVOID
 	);
 	
-	VOID ParseSSDT();
-
 	ULONGLONG LeakKeServiceDescriptorTableEptRvi();
 
 	static ULONGLONG LeakKiSystemServiceUser();
@@ -550,11 +565,11 @@ public:
 	}
 };
 
-class HashQueue : public BufferQueue {
+class NotifQueue : public BufferQueue {
 
 public:
 
-	HashQueue() : BufferQueue() {}
+	NotifQueue() : BufferQueue() {}
 
 };
 
@@ -651,6 +666,8 @@ class SyscallsUtils {
 	static ULONG NtFreeId;
 	static ULONG NtReadId;
 	static ULONG NtWriteFileId;
+
+	// For future use
 	static ULONG NtQueueApcThreadId;
 	static ULONG NtQueueApcThreadExId;
 	static ULONG NtSetContextThreadId;
@@ -665,6 +682,8 @@ class SyscallsUtils {
 
 	VadUtils* vadUtils;
 	
+	static HANDLE lastNotifedCidStackCorrupt;
+
 public:
 
 	SyscallsUtils() {} /*: isTracingEnabled(FALSE) {}*/
@@ -935,12 +954,11 @@ class ImageUtils {
 
 private:
 
-	//HashQueue* hashQueue;  // On peut s'en passer
 	static KMUTEX g_HashQueueMutex;
 
 public:
 
-	VOID InitHashQueue(HashQueue*);
+	VOID InitNotifQueue(NotifQueue*);
 
 	BOOLEAN isImageSignatureInvalid(
 		PVOID
@@ -1041,7 +1059,7 @@ class CallbackObjects :
 {
 
 	static BufferQueue* bufferQueue;
-	static HashQueue* hashQueue;
+	static NotifQueue* notifQueue;
 	static BytesQueue* bytesQueue;
 
 	static PVOID DriverObject;
@@ -1068,10 +1086,10 @@ public:
 		bufferQueue = bufQueue;
 	}
 
-	static VOID InitHashQueue(
-		HashQueue* hshQueue
+	static VOID InitNotifQueue(
+		NotifQueue* ntfQueue
 	) {
-		hashQueue = hshQueue;
+		notifQueue = ntfQueue;
 	}
 
 	static VOID InitBytesQueue(
@@ -1084,8 +1102,8 @@ public:
 		return bufferQueue;
 	}
 
-	static HashQueue* GetHashQueue() {
-		return hashQueue;
+	static NotifQueue* GetNotifQueue() {
+		return notifQueue;
 	}
 
 	static BytesQueue* GetBytesQueue() {

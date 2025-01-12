@@ -10,7 +10,7 @@ VadUtils::VadUtils(PEPROCESS pEprocess) {
 	
 	process = pEprocess;
 	
-	root = (PRTL_AVL_TREE)((PUCHAR)pEprocess + EPROCESS_VAD_ROOT_OFFSET);
+	root = (PRTL_AVL_TREE)((PUCHAR)pEprocess + OffsetsMgt::GetOffsets()->VadRoot);
 
 	if (!MmIsAddressValid(root)) {
 
@@ -37,18 +37,18 @@ BOOLEAN VadUtils::isAddressOutOfNtdll(
 	}
 
 	__try {
-		_SUBSECTION* subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + VAD_SUBSECTION_OFFSET);
+		_SUBSECTION* subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + OffsetsMgt::GetOffsets()->Subsection);
 
 		if (MmIsAddressValid(subsectionAddr)) {
-			PVOID ControlAreaAddr = *(PVOID*)(((PUCHAR)subsectionAddr + VAD_CONTROL_AREA_OFFSET));
+			PVOID ControlAreaAddr = *(PVOID*)(((PUCHAR)subsectionAddr + OffsetsMgt::GetOffsets()->ControlArea));
 
 			if (MmIsAddressValid(ControlAreaAddr))
 			{
-				_SEGMENT* segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + VAD_SEGMENT_OFFSET));
+				_SEGMENT* segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->Segment));
 
 				if (MmIsAddressValid(segmentAddr)) {
 
-					PVOID filePointer = (PVOID*)((PUCHAR)ControlAreaAddr + VAD_FILE_POINTER_OFFSET);
+					PVOID filePointer = (PVOID*)((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->FilePointer);
 					PVOID fileObjectPointer = *(PVOID*)filePointer;
 
 					FILE_OBJECT* fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)fileObjectPointer);
@@ -131,18 +131,18 @@ BOOLEAN VadUtils::isAddressOutOfSpecificDll(
 	}
 
 	__try {
-		_SUBSECTION* subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + VAD_SUBSECTION_OFFSET);
+		_SUBSECTION* subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + OffsetsMgt::GetOffsets()->Subsection);
 
 		if (MmIsAddressValid(subsectionAddr)) {
-			PVOID ControlAreaAddr = *(PVOID*)(((PUCHAR)subsectionAddr + VAD_CONTROL_AREA_OFFSET));
+			PVOID ControlAreaAddr = *(PVOID*)(((PUCHAR)subsectionAddr + OffsetsMgt::GetOffsets()->ControlArea));
 
 			if (MmIsAddressValid(ControlAreaAddr))
 			{
-				_SEGMENT* segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + VAD_SEGMENT_OFFSET));
+				_SEGMENT* segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->Segment));
 
 				if (MmIsAddressValid(segmentAddr)) {
 
-					PVOID filePointer = (PVOID*)((PUCHAR)ControlAreaAddr + VAD_FILE_POINTER_OFFSET);
+					PVOID filePointer = (PVOID*)((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->FilePointer);
 					PVOID fileObjectPointer = *(PVOID*)filePointer;
 
 					FILE_OBJECT* fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)fileObjectPointer);
@@ -262,39 +262,39 @@ VOID VadUtils::exploreVadTreeAndVerifyLdrIngtegrity(
 	UNICODE_STRING* searchStr,
 	BOOLEAN* isTampered
 ) {
-
-	if (node == NULL) {
+	if (PsGetCurrentProcess()) {
+		if (node == NULL || isTampered == NULL || *isTampered) {
 		return;
 	}
 
 	PMMVAD Vad = (PMMVAD)node;
-	if (Vad == NULL || !MmIsAddressValid(Vad))
-	{
+
+	if (!MmIsAddressValid(Vad)) {
 		return;
 	}
 
 	__try {
+		_SUBSECTION* subsectionAddr = NULL;
+		PVOID ControlAreaAddr = NULL;
+		_SEGMENT* segmentAddr = NULL;
+		FILE_OBJECT* fileObject = NULL;
 
-		_SUBSECTION* subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + VAD_SUBSECTION_OFFSET);
-
+		subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + OffsetsMgt::GetOffsets()->Subsection);
 		if (MmIsAddressValid(subsectionAddr)) {
-			PVOID ControlAreaAddr = *(PVOID*)(((PUCHAR)subsectionAddr + VAD_CONTROL_AREA_OFFSET));
+			ControlAreaAddr = *(PVOID*)((PUCHAR)subsectionAddr + OffsetsMgt::GetOffsets()->ControlArea);
 
-			if (MmIsAddressValid(ControlAreaAddr))
-			{
-				_SEGMENT* segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + VAD_SEGMENT_OFFSET));
+			if (MmIsAddressValid(ControlAreaAddr)) {
+				segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->Segment));
 
 				if (MmIsAddressValid(segmentAddr)) {
+					PVOID filePointer = *(PVOID*)((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->FilePointer);
 
-					PVOID filePointer = (PVOID*)((PUCHAR)ControlAreaAddr + VAD_FILE_POINTER_OFFSET);
-					PVOID fileObjectPointer = *(PVOID*)filePointer;
+					if (filePointer && MmIsAddressValid(filePointer)) {
+						fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)filePointer);
 
-					FILE_OBJECT* fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)fileObjectPointer);
-
-					if (MmIsAddressValid(fileObject)) {
-
-						if (UnicodeStringContains(&fileObject->FileName, searchStr->Buffer) && FileIsExe(&fileObject->FileName)) {
-
+						if (MmIsAddressValid(fileObject) &&
+							UnicodeStringContains(&fileObject->FileName, searchStr->Buffer) &&
+							FileIsExe(&fileObject->FileName)) {
 							*isTampered = isVadImageAddrIdenticalToLdr(PsGetCurrentProcess(), (ULONG64)Vad->StartingVpn);
 						}
 					}
@@ -309,7 +309,66 @@ VOID VadUtils::exploreVadTreeAndVerifyLdrIngtegrity(
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
 		DbgPrint("Exception in exploreVadTreeAndVerifyLdrIngtegrity\n");
-		//DbgBreakPoint();
+	}
 	}
 
+	
 }
+
+
+//VOID VadUtils::exploreVadTreeAndVerifyLdrIngtegrity(
+//	RTL_BALANCED_NODE* node,
+//	UNICODE_STRING* searchStr,
+//	BOOLEAN* isTampered
+//) {
+//
+//	if (node == NULL) {
+//		return;
+//	}
+//
+//	PMMVAD Vad = (PMMVAD)node;
+//	if (Vad == NULL || !MmIsAddressValid(Vad))
+//	{
+//		return;
+//	}
+//
+//	__try {
+//
+//		_SUBSECTION* subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + VAD_SUBSECTION_OFFSET);
+//
+//		if (MmIsAddressValid(subsectionAddr)) {
+//			PVOID ControlAreaAddr = *(PVOID*)(((PUCHAR)subsectionAddr + VAD_CONTROL_AREA_OFFSET));
+//
+//			if (MmIsAddressValid(ControlAreaAddr))
+//			{
+//				_SEGMENT* segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + VAD_SEGMENT_OFFSET));
+//
+//				if (MmIsAddressValid(segmentAddr)) {
+//
+//					PVOID filePointer = (PVOID*)((PUCHAR)ControlAreaAddr + VAD_FILE_POINTER_OFFSET);
+//					PVOID fileObjectPointer = *(PVOID*)filePointer;
+//
+//					FILE_OBJECT* fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)fileObjectPointer);
+//
+//					if (MmIsAddressValid(fileObject)) {
+//
+//						if (UnicodeStringContains(&fileObject->FileName, searchStr->Buffer) && FileIsExe(&fileObject->FileName)) {
+//
+//							*isTampered = isVadImageAddrIdenticalToLdr(PsGetCurrentProcess(), (ULONG64)Vad->StartingVpn);
+//						}
+//					}
+//				}
+//			}
+//		}
+//
+//		if (!*isTampered) {
+//			exploreVadTreeAndVerifyLdrIngtegrity(node->Left, searchStr, isTampered);
+//			exploreVadTreeAndVerifyLdrIngtegrity(node->Right, searchStr, isTampered);
+//		}
+//	}
+//	__except (EXCEPTION_EXECUTE_HANDLER) {
+//		DbgPrint("Exception in exploreVadTreeAndVerifyLdrIngtegrity\n");
+//		//DbgBreakPoint();
+//	}
+//
+//}

@@ -642,13 +642,15 @@ struct RAW_BUFFER {
     BYTE* buffer;
     SIZE_T size;
     HANDLE pid;
+	char procName[15];
 };
 
 typedef struct _KERNEL_STRUCTURED_BUFFER {
     ULONG bufSize;
+    char procName[15];
     UINT32 pid;
     BYTE* buffer;
-} KERNEL_STRUCTURED_BUFFER, *PKERNEL_STRUCTURED_BUFFER;
+} KERNEL_STRUCTURED_BUFFER, * PKERNEL_STRUCTURED_BUFFER;
 
 typedef struct _KERNEL_STRUCTURED_NOTIFICATION {
 
