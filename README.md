@@ -1,13 +1,9 @@
 ﻿
 # <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html"> Best EDR Of The Market (BEOTM) V3 🐲🏴‍☠️ </a>
 
-<center>
-<i>Little AV/EDR Evasion Lab for training & learning purposes.</i>
-</center>
 <br>
 <img src="Assets/beotm_banner.png">
 
-<br>
 Best Edr Of The Market is an open-source lab designed to implement and understand, from a low-level perspective, the detection methods used by Endpoints Detection & Response security products and their workarounds. These techniques are mainly based on the exploitation of Windows NT's telemetric capabilities to dynamically analyze process behavior.
 
 
