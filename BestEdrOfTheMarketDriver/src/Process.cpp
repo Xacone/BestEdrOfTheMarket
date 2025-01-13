@@ -22,6 +22,16 @@ BOOLEAN ProcessUtils::isProcessImageTampered() {
 			return FALSE;
 		}
 
+		PPS_PROTECTION curProcProtection = (PPS_PROTECTION)PsGetProcessProtection(PsGetCurrentProcess());
+
+		if (!curProcProtection) {
+			return FALSE;
+		}
+
+		if (curProcProtection->Level > 0x0) {
+			return FALSE;
+		}
+
 		vadUtils.exploreVadTreeAndVerifyLdrIngtegrity(
 			vadUtils.getVadRoot()->BalancedRoot,
 			&unicodeString,
@@ -38,6 +48,11 @@ BOOLEAN ProcessUtils::isProcessParentPidSpoofed(
 	PPS_CREATE_NOTIFY_INFO CreateInfo
 ) {
 	if (CreateInfo->ParentProcessId != CreateInfo->CreatingThreadId.UniqueProcess) {
+		
+		// print both 
+		DbgPrint("Parent Process ID: %d\n", CreateInfo->ParentProcessId);
+		DbgPrint("Creating Thread ID: %d\n\n\n", CreateInfo->CreatingThreadId.UniqueProcess);
+
 		return TRUE;
 	}
 

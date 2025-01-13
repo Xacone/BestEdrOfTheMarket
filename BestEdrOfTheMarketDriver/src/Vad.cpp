@@ -280,26 +280,31 @@ VOID VadUtils::exploreVadTreeAndVerifyLdrIngtegrity(
 		FILE_OBJECT* fileObject = NULL;
 
 		subsectionAddr = (_SUBSECTION*)*(PVOID*)((PUCHAR)Vad + OffsetsMgt::GetOffsets()->Subsection);
-		if (MmIsAddressValid(subsectionAddr)) {
-			ControlAreaAddr = *(PVOID*)((PUCHAR)subsectionAddr + OffsetsMgt::GetOffsets()->ControlArea);
 
-			if (MmIsAddressValid(ControlAreaAddr)) {
-				segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->Segment));
+		if (subsectionAddr != 0x0) {
 
-				if (MmIsAddressValid(segmentAddr)) {
-					PVOID filePointer = *(PVOID*)((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->FilePointer);
+			if (MmIsAddressValid(subsectionAddr)) {
+				ControlAreaAddr = *(PVOID*)((PUCHAR)subsectionAddr + OffsetsMgt::GetOffsets()->ControlArea);
 
-					if (filePointer && MmIsAddressValid(filePointer)) {
-						fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)filePointer);
+				if (MmIsAddressValid(ControlAreaAddr)) {
+					segmentAddr = *(_SEGMENT**)(((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->Segment));
 
-						if (MmIsAddressValid(fileObject) &&
-							UnicodeStringContains(&fileObject->FileName, searchStr->Buffer) &&
-							FileIsExe(&fileObject->FileName)) {
-							*isTampered = isVadImageAddrIdenticalToLdr(PsGetCurrentProcess(), (ULONG64)Vad->StartingVpn);
+					if (MmIsAddressValid(segmentAddr)) {
+						PVOID filePointer = *(PVOID*)((PUCHAR)ControlAreaAddr + OffsetsMgt::GetOffsets()->FilePointer);
+
+						if (filePointer && MmIsAddressValid(filePointer)) {
+							fileObject = (FILE_OBJECT*)NullifyLastDigit((ULONG64)filePointer);
+
+							if (MmIsAddressValid(fileObject) &&
+								UnicodeStringContains(&fileObject->FileName, searchStr->Buffer) &&
+								FileIsExe(&fileObject->FileName)) {
+								*isTampered = isVadImageAddrIdenticalToLdr(PsGetCurrentProcess(), (ULONG64)Vad->StartingVpn);
+							}
 						}
 					}
 				}
 			}
+
 		}
 
 		if (!*isTampered) {

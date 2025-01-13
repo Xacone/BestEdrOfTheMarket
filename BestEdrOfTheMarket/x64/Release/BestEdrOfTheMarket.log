@@ -1,0 +1,14 @@
+﻿cl : ligne de commande  warning D9025: substitution de '/sdl' par '/GS-'
+  main.cpp
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(118,10): warning C4101: 'targetPath' : variable locale non référencée
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(146,22): warning C4311: 'cast de type' : troncation de pointeur de 'HANDLE' à 'UINT32'
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(146,22): warning C4302: 'cast de type' : troncation de 'HANDLE' à 'UINT32'
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(327,18): warning C4311: 'cast de type' : troncation de pointeur de 'HANDLE' à 'UINT32'
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(327,18): warning C4302: 'cast de type' : troncation de 'HANDLE' à 'UINT32'
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(867,46): warning C4267: '=' : conversion de 'size_t' en 'int', perte possible de données
+  Génération de code en cours
+  0 of 1374 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Fin de la génération du code
+  BestEdrOfTheMarket.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\beotm.exe

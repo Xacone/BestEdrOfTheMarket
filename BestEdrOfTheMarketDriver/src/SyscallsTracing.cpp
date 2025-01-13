@@ -221,21 +221,23 @@ VOID SyscallsUtils::NtVersionPreCheck() {
 
 BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 
-	PVOID spoofedAddr;
+	PVOID spoofedAddr = NULL;
+
+	ULONG id = (ULONG)trapFrame->Rax;
 
 	if (lastNotifedCidStackCorrupt == PsGetCurrentProcessId()) {
 		return FALSE;
 	}
 
-	if (stackUtils->isCETEnabled()) {
-
-		if (stackUtils->isStackCorruptedRtlCET(&spoofedAddr)) {
+	if (id == NtAllocId || id == NtWriteId || id == NtProtectId) {
+		
+			if(stackUtils->isStackCorruptedRtlCET(&spoofedAddr)) {
 
 			lastNotifedCidStackCorrupt = PsGetCurrentProcessId();
 
 			PKERNEL_STRUCTURED_NOTIFICATION kernelNotif = (PKERNEL_STRUCTURED_NOTIFICATION)ExAllocatePool2(POOL_FLAG_NON_PAGED, sizeof(KERNEL_STRUCTURED_NOTIFICATION), 'krnl');
 
-			if (kernelNotif) {
+			if (kernelNotif) { 
 
 				char* msg = "Corrupted Thread Call Stack";
 
@@ -248,9 +250,7 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
 				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
 
-				char procName[15];
-				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
-				RtlCopyMemory(kernelNotif->procName, procName, 15);
+				RtlCopyMemory(kernelNotif->procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
 
 				if (kernelNotif->msg) {
 					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);
@@ -267,6 +267,7 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 		}
 	}
 	
+	
 
 	PULONGLONG pArg5 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x28);
 	PULONGLONG pArg6 = (PULONGLONG)((ULONG_PTR)trapFrame->Rsp + 0x30);
@@ -281,8 +282,6 @@ BOOLEAN SyscallsUtils::SyscallHandler(PKTRAP_FRAME trapFrame) {
 	if (MmIsAddressValid(pArg6)) {
 		arg6 = *pArg6;
 	}
-
-	ULONG id = (ULONG)trapFrame->Rax;
 
 	if ((ULONG)id == NtAllocId) {		// NtAllocateVirtualMemory
 
@@ -464,9 +463,7 @@ BOOLEAN SyscallsUtils::isSyscallDirect(ULONG64 Rip, char* syscallName)
 				kernelNotif->pid = PsGetProcessId(IoGetCurrentProcess());
 				kernelNotif->msg = (char*)ExAllocatePool2(POOL_FLAG_NON_PAGED, strlen(msg) + 1, 'msg');
 
-				char procName[15];
-				RtlCopyMemory(procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
-				RtlCopyMemory(kernelNotif->procName, procName, 15);
+				RtlCopyMemory(kernelNotif->procName, PsGetProcessImageFileName(IoGetCurrentProcess()), 15);
 
 				if (kernelNotif->msg) {
 					RtlCopyMemory(kernelNotif->msg, msg, strlen(msg) + 1);

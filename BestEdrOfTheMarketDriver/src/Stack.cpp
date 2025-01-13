@@ -47,6 +47,8 @@ BOOLEAN StackUtils::isCETSupported() {
 	return TRUE;
 }
 
+
+
 BOOLEAN StackUtils::isStackCorruptedRtlCET(
     PVOID* SpoofedAddr
 ) {
@@ -73,13 +75,13 @@ BOOLEAN StackUtils::isStackCorruptedRtlCET(
     }
 
     KIRQL oldIrql;
-    KeRaiseIrql(DISPATCH_LEVEL, &oldIrql); 
+    KeRaiseIrql(DISPATCH_LEVEL, &oldIrql);
 
     __try {
         PVOID ssp = (PVOID)this->getSSP();
 
         if (ssp == nullptr || ssp == 0x0) {
-            KeLowerIrql(oldIrql); 
+            KeLowerIrql(oldIrql);
             return FALSE;
         }
 
@@ -87,7 +89,7 @@ BOOLEAN StackUtils::isStackCorruptedRtlCET(
         ULONG capturedFramesCount = RtlWalkFrameChain(stackFrames, MAX_STACK_FRAMES, RTL_WALK_USER_MODE_STACK);
 
         if (capturedFramesCount == 0) {
-            KeLowerIrql(oldIrql); 
+            KeLowerIrql(oldIrql);
             return FALSE;
         }
 
@@ -180,7 +182,7 @@ BOOLEAN StackUtils::isStackCorruptedRtlCET(
                     }
                     else {
                         *SpoofedAddr = shadowFrame;
-                        KeLowerIrql(oldIrql); 
+                        KeLowerIrql(oldIrql);
                         return TRUE;
                     }
                 }
@@ -189,10 +191,10 @@ BOOLEAN StackUtils::isStackCorruptedRtlCET(
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
         DbgPrint("[-] General exception caught in isStackCorruptedRtlCET.\n");
-        KeLowerIrql(oldIrql); 
+        KeLowerIrql(oldIrql);
         return FALSE;
     }
 
-    KeLowerIrql(oldIrql); 
+    KeLowerIrql(oldIrql);
     return FALSE;
 }

@@ -75,6 +75,9 @@
     <ClCompile Include="src\ShadowStack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\OffsetsMgt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\TcpipFilteringUtils.cpp">

@@ -19,30 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MonitoringUtils.cpp" />
-    <ClCompile Include="Startup.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Docs\Setup.md" />
     <None Include="..\README.md" />
-    <None Include="MsfvenomWho.yara" />
-    <None Include="YaroRules.json" />
+    <None Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BytesSequencesUtils.h" />
-    <ClInclude Include="ColorsUtils.h" />
-    <ClInclude Include="ConversionUtils.h" />
-    <ClInclude Include="DriverComUtils.h" />
-    <ClInclude Include="ErrorsReportingUtils.h" />
-    <ClInclude Include="IPCUtils.h" />
-    <ClInclude Include="HeapUtils.h" />
-    <ClInclude Include="ModuleLoadingUtils.h" />
-    <ClInclude Include="PatchingUtils.h" />
-    <ClInclude Include="Pe64Utils.h" />
-    <ClInclude Include="ProcessStructUtils.h" />
-    <ClInclude Include="ReportingUtils.h" />
-    <ClInclude Include="SSNHookingUtils.h" />
-    <ClInclude Include="Startup.h" />
+    <ClCompile Include="src\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -98,6 +82,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\vcpkg\installed\x64-windows\lib</LibraryPath>
+    <TargetName>beotm</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -151,7 +136,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\km;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\um;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\ucrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\winrt;C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared;C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -159,6 +144,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\vcpkg\installed\x64-windows\lib</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
     <PreBuildEvent>
       <Command>
