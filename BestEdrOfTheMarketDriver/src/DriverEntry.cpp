@@ -259,11 +259,9 @@ NTSTATUS DriverIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 			NTSTATUS termStatus = TerminateProcess((HANDLE) * (UINT32*)Irp->AssociatedIrp.SystemBuffer);
 
 			if (!NT_SUCCESS(termStatus)) {
-				DbgPrint("[-] Failed to terminate process with PID %d\n", (UINT32*)Irp->AssociatedIrp.SystemBuffer);
 				status = STATUS_UNSUCCESSFUL;
 			}
 			else {
-				DbgPrint("[+] Process %d terminated\n", (UINT32*)Irp->AssociatedIrp.SystemBuffer);
 				status = STATUS_SUCCESS;
 			}
 		}
