@@ -136,4 +136,4 @@ If it was one of your artifacts that caused the crash/bug/BSOD, it would be cool
 
 <h2>Disclaimer ⚠️</h2>
 
-The scope of this project is purely educational. The driver is to be used in a <u>controlled testing environment</u> only.
+The scope of this project is purely educational. The driver is to be used in a **controlled testing environment** only.
