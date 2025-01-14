@@ -7,8 +7,8 @@ C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(327,18): warni
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(327,18): warning C4302: 'cast de type' : troncation de 'HANDLE' à 'UINT32'
 C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(867,46): warning C4267: '=' : conversion de 'size_t' en 'int', perte possible de données
   Génération de code en cours
-  0 of 1374 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+  Previous IPDB and IOBJ mismatch, fall back to full compilation.
+C:\Users\1234Y\BestEdrOfTheMarket\BestEdrOfTheMarket\src\main.cpp(460): warning C4715: 'Notify' : les chemins de contrôle ne retournent pas tous une valeur
+  All 1374 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   Fin de la génération du code
   BestEdrOfTheMarket.vcxproj -> C:\Users\1234Y\BestEdrOfTheMarket\x64\Release\beotm.exe
