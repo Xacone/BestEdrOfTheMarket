@@ -1,13 +1,12 @@
 ﻿
 # <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html"> Best EDR Of The Market (BEOTM) V3 🐲🏴‍☠️ </a>
 
-<br>
 <img src="Assets/beotm_banner.png">
 
 Best Edr Of The Market is an open-source lab designed to implement and understand, from a low-level perspective, the detection methods used by Endpoints Detection & Response security products and their workarounds. These techniques are mainly based on the exploitation of Windows NT's telemetric capabilities to dynamically analyze process behavior.
 
 <div align="center">
-<u><b><a href="https://xacone>.github.io/BestEdrOfTheMarketV3.html">➡️​ What's New in the Kernel Version of BestEdrOfTheMarket? </a></b></u>
+<u><b><a href="https://xacone.github.io/BestEdrOfTheMarketV3.html">➡️​ What's New in the Kernel Version of BestEdrOfTheMarket? </a></b></u>
 </div>
 
 <h2>Defensive Capabilities</h2>
@@ -107,7 +106,7 @@ The project was designed in Visual Studio 2022. Make sure you have the WDK upstr
 
 The project uses C++20.
 
-The project includes as yet unimplemented TCP/IP fitlrage functionality based on NDIS. If you encounter "Symbol not found"-like errors. Make sure to link the following libraries in <i>BestEdrOfTheMarketDriver -> Project Properties -> Linker -> Entry -> Additional Dependencies</i>:
+The project includes as yet unimplemented TCP/IP filtering functionality based on NDIS. If you encounter "Symbol not found"-like errors. Make sure to link the following libraries in <i>BestEdrOfTheMarketDriver -> Project Properties -> Linker -> Entry -> Additional Dependencies</i>:
 
 ```
 $(DDK_LIB_PATH)\fwpkclnt.lib
