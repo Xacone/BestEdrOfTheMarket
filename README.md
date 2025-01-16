@@ -102,7 +102,7 @@ I recommend a Windows 10 22H2 VM (this is the version on which BEOTM was tested)
 
 <h2>Building the Project</h2>
 
-The project was designed in Visual Studio 2022. Make sure you have the WDK upstream and all the prerequisites, such as the x64 spectrum mitigation libraries. <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/download-the-wdk">The Windows Hardware documentation details how to proceed.</a>
+The project was designed in Visual Studio 2022. Make sure you have the WDK upstream and all the prerequisites, such as the x64 spectre mitigation libraries. <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/download-the-wdk">The Windows Hardware documentation details how to proceed.</a>
 
 The project uses C++20.
 
