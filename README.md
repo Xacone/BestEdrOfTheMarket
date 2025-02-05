@@ -10,7 +10,8 @@ Best Edr Of The Market is an open-source lab designed to implement and understan
 </div>
 
 <h2>Defensive Capabilities</h2>
-This current version (v3) focuses on some of the interception capabilities offered by the Windows kernel. These include
+This current version (v3) focuses on some of the interception capabilities offered by the Windows kernel. These include:
+<br><br>
 
 - [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4"> System Calls Interception via Alternative System Call Handlers  </a><br>
 - [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#3"> 
@@ -35,8 +36,10 @@ The project incorporates a clone of @Elastic's <a href="">protection-artifacts</
     📁 protection-artifacts/
         📁 rules/
             📁 yara/
-                📄 Metasploit_Artefacts_Rule.yara
-                📄 Metasploit_Artefacts_Rule.yara
+                📄 Windows_Trojan_Metasploit.yar
+                📄 Windows_Hacktool_Mimikatz.yar
+                📄 Windows_Hacktool_Rubeus.yar
+                📄 ...
     📄 libcrypto-3-x64.dll
 ```
 
@@ -48,7 +51,7 @@ beotm.exe <path to driver> <path to Yara rules folder>
 
 Example:
 ```
-beotm.sys .\beotm.sys .\protection-artifacts
+beotm.exe .\beotm.sys .\protection-artifacts
 ```
 beotm.exe installs the beotm.sys driver on the system by itself, and asks to be run in administrator mode before starting. Once the driver is installed, it retrieves and compiles the Yara rules supplied in the path specified in its parameters:
 
