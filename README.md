@@ -22,6 +22,7 @@ Exploitation of the Virtual Address Descriptor (VAD) Tree for Image Integrity Ch
 - [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4"> Integrity checking of system calls </a><br>
 - [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#6"> Leverage of the Shadow Stack to Verify Thread Call Stacks Integrity </a><br>
 
+<br>
 
 Thus, this 3rd version makes it possible to detect a bunch of TTPs such as PPID Spoofing (<a href="https://attack.mitre.org/techniques/T1134/004/">T1134.004</a>), Credential Dumping (<a href="https://attack.mitre.org/techniques/T1003/001/">T1003.001</a>), process Hollowing/Ghosting/Tampering (<a href="https://attack.mitre.org/techniques/T1055/012/">T1055.012</a>), memory code injection (<a href="https://attack.mitre.org/techniques/T1055/">T1055</a>) methods including APC queuing (<a href="https://attack.mitre.org/techniques/T1055/004/">T1055.004</a>) & Thread Hijacking (<a href="https://attack.mitre.org/techniques/T1055/003/">T1055.003</a>), Abnormal System Calls (<a href="https://attack.mitre.org/techniques/T1106/">T1106</a>), Registry Persistence Operations (<a href="https://attack.mitre.org/techniques/T1547/001/">T1547.001</a>) and many more...
 
