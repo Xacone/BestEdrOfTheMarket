@@ -78,7 +78,7 @@ C:\Windows\system32> sc.exe stop BeotmDrv
 
 You'll need a test environment such as a Windows virtual machine. <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/install/the-testsigning-boot-configuration-option#enable-or-disable-use-of-test-signed-code">The machine must be configured in ``TESTSIGNING`` mode.</a>
 
-I recommend a Windows 10 22H2 VM (this is the version on which BEOTM was tested), but the project should be compatible between Windows 10 20H1 and Windows 11 23H2.
+I recommend a Windows 10 22H2 VM (this is the version on which BEOTM was tested), but the project should be compatible between Windows 10 20H1 and Windows 10 22H2.
 
 <a href="https://www.apriorit.com/dev-blog/kernel-driver-debugging-with-windbg">You can also debug the remote VM kernel if you would like to test your changes.</a> A debug message is displayed when BEOTM is launched, informing whether or not the callbacks have been successfully registered:
 
