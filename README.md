@@ -50,9 +50,9 @@ The project incorporates a clone of @Elastic's <a href="">protection-artifacts</
 beotm.exe <path to driver> <path to Yara rules folder>
 ```
 
-Example:
+Example with ``protection-artifacts``:
 ```
-beotm.exe .\beotm.sys .\protection-artifacts
+.\beotm.exe .\beotm.sys .\protection-artifacts\yara\rules\
 ```
 beotm.exe installs the beotm.sys driver on the system by itself, and asks to be run in administrator mode before starting. Once the driver is installed, it retrieves and compiles the Yara rules supplied in the path specified in its parameters:
 
