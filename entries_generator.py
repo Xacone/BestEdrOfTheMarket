@@ -1,6 +1,7 @@
 import random
 import json
 import argparse
+from datetime import datetime, timedelta
 
 def random_protect_flag():
     return random.choice(["X", "WX", "RX", "RWX", "NX"])
@@ -13,6 +14,14 @@ def generate_address(prefix="0x"):
 
 def random_yara_rule():
     return f"Windows_Hacktool_Mimikatz_{''.join(random.choices('abcdef0123456789', k=8))}"
+
+def random_datetime_this_year():
+    start = datetime(datetime.now().year, 1, 1)
+    end = datetime.now()
+    delta = end - start
+    random_seconds = random.randint(0, int(delta.total_seconds()))
+    rand_datetime = start + timedelta(seconds=random_seconds)
+    return rand_datetime.isoformat(sep=' ', timespec='seconds')
 
 REGISTRY_KEYS = [
     "HKLM\\SYSTEM\\CurrentControlSet\\Services\\BadDriver",
@@ -145,13 +154,13 @@ def generate_logical_event():
         "GlobalDefensiveMethodId": method_id,
         "Level": random_level(),
         "isCodeInjection": method_id == 4,
-        "ScoopedAddress": generate_address(),
         "OriginProcess": origin_process,
         "OriginPID": random.randint(500, 5000),
         "VictimProcess": victim_process,
         "TargetPID": random.randint(5000, 10000),
         "OriginProcessImagePath": f"C:\\Users\\User\\Downloads\\Malwares\\{origin_process}",
         "InvolvedYaraRule": random_yara_rule(),
+        "DateAndTime": random_datetime_this_year(),
         "SpecificEventsInfo": [generator()]
     }
 
