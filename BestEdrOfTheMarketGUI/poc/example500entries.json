@@ -1,0 +1,1143 @@
+[
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "System Call Check",
+    "GlobalDefensiveMethodId": 1,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 3618,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 7329,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_375d8ed4",
+    "DateAndTime": "2025-03-21 08:42:23",
+    "SpecificEventsInfo": [
+      {
+        "SystemCallInfo": {
+          "InvolvedSystemCall": "NtWriteVirtualMemory",
+          "InvolvedSystemCallId": 1,
+          "NtWriteVmInfo": {
+            "SourceAddress": "0xF976732120266033",
+            "TargetAddress": "0xFF409790D2D7380E",
+            "Size": 2048
+          }
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "BackdoorAgent.exe",
+    "OriginPID": 2972,
+    "VictimProcess": "Explorer.exe",
+    "TargetPID": 7311,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\BackdoorAgent.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_5fa59310",
+    "DateAndTime": "2025-03-31 15:54:36",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0xBE45C7B8BEE41EA7",
+          "ProcessBaseAddressVad": "0x6B604F197E74874B",
+          "ProcessBaseAddressLdr": "0x45A6586DED2C0444"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 4841,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 9096,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_2165c214",
+    "DateAndTime": "2025-01-03 08:06:11",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": true,
+          "ProcessVadRootAddress": "0x8B6E1A703BBA28D7",
+          "ProcessBaseAddressVad": "0x3CB63478BAF29C56",
+          "ProcessBaseAddressLdr": "0x6F85AEA136E8D3F6"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Warning",
+    "isCodeInjection": true,
+    "OriginProcess": "BackdoorAgent.exe",
+    "OriginPID": 3176,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 9160,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\BackdoorAgent.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_3ed762f2",
+    "DateAndTime": "2025-02-06 19:54:28",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0xD1F42B5323032052",
+          "OriginMemoryRegionProtect": "RWX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Info",
+    "isCodeInjection": true,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 1598,
+    "VictimProcess": "Explorer.exe",
+    "TargetPID": 9341,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_4a7f61c6",
+    "DateAndTime": "2025-02-07 05:49:23",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0x33B5BC2AC07AEC54",
+          "OriginMemoryRegionProtect": "WX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Abnormal NT Syscall",
+    "GlobalDefensiveMethodId": 8,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 1802,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 6855,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_b13c6503",
+    "DateAndTime": "2025-02-05 14:25:19",
+    "SpecificEventsInfo": [
+      {
+        "AbnormalNtSyscallInfo": {
+          "UserSyscallAddress": "0xE7231C8A444CC671"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "System Call Check",
+    "GlobalDefensiveMethodId": 1,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 1649,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 5965,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_92ecd122",
+    "DateAndTime": "2025-02-22 20:12:36",
+    "SpecificEventsInfo": [
+      {
+        "SystemCallInfo": {
+          "InvolvedSystemCall": "NtWriteVirtualMemory",
+          "InvolvedSystemCallId": 1,
+          "NtWriteVmInfo": {
+            "SourceAddress": "0xE84C8C6DD2C23639",
+            "TargetAddress": "0x729154F474DA0F47",
+            "Size": 1024
+          }
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Abnormal NT Syscall",
+    "GlobalDefensiveMethodId": 8,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 2415,
+    "VictimProcess": "chrome.exe",
+    "TargetPID": 7977,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_55ec5aa0",
+    "DateAndTime": "2025-02-18 22:43:22",
+    "SpecificEventsInfo": [
+      {
+        "AbnormalNtSyscallInfo": {
+          "UserSyscallAddress": "0x1B5FF5264D7D96B1"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Critical",
+    "isCodeInjection": true,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 887,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 9980,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_79a047ab",
+    "DateAndTime": "2025-03-31 07:59:38",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0x97C807FF505281C5",
+          "OriginMemoryRegionProtect": "WX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Abnormal NT Syscall",
+    "GlobalDefensiveMethodId": 8,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 4235,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 5377,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_762637de",
+    "DateAndTime": "2025-02-01 07:41:17",
+    "SpecificEventsInfo": [
+      {
+        "AbnormalNtSyscallInfo": {
+          "UserSyscallAddress": "0x014644050B1BFDB8"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Abnormal NT Syscall",
+    "GlobalDefensiveMethodId": 8,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 1286,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 5730,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_bbb21994",
+    "DateAndTime": "2025-03-27 14:34:06",
+    "SpecificEventsInfo": [
+      {
+        "AbnormalNtSyscallInfo": {
+          "UserSyscallAddress": "0xD4237A82393AC7C5"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Info",
+    "isCodeInjection": true,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 1559,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 7189,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_6664dab1",
+    "DateAndTime": "2025-03-12 09:14:58",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0x5EAB7736733D0EFB",
+          "OriginMemoryRegionProtect": "RWX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Credential Dump",
+    "GlobalDefensiveMethodId": 6,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 3184,
+    "VictimProcess": "Explorer.exe",
+    "TargetPID": 8946,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_bffd76f9",
+    "DateAndTime": "2025-04-10 07:04:51",
+    "SpecificEventsInfo": [
+      {
+        "CredentialDumpInfo": {
+          "OperationType": "Handle Duplication"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Abnormal NT Syscall",
+    "GlobalDefensiveMethodId": 8,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 3219,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 9133,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_2889fcab",
+    "DateAndTime": "2025-02-08 12:47:25",
+    "SpecificEventsInfo": [
+      {
+        "AbnormalNtSyscallInfo": {
+          "UserSyscallAddress": "0x56C447DC0E663A12"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Info",
+    "isCodeInjection": true,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 1519,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 5246,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_57bd931c",
+    "DateAndTime": "2025-04-13 16:02:59",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0xBDC9F81B842606FE",
+          "OriginMemoryRegionProtect": "RX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Suspicious Reg Key",
+    "GlobalDefensiveMethodId": 5,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 1392,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 8496,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_20bac758",
+    "DateAndTime": "2025-01-29 07:26:29",
+    "SpecificEventsInfo": [
+      {
+        "RegistryOperationInfo": {
+          "SuspiciousRegistryKey": "HKLM\\SYSTEM\\FakeControl\\FakeKey",
+          "SuspiciousRegistryValue": "Dropper.exe"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Abnormal NT Syscall",
+    "GlobalDefensiveMethodId": 8,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 3783,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 9273,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_a3137469",
+    "DateAndTime": "2025-01-22 06:44:56",
+    "SpecificEventsInfo": [
+      {
+        "AbnormalNtSyscallInfo": {
+          "UserSyscallAddress": "0x88D4260ECAE140D0"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Info",
+    "isCodeInjection": true,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 4413,
+    "VictimProcess": "chrome.exe",
+    "TargetPID": 7924,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_0f265bd4",
+    "DateAndTime": "2025-02-10 16:04:25",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0x6D2E6E03F153B054",
+          "OriginMemoryRegionProtect": "RX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Warning",
+    "isCodeInjection": true,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 3684,
+    "VictimProcess": "Explorer.exe",
+    "TargetPID": 7512,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_9cdf1498",
+    "DateAndTime": "2025-02-02 16:57:18",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0xA2E4DC4F64708DE1",
+          "OriginMemoryRegionProtect": "NX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Critical",
+    "isCodeInjection": true,
+    "OriginProcess": "BackdoorAgent.exe",
+    "OriginPID": 3963,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 6638,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\BackdoorAgent.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_14e10c33",
+    "DateAndTime": "2025-03-12 19:33:04",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0xAD517D5988640FDF",
+          "OriginMemoryRegionProtect": "RX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 3526,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 8271,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_b75402c0",
+    "DateAndTime": "2025-01-18 15:52:30",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x1451AE9DDA40F6E3",
+          "ProcessBaseAddressVad": "0xE93C3CDE8D58F741",
+          "ProcessBaseAddressLdr": "0x8F4538008EEAAB3C"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 968,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 9052,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_25e79e40",
+    "DateAndTime": "2025-03-26 20:40:31",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x235A04B1A1C15653",
+          "ProcessBaseAddressVad": "0x72892B2666BE4327",
+          "ProcessBaseAddressLdr": "0xEEC92C78C8394CC7"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 3527,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 8055,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_3d51e3bb",
+    "DateAndTime": "2025-02-20 00:49:04",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x60373D348FB7F618",
+          "ProcessBaseAddressVad": "0x6E35B064E7C6132C",
+          "ProcessBaseAddressLdr": "0x187861C788EC8F4F"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "System Call Check",
+    "GlobalDefensiveMethodId": 1,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 3017,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 9398,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_8c88c08d",
+    "DateAndTime": "2025-01-31 18:19:09",
+    "SpecificEventsInfo": [
+      {
+        "SystemCallInfo": {
+          "InvolvedSystemCall": "NtProtectVirtualMemory",
+          "InvolvedSystemCallId": 3,
+          "NtProtectVmInfo": {
+            "BaseAddress": "0xBDB80A098C42CB07",
+            "NumberOfBytesToProtect": 2048,
+            "Protection": 94
+          }
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 2050,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 5238,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_caa82083",
+    "DateAndTime": "2025-02-28 11:44:33",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x5181FC8801D5177D",
+          "ProcessBaseAddressVad": "0x8A38707FF8E6BBA8",
+          "ProcessBaseAddressLdr": "0xD009FF6BFD03C9E8"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Credential Dump",
+    "GlobalDefensiveMethodId": 6,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 1145,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 8446,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_a36669ab",
+    "DateAndTime": "2025-01-01 20:23:00",
+    "SpecificEventsInfo": [
+      {
+        "CredentialDumpInfo": {
+          "OperationType": "VM Read"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 888,
+    "VictimProcess": "chrome.exe",
+    "TargetPID": 5319,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_1c11e617",
+    "DateAndTime": "2025-01-14 10:41:04",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x3205A8847B11FD0A",
+          "ProcessBaseAddressVad": "0xCEC6B4B54BA7A087",
+          "ProcessBaseAddressLdr": "0xDF78E52341F47D27"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Credential Dump",
+    "GlobalDefensiveMethodId": 6,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 2692,
+    "VictimProcess": "Explorer.exe",
+    "TargetPID": 9127,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_d17914d4",
+    "DateAndTime": "2025-01-04 10:41:10",
+    "SpecificEventsInfo": [
+      {
+        "CredentialDumpInfo": {
+          "OperationType": "Memory Scan"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Credential Dump",
+    "GlobalDefensiveMethodId": 6,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "BackdoorAgent.exe",
+    "OriginPID": 4010,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 8828,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\BackdoorAgent.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_d82fa101",
+    "DateAndTime": "2025-02-19 21:41:22",
+    "SpecificEventsInfo": [
+      {
+        "CredentialDumpInfo": {
+          "OperationType": "Handle Duplication"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 4545,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 6595,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_38fe9ad6",
+    "DateAndTime": "2025-02-16 10:59:31",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x6C47DFAC98101CD5",
+          "ProcessBaseAddressVad": "0x8A5CCA3156CBB874",
+          "ProcessBaseAddressLdr": "0xDE90396F5AD13E89"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 4427,
+    "VictimProcess": "Explorer.exe",
+    "TargetPID": 8765,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_b4bde1f7",
+    "DateAndTime": "2025-03-15 05:33:10",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": true,
+          "ProcessVadRootAddress": "0x6C8473DBABF3067F",
+          "ProcessBaseAddressVad": "0x3DF1ED29DFF5A201",
+          "ProcessBaseAddressLdr": "0x710E91F5A4B99ED5"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Warning",
+    "isCodeInjection": true,
+    "OriginProcess": "BackdoorAgent.exe",
+    "OriginPID": 1085,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 8140,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\BackdoorAgent.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_ed18fe28",
+    "DateAndTime": "2025-04-01 21:09:44",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0xB34DBB140BF5A0E2",
+          "OriginMemoryRegionProtect": "RWX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 4834,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 5993,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_0d96abbf",
+    "DateAndTime": "2025-04-08 17:27:49",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": true,
+          "ProcessVadRootAddress": "0x03921762821A42DC",
+          "ProcessBaseAddressVad": "0x55AAC8E4A2DB663F",
+          "ProcessBaseAddressLdr": "0x3CF7FC6743F6B5D4"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Thread Stack Corruption",
+    "GlobalDefensiveMethodId": 7,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 2128,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 6008,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_9250c62f",
+    "DateAndTime": "2025-04-06 16:54:02",
+    "SpecificEventsInfo": [
+      {
+        "ShadowStackInfo": {
+          "AbnormalStackFrame": "0x41F60C57A0D0F2B5"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 853,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 5443,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_f0e2a136",
+    "DateAndTime": "2025-02-10 17:29:41",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x73D759C8A236C6F4",
+          "ProcessBaseAddressVad": "0x327D450B77E664FC",
+          "ProcessBaseAddressLdr": "0x1533CD23BDF3B4BD"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Info",
+    "isCodeInjection": true,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 2673,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 5619,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_5f1e2173",
+    "DateAndTime": "2025-02-22 00:14:31",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0x270F06D4E515E335",
+          "OriginMemoryRegionProtect": "X"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "System Call Check",
+    "GlobalDefensiveMethodId": 1,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 2252,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 9825,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_973cd61e",
+    "DateAndTime": "2025-03-29 17:47:58",
+    "SpecificEventsInfo": [
+      {
+        "SystemCallInfo": {
+          "InvolvedSystemCall": "NtWriteFile",
+          "InvolvedSystemCallId": 2,
+          "NtWriteFileInfo": {
+            "BufferAddress": "0x8D9A6B83C77F1C80",
+            "BufferLength": 1024
+          }
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 2790,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 7220,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_2888ad46",
+    "DateAndTime": "2025-02-16 22:43:01",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x0F0ADD10AFCA5AD4",
+          "ProcessBaseAddressVad": "0x0FC7B677170713DF",
+          "ProcessBaseAddressLdr": "0x2540E577F21E93E7"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Code Injection",
+    "GlobalDefensiveMethodId": 4,
+    "Level": "Warning",
+    "isCodeInjection": true,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 2159,
+    "VictimProcess": "chrome.exe",
+    "TargetPID": 9268,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_fe368730",
+    "DateAndTime": "2025-01-05 22:22:21",
+    "SpecificEventsInfo": [
+      {
+        "CodeInjectionInfo": {
+          "SuspiciousStartAddress": "0xD03F8F0323589422",
+          "OriginMemoryRegionProtect": "RWX"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 1375,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 7240,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_24cfcd31",
+    "DateAndTime": "2025-04-05 01:20:17",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x4F6D100DD52F4CF6",
+          "ProcessBaseAddressVad": "0x4C6AB929778D31DD",
+          "ProcessBaseAddressLdr": "0xFCCA2A07728859DA"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "BackdoorAgent.exe",
+    "OriginPID": 1251,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 7985,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\BackdoorAgent.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_548d5aa2",
+    "DateAndTime": "2025-01-20 18:22:24",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": true,
+          "ProcessVadRootAddress": "0x2FDAAA22AC5B364C",
+          "ProcessBaseAddressVad": "0x6DE9EF39C4E7EF2F",
+          "ProcessBaseAddressLdr": "0x214C287D1567FCE2"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 3354,
+    "VictimProcess": "chrome.exe",
+    "TargetPID": 6014,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_d1fc774b",
+    "DateAndTime": "2025-04-16 18:34:06",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x7126C3E3144AE352",
+          "ProcessBaseAddressVad": "0xFCCFF1D6116C7F25",
+          "ProcessBaseAddressLdr": "0xBA96C4D2B8338508"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Ghost Process",
+    "GlobalDefensiveMethodId": 2,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Stealer.exe",
+    "OriginPID": 817,
+    "VictimProcess": "chrome.exe",
+    "TargetPID": 8907,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Stealer.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_3512637a",
+    "DateAndTime": "2025-01-22 05:07:11",
+    "SpecificEventsInfo": [
+      {
+        "GhostProcessInfo": {
+          "Hollowed": true,
+          "ProcessVadRootAddress": "0xAF83524FBBAF7B49",
+          "ProcessBaseAddressVad": "0xB2911FD223F3D54A",
+          "ProcessBaseAddressLdr": "0x3D8CA9D3AF738525"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Abnormal NT Syscall",
+    "GlobalDefensiveMethodId": 8,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 828,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 9690,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_360c22fb",
+    "DateAndTime": "2025-01-06 00:51:46",
+    "SpecificEventsInfo": [
+      {
+        "AbnormalNtSyscallInfo": {
+          "UserSyscallAddress": "0xC652EE00EEA65385"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Suspicious Reg Key",
+    "GlobalDefensiveMethodId": 5,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 3889,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 5143,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_96e6ad42",
+    "DateAndTime": "2025-01-12 01:42:02",
+    "SpecificEventsInfo": [
+      {
+        "RegistryOperationInfo": {
+          "SuspiciousRegistryKey": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce",
+          "SuspiciousRegistryValue": "Stealer.exe"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "BackdoorAgent.exe",
+    "OriginPID": 3560,
+    "VictimProcess": "svchost.exe",
+    "TargetPID": 5936,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\BackdoorAgent.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_b786e580",
+    "DateAndTime": "2025-01-21 08:35:07",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": false,
+          "ProcessVadRootAddress": "0x691F9406F97AA27C",
+          "ProcessBaseAddressVad": "0xA7C96CF67517798A",
+          "ProcessBaseAddressLdr": "0xE1E8B80231FCEE9A"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Hollowed Process",
+    "GlobalDefensiveMethodId": 3,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 3101,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 7820,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_afa50f37",
+    "DateAndTime": "2025-01-18 14:52:45",
+    "SpecificEventsInfo": [
+      {
+        "HollowedVadTreeInfo": {
+          "Hollowed": true,
+          "ProcessVadRootAddress": "0x73AD67ABA37A5FB9",
+          "ProcessBaseAddressVad": "0x26CF3CF65C131896",
+          "ProcessBaseAddressLdr": "0xCD837F35419E4D35"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Thread Stack Corruption",
+    "GlobalDefensiveMethodId": 7,
+    "Level": "Info",
+    "isCodeInjection": false,
+    "OriginProcess": "Malware.exe",
+    "OriginPID": 528,
+    "VictimProcess": "Explorer.exe",
+    "TargetPID": 9081,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Malware.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_b705e65d",
+    "DateAndTime": "2025-03-02 06:50:52",
+    "SpecificEventsInfo": [
+      {
+        "ShadowStackInfo": {
+          "AbnormalStackFrame": "0x7EFDD9806802481D"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Suspicious Reg Key",
+    "GlobalDefensiveMethodId": 5,
+    "Level": "Critical",
+    "isCodeInjection": false,
+    "OriginProcess": "TrojanLoader.exe",
+    "OriginPID": 3998,
+    "VictimProcess": "lsass.exe",
+    "TargetPID": 8667,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\TrojanLoader.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_ceb60a62",
+    "DateAndTime": "2025-01-06 07:47:13",
+    "SpecificEventsInfo": [
+      {
+        "RegistryOperationInfo": {
+          "SuspiciousRegistryKey": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Suspicious",
+          "SuspiciousRegistryValue": "Stealer.exe"
+        }
+      }
+    ]
+  },
+  {
+    "Version": 3,
+    "GlobalDefensiveMethod": "Thread Stack Corruption",
+    "GlobalDefensiveMethodId": 7,
+    "Level": "Warning",
+    "isCodeInjection": false,
+    "OriginProcess": "Dropper.exe",
+    "OriginPID": 1450,
+    "VictimProcess": "cmd.exe",
+    "TargetPID": 9047,
+    "OriginProcessImagePath": "C:\\Users\\User\\Downloads\\Malwares\\Dropper.exe",
+    "InvolvedYaraRule": "Windows_Hacktool_Mimikatz_171830cb",
+    "DateAndTime": "2025-04-19 22:07:23",
+    "SpecificEventsInfo": [
+      {
+        "ShadowStackInfo": {
+          "AbnormalStackFrame": "0x71C0B8130479A30E"
+        }
+      }
+    ]
+  }
+]
