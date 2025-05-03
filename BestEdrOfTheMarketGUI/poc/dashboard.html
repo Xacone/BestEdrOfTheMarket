@@ -26,7 +26,7 @@
             <div class="card-body">
 
                 <div class="flex flex-wrap gap-2 items-center">
-                    <div class="badge badge">Data input</div>
+                    <div class="badge badge-ghost">Data input</div>
                     <h2 class="card-title text-xl">
                         Server connection
                     </h2>
@@ -84,7 +84,7 @@
         <div class="card min-w-90 grow-9">
             <div class="card-body">
                 <div class="flex flex-wrap gap-2 items-center">
-                    <div class="badge badge">Event selection</div>
+                    <div class="badge badge-ghost">Event selection</div>
                     <h2 class="card-title text-xl">Received events</h2>
                 </div>
                 <!-- The table could be swappable with a live graph (number of events x time ; each event is a selectable dot, and its color is the criticity level)     -->
@@ -186,13 +186,13 @@
         <div class="card grow">
             <div class="card-body">
                 <div class="flex flex-wrap gap-2 items-center">
-                    <div class="badge badge">Event details</div>
+                    <div class="badge badge-ghost">Event details</div>
                     <h2 class="card-title text-xl">
                         Selected event
                     </h2>
                 </div>
-                <div class="flex flex-wrap flex-start">
-                    <table class="table [&_th]:py-1 [&_td]:py-1 flex-1">
+                <div class="flex flex-wrap flex-start gap-2">
+                    <table class="table bg-base-200 [&_th]:py-1 [&_td]:py-1 flex-1">
                         <tbody>
                             <tr>
                                 <th>Date</th>
@@ -210,11 +210,19 @@
                                 <th>Global Defensive Method ID</th>
                                 <td>3</td>
                             </tr>
+                            <tr>
+                                <th>Involved Yara Rule</th>
+                                <td class="max-w-48 break-words">Windows_Hacktool_Mimikatz_b786e580</td>
+                            </tr>
+                            <tr>
+                                <th class="w-48">Is Code Injection</th>
+                                <td>false</td>
+                            </tr>
 
                         </tbody>
                     </table>
 
-                    <table class="table [&_th]:py-1 [&_td]:py-1 flex-1">
+                    <table class="table bg-base-200 [&_th]:py-1 [&_td]:py-1 flex-1">
                         <tbody>
                             <tr>
                                 <th>Origin Process</th>
@@ -223,6 +231,10 @@
                             <tr>
                                 <th>Origin PID</th>
                                 <td>3560</td>
+                            </tr>
+                            <tr>
+                                <th>Origin Process Image Path</th>
+                                <td class="max-w-48 break-words">C:\\Users\\Downloads\\Malwares\\BackdoorAgent.exe</td>
                             </tr>
                             <tr>
                                 <th>Victim Process</th>
@@ -234,23 +246,7 @@
                             </tr>
                         </tbody>
                     </table>
-                    <table class="table [&_th]:py-1 [&_td]:py-1 flex-1">
-                        <tbody>
-                            <tr>
-                                <th>Origin Process Image Path</th>
-                                <td class="max-w-48 break-words">C:\\Users\\Downloads\\Malwares\\BackdoorAgent.exe</td>
-                            </tr>
-                            <tr>
-                                <th>Involved Yara Rule</th>
-                                <td class="max-w-48 break-words">Windows_Hacktool_Mimikatz_b786e580</td>
-                            </tr>
-                            <tr>
-                                <th class="w-48">Is Code Injection</th>
-                                <td>false</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <table class="table [&_th]:py-1 [&_td]:py-1 flex-1">
+                    <table class="table bg-base-200 [&_th]:py-1 [&_td]:py-1 flex-1">
                         <tbody>
                             <tr>
                                 <th>Hollowed</th>
