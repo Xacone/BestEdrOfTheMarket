@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@lucide/svelte':
+        specifier: ^0.525.0
+        version: 0.525.0(svelte@5.34.9)
       zod:
         specifier: ^3.25.67
         version: 3.25.67
@@ -229,6 +232,11 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
+
+  '@lucide/svelte@0.525.0':
+    resolution: {integrity: sha512-dyUxkXzepagLUzL8jHQNdeH286nC66ClLACsg+Neu/bjkRJWPWMzkT+H0DKlE70QdkicGCfs1ZGmXCc351hmZA==}
+    peerDependencies:
+      svelte: ^5
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
@@ -953,6 +961,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@lucide/svelte@0.525.0(svelte@5.34.9)':
+    dependencies:
+      svelte: 5.34.9
 
   '@polka/url@1.0.0-next.29': {}
 
