@@ -28,7 +28,7 @@
 
   $effect(() => {
     if (!mounted) {
-      // The local storage update should only be available once the theme has been retried a first time.
+      // The local storage update should only be available once the theme has been retrieved a first time (on mount)
       return;
     }
     document.documentElement.setAttribute('data-theme', themeSelection[theme]);
