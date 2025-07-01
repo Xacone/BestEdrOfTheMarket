@@ -2,6 +2,7 @@
   import '../app.css';
   import DarkMode from '$lib/components/DarkMode.svelte';
   import GitHubLink from '$lib/components/GitHubLink.svelte';
+  import ListDetectionEvents from '$lib/components/ListDetectionEvents.svelte';
 </script>
 
 <div class="p-5">
@@ -17,4 +18,5 @@
       <GitHubLink></GitHubLink>
     </div>
   </header>
+  <ListDetectionEvents></ListDetectionEvents>
 </div>
