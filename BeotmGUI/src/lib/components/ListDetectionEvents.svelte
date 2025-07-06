@@ -52,11 +52,15 @@
           {evt.DateAndTime.toLocaleDateString()}
         </li>
       {/if}
-      <li class="border-b-base-300 hover:bg-base-200 flex w-full cursor-pointer border-b-1 p-2">
+      <li
+        class="border-b-base-300 hover:bg-base-200 flex w-full cursor-pointer border-b-1 p-2 pt-0.5"
+      >
         <div class="w-full">
-          <div class="flex gap-2">
-            <div>{evt.DateAndTime.toLocaleTimeString()}</div>
-            <div class="badge badge-{evt.Level.replace('Critical', 'Error').toLowerCase()}">
+          <div class="flex items-center gap-2">
+            <div class="text-sm">{evt.DateAndTime.toLocaleTimeString()}</div>
+            <div
+              class="badge badge-md badge-{evt.Level.replace('Critical', 'Error').toLowerCase()}"
+            >
               {evt.Level}
             </div>
             <div class="flex">
@@ -69,13 +73,17 @@
               </span>
             </div>
           </div>
-          <div class="flex flex-col gap-2 pt-1">
+          <div class="text-base-content flex flex-col gap-1 text-sm">
             <div class="flex items-center">
-              <SquareFunction class="h-5 w-5" strokeWidth="0.7"></SquareFunction><span class="select-none pl-1 pr-2">:</span>
+              <SquareFunction class="h-4 w-4" strokeWidth="0.7"></SquareFunction><span
+                class="pr-2 pl-1 select-none">:</span
+              >
               {displayId ? evt.GlobalDefensiveMethodId : evt.GlobalDefensiveMethod}
             </div>
             <div class="flex items-center">
-              <Scale class="h-5 w-5" strokeWidth="0.7"></Scale><span class="select-none pl-1 pr-2">:</span>
+              <Scale class="h-4 w-4" strokeWidth="0.7"></Scale><span class="pr-2 pl-1 select-none"
+                >:</span
+              >
               {evt.InvolvedYaraRule}
             </div>
           </div>
