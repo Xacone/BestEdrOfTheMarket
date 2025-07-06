@@ -2,10 +2,8 @@
   import LetterText from '@lucide/svelte/icons/letter-text';
   import Binary from '@lucide/svelte/icons/binary';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
-  import ShieldCheck from '@lucide/svelte/icons/shield-check';
+  import Scale from '@lucide/svelte/icons/scale';
   import SquareFunction from '@lucide/svelte/icons/square-function';
-  import BowArrow from '@lucide/svelte/icons/bow-arrow';
-  import Target from '@lucide/svelte/icons/target';
 
   // TODO: move fetching logic at the page level or as a util
   // Use svelte stores to propagate data between components ?
@@ -63,23 +61,21 @@
             </div>
             <div class="flex">
               <span class="font-semibold">
-                <!-- <BowArrow class="h-5 w-5" strokeWidth="0.7"></BowArrow> -->
                 {displayId ? evt.OriginPID : evt.OriginProcess}
               </span>
               <ChevronRight class="h-7" strokeWidth="1"></ChevronRight>
               <span>
-                <!-- <Target class="h-5 w-5" strokeWidth="0.7"></Target> -->
                 {displayId ? evt.TargetPID : evt.VictimProcess}
               </span>
             </div>
           </div>
           <div class="flex flex-col gap-2 pt-1">
             <div class="flex items-center">
-              <SquareFunction class="h-5 w-5" strokeWidth="0.7"></SquareFunction> :
+              <SquareFunction class="h-5 w-5" strokeWidth="0.7"></SquareFunction><span class="select-none pl-1 pr-2">:</span>
               {displayId ? evt.GlobalDefensiveMethodId : evt.GlobalDefensiveMethod}
             </div>
             <div class="flex items-center">
-              <ShieldCheck class="h-5 w-5" strokeWidth="0.7"></ShieldCheck> :
+              <Scale class="h-5 w-5" strokeWidth="0.7"></Scale><span class="select-none pl-1 pr-2">:</span>
               {evt.InvolvedYaraRule}
             </div>
           </div>
