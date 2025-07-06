@@ -5,8 +5,8 @@
   import ListDetectionEvents from '$lib/components/ListDetectionEvents.svelte';
 </script>
 
-<div class="p-5">
-  <header class="flex items-baseline justify-between">
+<div class="flex h-dvh flex-col gap-5 p-5">
+  <header class="flex shrink-0 items-baseline justify-between">
     <div class="flex items-baseline gap-2">
       <h1 class="text-4xl font-bold">BEOTM</h1>
       <span class="text-primary text-2xl">GUI</span>

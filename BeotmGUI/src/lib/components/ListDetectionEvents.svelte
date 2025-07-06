@@ -13,43 +13,23 @@
   }, 2000);
 </script>
 
-<div class="overflow-x-auto">
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Detection Time</th>
-        <th>Level</th>
-        <th>Global defensive method</th>
-        <th>Origin process</th>
-        <th>Victim process</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each detectedEvents as evt}
-        <tr>
-          <td>
-            {evt.DateAndTime.toLocaleString()}
-          </td>
-          <td>
-            {#if evt.Level === 'Critical'}
-              <div class="badge badge-outline badge-error">Critical</div>
-            {:else if evt.Level === 'Warning'}
-              <div class="badge badge-outline badge-warning">Warning</div>
-            {:else}
-              <div class="badge badge-outline badge-info">Info</div>
-            {/if}
-          </td>
-          <td>
-            <div class="badge badge-neutral">{evt.GlobalDefensiveMethod}</div>
-          </td>
-          <td>
-            <span class="badge badge-primary">{evt.OriginProcess}</span>
-          </td>
-          <td>
-            <span class="badge badge-secondary">{evt.VictimProcess}</span>
-          </td>
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+<!-- <th>Detection Time</th>
+<th>Level</th>
+<th>Global defensive method</th>
+<th>Origin process</th>
+<th>Victim process</th> -->
+<div class="bg-base-300 w-200 flex-1 overflow-hidden rounded-xl pb-10">
+  <div class="bg-base-200 sticky p-2">Detected events</div>
+  <ul class="h-full overflow-y-scroll">
+    {#each detectedEvents as evt}
+      <li class="flex pr-2 pl-2">
+        {evt.DateAndTime.getHours()}:{evt.DateAndTime.getMinutes()}
+        {evt.Level}
+        {evt.GlobalDefensiveMethod}
+        {evt.OriginProcess}
+        {evt.VictimProcess}
+        {evt.InvolvedYaraRule}
+      </li>
+    {/each}
+  </ul>
 </div>
