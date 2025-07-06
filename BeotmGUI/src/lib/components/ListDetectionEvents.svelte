@@ -19,10 +19,13 @@
 <th>Origin process</th>
 <th>Victim process</th> -->
 <div class="bg-base-300 w-200 flex-1 overflow-hidden rounded-xl pb-10">
-  <div class="bg-base-200 sticky p-2">Detected events</div>
+  <div class="bg-base-200 p-2">Detected events</div>
   <ul class="h-full overflow-y-scroll">
-    {#each detectedEvents as evt}
-      <li class="flex pr-2 pl-2">
+    {#each detectedEvents as evt, i}
+      {#if i === 0 || evt.DateAndTime.toDateString() !== detectedEvents[i - 1].DateAndTime.toDateString()}
+        <li class="bg-base-300 sticky top-0 z-10 p-2">{evt.DateAndTime.toLocaleDateString()}</li>
+      {/if}
+      <li class="flex pr-5 pl-5">
         {evt.DateAndTime.getHours()}:{evt.DateAndTime.getMinutes()}
         {evt.Level}
         {evt.GlobalDefensiveMethod}
