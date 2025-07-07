@@ -19,7 +19,9 @@
   let displayId = $state(false);
 </script>
 
-<div class="border-base-300 flex h-full w-1/3 flex-col overflow-hidden rounded-xl border-1">
+<div
+  class="border-base-300 flex h-full w-1/3 min-w-[300px] flex-col overflow-hidden rounded-xl border-1"
+>
   <div class="bg-base-200 p-2">
     Selected: {selectedEvent?.OriginProcess}
     TODO: sort options
@@ -39,21 +41,15 @@
   <ul class="h-full overflow-y-scroll">
     {#each detectedEvents as evt, i}
       {#if i === 0 || evt.DateAndTime.toDateString() !== detectedEvents[i - 1].DateAndTime.toDateString()}
-        <li
-          class="bg-base-100 border-b-base-300 sticky top-0 border-b-1 p-0.5 text-right font-semibold"
-        >
+        <li class="bg-base-100 border-b-base-300 sticky top-0 border-b-1 text-right font-semibold">
           {evt.DateAndTime.toLocaleDateString()}
         </li>
       {/if}
-      <li
-        class="border-b-base-300 hover:bg-base-200 flex w-full cursor-pointer border-b-1 p-2 pt-0.5"
-      >
-        <div
-          class="w-full"
+      <li class="border-b-base-300 flex w-full border-b-1">
+        <button
+          class="hover:bg-base-200 w-full cursor-pointer p-2 pt-0.5"
+          class:bg-base-200={evt === selectedEvent}
           onclick={() => updateSelection(evt)}
-          onkeyup={() => updateSelection(evt)}
-          role="button"
-          tabindex="0"
         >
           <div class="flex items-center gap-2">
             <div class="text-sm">{evt.DateAndTime.toLocaleTimeString()}</div>
@@ -86,7 +82,7 @@
               {evt.InvolvedYaraRule}
             </div>
           </div>
-        </div>
+        </button>
       </li>
     {/each}
   </ul>
