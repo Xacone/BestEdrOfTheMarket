@@ -1,0 +1,88 @@
+<html data-theme="emerald">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--daisy ui dependencies-->
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+
+  <div class="hero bg-base-200 min-h-screen">
+    <div class="hero-content">
+
+
+      <div class="drawer">
+        <input id="my-drawer" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content">
+          <!-- Page content here -->
+
+          <h1 class="text-5xl font-bold">BEOTM - GUI</h1>
+          <p class="py-6">
+            Welcome on the Best EDR of the Market GUI. <br>
+
+            Easily monitor suspicious events from the Windows kernel.
+          </p>
+          <button class="btn btn-primary">Let's see that</button>
+
+
+          <label for="my-drawer" class="btn btn-neutral drawer-button">Settings</label>
+        </div>
+        <div class="drawer-side">
+          <label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+          <ul class="menu bg-base-200 w-80 p-4 min-h-full">
+
+
+            <h1 class="text-4xl p-4">Settings</h1>
+
+            <h2 class="text-2xl p-2">Appearance</h2>
+            <div class="p-1">
+              <input type="checkbox" value="synthwave" class="checkbox theme-controller" />
+              Night mode
+            </div>
+            </label>
+
+          </ul>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+
+  <h1 class="text-5xl font-bold">
+    BEOTM
+  </h1>
+
+  <div class="stats stats-vertical lg:stats-horizontal shadow">
+    <div class="stat">
+      <div class="stat-title">Running process</div>
+      <div class="stat-value">25</div>
+      <div class="stat-desc">2025-04-16 15:07:31</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-title">Detected Events</div>
+      <div class="stat-value">4,200</div>
+      <div class="stat-desc">↗︎ 678 new detections in last 5 minutes</div>
+    </div>
+
+    <div class="stat">
+      <div class="stat-title">Alerts</div>
+      <div class="stat-value">1,200</div>
+      <div class="stat-desc">↘︎ 90 (14%) in last 5 minutes</div>
+    </div>
+  </div>
+
+  <div class="badge badge-info">Info</div>
+  <div class="badge badge-success">Success</div>
+  <div class="badge badge-warning">Warning</div>
+  <div class="badge badge-error">Error</div>
+
+</body>
+
+</html>
