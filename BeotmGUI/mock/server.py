@@ -24,6 +24,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+def change_hour(detection: dict) -> dict:
+    # Make the data more "unique" to reduce the pure duplicates
+    date = detection["DateAndTime"]
+    new_date = f"{date[:11]}{random.randint(0,23):02}{date[13:]}"
+    detection["DateAndTime"] = new_date
+    return detection
+
 @app.get("/all")
 def get_all():
     return data
@@ -31,7 +39,7 @@ def get_all():
 @app.get("/events")
 def get_events():
     random_selection = random.sample(data, random.randint(1,2))
-    return random_selection
+    return [change_hour(detection) for detection in random_selection]
 
 
 if __name__ == "__main__":

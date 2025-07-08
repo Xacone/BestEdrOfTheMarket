@@ -13,7 +13,8 @@
   }: { selectedEvent: DetectionEvent | null; detectedEvents: DetectionEvent[] } = $props();
 
   const updateSelection = (evt: DetectionEvent) => {
-    selectedEvent = evt;
+    const isSelectedEvent = selectedEvent? JSON.stringify(evt) === JSON.stringify(selectedEvent): false;
+    selectedEvent = isSelectedEvent? null: evt;
   };
 
   let displayId = $state(false);
