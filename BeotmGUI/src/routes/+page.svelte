@@ -1,8 +1,13 @@
-<script>
+<script lang="ts">
   import '../app.css';
   import DarkMode from '$lib/components/DarkMode.svelte';
   import GitHubLink from '$lib/components/GitHubLink.svelte';
   import ListDetectionEvents from '$lib/components/ListDetectionEvents.svelte';
+  import DetectionEventDetails from '$lib/components/DetectionEventDetails.svelte';
+  import { detectedEvents } from '$lib/logic/poll-events.svelte';
+  import { type DetectionEvent } from '$lib/schemas/detection-events';
+
+  let selectedEvent: DetectionEvent | null = $state(null);
 </script>
 
 <div class="flex h-dvh flex-col gap-5 p-5">
@@ -18,5 +23,10 @@
       <GitHubLink></GitHubLink>
     </div>
   </header>
-  <ListDetectionEvents></ListDetectionEvents>
+  <div class="flex h-full w-full gap-5 overflow-hidden">
+    <ListDetectionEvents {detectedEvents} bind:selectedEvent></ListDetectionEvents>
+    {#if selectedEvent}
+      <DetectionEventDetails bind:selectedEvent></DetectionEventDetails>
+    {/if}
+  </div>
 </div>

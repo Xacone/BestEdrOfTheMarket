@@ -5,34 +5,25 @@
   import Scale from '@lucide/svelte/icons/scale';
   import SquareFunction from '@lucide/svelte/icons/square-function';
 
-  // TODO: move fetching logic at the page level or as a util
-  // Use svelte stores to propagate data between components ?
-  // (probably simpler): using child props
-  import { DetectionEventSchema, type DetectionEvent } from '$lib/schemas/detection-events';
-  import DetailsAlerte from '$lib/components/DetailsAlerte.svelte';
+  import { type DetectionEvent } from '$lib/schemas/detection-events';
 
-  let eventClickedForMoreDetails: DetectionEvent | null = $state(null);
+  let {
+    selectedEvent = $bindable(),
+    detectedEvents,
+  }: { selectedEvent: DetectionEvent | null; detectedEvents: DetectionEvent[] } = $props();
 
-  let detectedEvents: DetectionEvent[] = $state([]);
-  setInterval(async () => {
-    const data = await (await fetch('http://127.0.0.1:8000/events')).json();
-    const events = DetectionEventSchema.array().parse(data);
-    events.forEach((receivedEvent) => detectedEvents.push(receivedEvent));
-    detectedEvents.sort((evt1, evt2) => evt1.DateAndTime.getTime() - evt2.DateAndTime.getTime());
-  }, 2000);
+  const updateSelection = (evt: DetectionEvent) => {
+    selectedEvent = evt;
+  };
 
   let displayId = $state(false);
 </script>
 
-<!-- <th>Detection Time</th>
-<th>Level</th>
-<th>Global defensive method</th>
-<th>Origin process</th>
-<th>Victim process</th> -->
-
-<div class="flex">
-  <div class="border-base-300 flex w-125 flex-1 flex-col overflow-hidden rounded-xl border-1">
+<div
+  class="border-base-300 flex h-full w-1/3 min-w-[300px] flex-col overflow-hidden rounded-xl border-1"
+>
   <div class="bg-base-200 p-2">
+    Selected: {selectedEvent?.OriginProcess}
     TODO: sort options
     <button
       class="btn btn-square"
@@ -47,23 +38,19 @@
       </label>
     </button>
   </div>
-  <ul class="flex-1 overflow-y-scroll">
+  <ul class="h-full overflow-y-scroll">
     {#each detectedEvents as evt, i}
       {#if i === 0 || evt.DateAndTime.toDateString() !== detectedEvents[i - 1].DateAndTime.toDateString()}
-        <li
-          class="bg-base-100 border-b-base-300 sticky top-0 border-b-1 p-0.5 text-right font-semibold"
-        >
+        <li class="bg-base-100 border-b-base-300 sticky top-0 border-b-1 text-right font-semibold">
           {evt.DateAndTime.toLocaleDateString()}
         </li>
       {/if}
-      <li
-        class="border-b-base-300 hover:bg-base-200 flex w-full cursor-pointer border-b-1 p-2 pt-0.5"
-      >
-        <div class="w-full" 
-          onclick={() => eventClickedForMoreDetails = evt}
-          onkeyup={() => eventClickedForMoreDetails = evt}
-          role="button"
-          tabindex="0">
+      <li class="border-b-base-300 flex w-full border-b-1">
+        <button
+          class="hover:bg-base-200 w-full cursor-pointer p-2 pt-0.5"
+          class:bg-base-200={evt === selectedEvent}
+          onclick={() => updateSelection(evt)}
+        >
           <div class="flex items-center gap-2">
             <div class="text-sm">{evt.DateAndTime.toLocaleTimeString()}</div>
             <div
@@ -95,12 +82,9 @@
               {evt.InvolvedYaraRule}
             </div>
           </div>
-        </div>
+        </button>
       </li>
     {/each}
   </ul>
   <div class="bg-base-200 p-2">TODO: filter options</div>
-</div>
-<DetailsAlerte bind:eventClickedForMoreDetails={eventClickedForMoreDetails}></DetailsAlerte>
-
 </div>
