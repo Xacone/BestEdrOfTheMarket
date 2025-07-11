@@ -4,6 +4,7 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import Scale from '@lucide/svelte/icons/scale';
   import SquareFunction from '@lucide/svelte/icons/square-function';
+  import { t } from "svelte-i18n";
 
   import { type DetectionEvent } from '$lib/schemas/detection-events';
 
@@ -24,7 +25,7 @@
   class="border-base-300 flex h-full w-1/3 min-w-[300px] flex-col overflow-hidden rounded-xl border-1"
 >
   <div class="bg-base-200 p-2">
-    Selected: {selectedEvent?.OriginProcess}
+    { $t('list_event.selected', {values: {event: selectedEvent?.OriginProcess}}) }
     TODO: sort options
     <button
       class="btn btn-square"

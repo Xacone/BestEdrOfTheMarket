@@ -1,0 +1,22 @@
+{
+  "beotm": "MEDM",
+  "gui": "IHM",
+  "label": {
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "list_event": {
+    "selected": "Évènement sélectionné : {event}"
+  },
+  "event_details": {
+    "waiting": "Sélectionnez un évènement pour consulter ses détails",
+    "tooltip": {
+      "close": "Fermer l'évènement sélectionné",
+      "copy_path": "Copier le chemin d'accès du processus d'origine"
+    },
+    "pid": "(IDP : {pid})",
+    "error_copy_path": "Erreur levée durant la copie : ",
+    "yara_rule": "Règle Yara : ",
+    "is_code_injection": "Est une injection de code :"
+  }
+}
