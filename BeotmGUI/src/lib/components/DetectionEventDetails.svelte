@@ -5,15 +5,17 @@
   import ClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
   import Check from '@lucide/svelte/icons/check';
   import X from '@lucide/svelte/icons/x';
+  import {alertStore} from "$lib/components/alert/alert-manager";
 
   let { selectedEvent = $bindable() }: { selectedEvent: DetectionEvent | null } = $props();
 
   async function copyText() {
-    // TODO pop-up saying 'path successfuly copied to clipboard' / 'error trying to copy path to clipboard' => look at SVAR "showNotice"
     try {
       await navigator.clipboard.writeText(selectedEvent!.OriginProcessImagePath);
+      alertStore.send($t('event_details.success_copy_path'), 3000, 'success');
     } catch (err) {
       console.error($t('event_details.error_copy_path'), err);
+      alertStore.send($t('event_details.error_copy_path'), 3000, 'error');
     }
   }
 </script>

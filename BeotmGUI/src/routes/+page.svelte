@@ -8,6 +8,7 @@
   import DetectionEventDetails from "$lib/components/DetectionEventDetails.svelte";
   import "../lib/i18n.js";
   import { isLoading, t, locale} from 'svelte-i18n';
+  import TemporaryAlert from "$lib/components/alert/TemporaryAlert.svelte";
 
   let selectedEvent: DetectionEvent | null = $state(null);
 
@@ -36,3 +37,4 @@
     </div>
   </div>
 {/if}
+<TemporaryAlert />

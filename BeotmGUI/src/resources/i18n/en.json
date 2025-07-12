@@ -15,7 +15,8 @@
       "copy_path": "Copy origin process path"
     },
     "pid": "(PID : {pid})",
-    "error_copy_path": "Failed to copy with error: ",
+    "error_copy_path": "Failed to copy origin process path",
+    "success_copy_path": "Path has been copied to clipboard",
     "yara_rule": "Yara rule : ",
     "is_code_injection": "Is code injection :"
   }

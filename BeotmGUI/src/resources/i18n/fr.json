@@ -15,7 +15,8 @@
       "copy_path": "Copier le chemin d'accès du processus d'origine"
     },
     "pid": "(IDP : {pid})",
-    "error_copy_path": "Erreur levée durant la copie : ",
+    "error_copy_path": "Erreur levée durant la copie du chemin d'accès du processus d'origine",
+    "success_copy_path": "Chemin d'accès du processus d'origine copié dans le presse-papier",
     "yara_rule": "Règle Yara : ",
     "is_code_injection": "Est une injection de code :"
   }
