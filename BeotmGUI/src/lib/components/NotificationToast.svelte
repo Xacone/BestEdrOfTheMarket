@@ -22,7 +22,7 @@
     <span>
       {notification.message}
     </span>
-    <button aria-label="close">
+    <button class="cursor-pointer" aria-label="close">
       <CircleX
         strokeWidth="0.7"
         onclick={() => {
