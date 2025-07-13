@@ -5,23 +5,34 @@
   import ListDetectionEvents from '$lib/components/ListDetectionEvents.svelte';
   import { detectedEvents } from '$lib/logic/poll-events.svelte';
   import { type DetectionEvent } from '$lib/schemas/detection-events';
-  import DetectionEventDetails from "$lib/components/DetectionEventDetails.svelte";
-  import "../lib/i18n.js";
-  import { isLoading, t, locale} from 'svelte-i18n';
+  import DetectionEventDetails from '$lib/components/DetectionEventDetails.svelte';
+  import '../lib/i18n.js';
+  import { isLoading, t, locale } from 'svelte-i18n';
+  import NotificationToast from '$lib/components/NotificationToast.svelte';
+  import type { AppNotification } from '$lib/schemas/notification';
 
   let selectedEvent: DetectionEvent | null = $state(null);
+  let notification: AppNotification | null = $state(null);
 
- function toggleMagic() {
-   locale.set($locale === 'fr' ? 'en' : 'fr');
+  $effect(() => {
+    if (notification && notification.remove) {
+      notification = null;
+    }
+  });
+  function toggleMagic() {
+    locale.set($locale === 'fr' ? 'en' : 'fr');
   }
 </script>
 
 {#if !$isLoading}
+  {#if notification}
+    <NotificationToast bind:notification></NotificationToast>
+  {/if}
   <div class="flex h-dvh flex-col gap-5 p-5">
     <header class="flex shrink-0 items-baseline justify-between">
       <div class="flex items-baseline gap-2">
-        <h1 class="text-4xl font-bold">{ $t('beotm') }</h1>
-        <button onclick="{() => toggleMagic()}" class="text-primary text-2xl">{ $t('gui') }</button>
+        <h1 class="text-4xl font-bold">{$t('beotm')}</h1>
+        <button onclick={() => toggleMagic()} class="text-primary text-2xl">{$t('gui')}</button>
       </div>
       <div class="flex items-baseline">
         <!-- (later) Why not a panel / grid icon to manage the view -->
@@ -32,7 +43,7 @@
     </header>
     <div class="flex h-full w-full gap-5 overflow-hidden">
       <ListDetectionEvents {detectedEvents} bind:selectedEvent></ListDetectionEvents>
-      <DetectionEventDetails bind:selectedEvent></DetectionEventDetails>
+      <DetectionEventDetails bind:selectedEvent bind:notification></DetectionEventDetails>
     </div>
   </div>
 {/if}

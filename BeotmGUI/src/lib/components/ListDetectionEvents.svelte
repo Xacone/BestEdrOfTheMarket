@@ -4,7 +4,7 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import Scale from '@lucide/svelte/icons/scale';
   import SquareFunction from '@lucide/svelte/icons/square-function';
-  import { t } from "svelte-i18n";
+  import { t } from 'svelte-i18n';
 
   import { type DetectionEvent } from '$lib/schemas/detection-events';
 
@@ -14,8 +14,8 @@
   }: { selectedEvent: DetectionEvent | null; detectedEvents: DetectionEvent[] } = $props();
 
   const updateSelection = (evt: DetectionEvent) => {
-    const isSelectedEvent = selectedEvent? JSON.stringify(evt) === JSON.stringify(selectedEvent): false;
-    selectedEvent = isSelectedEvent? null: evt;
+    const isSelectedEvent = selectedEvent === evt;
+    selectedEvent = isSelectedEvent ? null : evt;
   };
 
   let displayId = $state(false);
@@ -25,7 +25,7 @@
   class="border-base-300 flex h-full w-1/3 min-w-[300px] flex-col overflow-hidden rounded-xl border-1"
 >
   <div class="bg-base-200 p-2">
-    { $t('list_event.selected', {values: {event: selectedEvent?.OriginProcess}}) }
+    {$t('list_event.selected', { values: { event: selectedEvent?.OriginProcess } })}
     TODO: sort options
     <button
       class="btn btn-square"
