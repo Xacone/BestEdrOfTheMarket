@@ -78,7 +78,7 @@
     <div id="other-infos" class="mt-5">
       <div id="yara-rule">
         <p class="font-semibold">{$t('event_details.yara_rule')}</p>
-        <p>{selectedEvent.InvolvedYaraRule}</p>
+        <CopyText text={selectedEvent.InvolvedYaraRule} bind:notification></CopyText>
       </div>
       <div id="code-injection" class="mt-2 flex">
         {$t('event_details.is_code_injection')}
