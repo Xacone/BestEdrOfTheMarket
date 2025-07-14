@@ -15,9 +15,9 @@
   });
 </script>
 
-<!-- Why not a modal to list all the notifications -->
-<!-- https://daisyui.com/components/modal/ -->
+
 <div class="toast toast-top toast-center">
+  <!-- Just duplicate this div to create multiple notifications -->
   <div class="alert {alertClass}" role="alert">
     <span>
       {notification.message}
