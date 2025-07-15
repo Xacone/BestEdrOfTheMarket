@@ -25,7 +25,6 @@
 
 {text}
 <button
-  id="close-panel"
   onclick={() => copyText()}
   class="cursor-pointer"
   title={$t('event_details.tooltip.copy_path')}
