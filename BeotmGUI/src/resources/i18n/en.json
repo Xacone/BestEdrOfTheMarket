@@ -14,9 +14,9 @@
       "close": "Close the selected event",
       "copy_path": "Copy origin process path"
     },
-    "pid": "(PID : {pid})",
+    "pid": "PID",
     "error_copy_path": "Failed to copy with error: ",
-    "yara_rule": "Yara rule : ",
+    "yara_rule": "Yara rule",
     "is_code_injection": "Is code injection :"
   }
 }

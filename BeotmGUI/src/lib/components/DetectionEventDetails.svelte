@@ -1,94 +1,98 @@
 <script lang="ts">
-  import {type DetectionEvent, CodeInjectionInfoSchema} from '$lib/schemas/detection-events';
-  import { t } from 'svelte-i18n'
+  import { type DetectionEvent, CodeInjectionInfoSchema } from '$lib/schemas/detection-events';
+  import { t } from 'svelte-i18n';
   import ChevronsLeft from '@lucide/svelte/icons/chevrons-left';
-  import ClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
-  import Check from '@lucide/svelte/icons/check';
-  import X from '@lucide/svelte/icons/x';
 
-  let { selectedEvent = $bindable() }: { selectedEvent: DetectionEvent | null } = $props();
+  import CopyText from './CopyText.svelte';
+  import type { AppNotification } from '$lib/schemas/notification';
 
-  async function copyText() {
-    // TODO pop-up saying 'path successfuly copied to clipboard' / 'error trying to copy path to clipboard' => look at SVAR "showNotice"
-    try {
-      await navigator.clipboard.writeText(selectedEvent!.OriginProcessImagePath);
-    } catch (err) {
-      console.error($t('event_details.error_copy_path'), err);
-    }
-  }
+  let {
+    selectedEvent = $bindable(),
+    notification = $bindable(),
+  }: { selectedEvent: DetectionEvent | null; notification: AppNotification | null } = $props();
 </script>
 
-<div class="border-base-300 bg-base-100 flex flex-1 flex-col overflow-hidden rounded-xl border-1 p-2">
+<div
+  class="border-base-300 bg-base-100 flex flex-1 flex-col overflow-hidden rounded-xl border-1 p-2"
+>
   {#if selectedEvent !== null}
-
     <div id="tool-row">
       <!--TODO Better style when hoovering buttons-->
-      <button id="close-panel" onclick="{() => selectedEvent = null}" class="cursor-pointer"
-              title="{ $t('event_details.tooltip.close') }">
-        <ChevronsLeft/>
-      </button>
-      <button id="close-panel" onclick="{() => copyText()}" class="cursor-pointer"
-              title="{ $t('event_details.tooltip.copy_path') }">
-        <ClipboardCopy/>
+      <button
+        id="close-panel"
+        onclick={() => (selectedEvent = null)}
+        class="cursor-pointer"
+        title={$t('event_details.tooltip.close')}
+      >
+        <ChevronsLeft />
       </button>
     </div>
 
     <div id="header">
-      <div class="flex align-items-center">
-        <h1 class="font-bold mr-3">{ selectedEvent.GlobalDefensiveMethod }</h1>
-        <div class="badge badge-md badge-{selectedEvent.Level.replace('Critical', 'Error').toLowerCase()}">
+      <div class="align-items-center flex">
+        <h1 class="mr-3 font-bold">{selectedEvent.GlobalDefensiveMethod}</h1>
+        <div
+          class="badge badge-md badge-{selectedEvent.Level.replace(
+            'Critical',
+            'Error',
+          ).toLowerCase()}"
+        >
           {selectedEvent.Level}
         </div>
       </div>
-      <p>{ selectedEvent.DateAndTime.toDateString() }</p>
+      <p>{selectedEvent.DateAndTime.toDateString()}</p>
     </div>
 
-    <div id="process-infos" class="flex mt-5">
+    <div id="process-infos" class="mt-5 flex">
       <div id="origin-process" class="width-1/2">
-        <p class="font-semibold">Origin Process:</p>
+        <p class="font-semibold">Origin Process</p>
         <div class="pl-5">
           <li>
-            { selectedEvent.OriginProcess+ $t('event_details.pid', {values : {pid: selectedEvent.OriginPID}}) }
+            {$t('event_details.pid')}:
+            <CopyText text={selectedEvent.OriginPID + ''} bind:notification></CopyText>
           </li>
           <li>
-            { selectedEvent.OriginProcessImagePath }
+            Name:
+            <CopyText text={selectedEvent.OriginProcess} bind:notification></CopyText>
+          </li>
+          <li>
+            Path: <CopyText text={selectedEvent.OriginProcessImagePath} bind:notification
+            ></CopyText>
           </li>
         </div>
       </div>
       <div id="victim-process" class="width-1/2 ml-3">
-        <p class="font-semibold">Victim Process:</p>
+        <p class="font-semibold">Victim Process</p>
         <div class="pl-5">
           <li>
-            { selectedEvent.VictimProcess+ $t('event_details.pid', {values : {pid: selectedEvent.TargetPID}}) }
+            {$t('event_details.pid')}:
+            <CopyText text={selectedEvent.TargetPID + ''} bind:notification></CopyText>
+          </li>
+          <li>
+            Name: <CopyText text={selectedEvent.VictimProcess} bind:notification></CopyText>
           </li>
         </div>
       </div>
     </div>
 
     <div id="other-infos" class="mt-5">
-      <div id="yara-rule" class="flex">
-        <p class="font-semibold">{ $t('event_details.yara_rule') }</p>
-        <p>{ selectedEvent.InvolvedYaraRule }</p>
+      <div id="yara-rule">
+        <p class="font-semibold">{$t('event_details.yara_rule')}</p>
+        <CopyText text={selectedEvent.InvolvedYaraRule} bind:notification></CopyText>
       </div>
-      <div id="code-injection" class="flex mt-2">
-        <label title={selectedEvent.isCodeInjection ? $t('label.yes') : $t('label.no')} class="flex">
-          { $t('event_details.is_code_injection') }
-          {#if selectedEvent.isCodeInjection}
-            <Check/>
-          {:else}
-            <X/>
-          {/if}
-        </label>
+      <div id="code-injection" class="mt-2 flex">
+        {$t('event_details.is_code_injection')}
+        <CopyText text={selectedEvent.isCodeInjection + ''} bind:notification></CopyText>
       </div>
     </div>
 
     <div id="specific-infos" class="mt-5">
       {#each selectedEvent.SpecificEventsInfo as info, i}
         <!-- TODO better display because [Object] is not very explicit -->
-        <p>{ i + ' : ' + info }</p>
+        <p>{i + ' : ' + info}</p>
       {/each}
     </div>
   {:else}
-    <p>{ $t('event_details.waiting') }</p>
+    <p>{$t('event_details.waiting')}</p>
   {/if}
 </div>
