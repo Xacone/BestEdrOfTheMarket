@@ -13,3 +13,4 @@ Dependencies are managed with [pNPM](https://pnpm.io/).
 - **Verify the validity of the code** with `pnpm check`
 - **Format the code** with `pnpm format`
 - **Build** the production files with `pnpm build`
+- **Preview** the production result with `pnpm preview`

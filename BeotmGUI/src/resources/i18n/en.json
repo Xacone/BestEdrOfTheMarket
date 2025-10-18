@@ -6,7 +6,9 @@
     "no": "No"
   },
   "list_event": {
-    "selected": "Selected event : {event}"
+    "sort_recent": "Sort by date (most recent events on top)",
+    "sort_oldest": "Sort by date (most recent events at the bottom)",
+    "received_count": "Received events"
   },
   "event_details": {
     "waiting": "Select an event to see its details",
@@ -14,9 +16,15 @@
       "close": "Close the selected event",
       "copy_path": "Copy origin process path"
     },
-    "pid": "PID",
-    "error_copy_path": "Failed to copy with error: ",
+    "defensive_method": "Defensive method",
     "yara_rule": "Yara rule",
-    "is_code_injection": "Is code injection :"
+    "is_code_injection": "Is code injection",
+    "name": "Name",
+    "pid": "PID",
+    "image_path": "Image Path",
+    "error_copy_path": "Failed to copy !",
+    "origin_process": "Origin process",
+    "target_process": "Target process",
+    "specific_info": "Specific information"
   }
 }
