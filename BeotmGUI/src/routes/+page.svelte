@@ -9,6 +9,7 @@
   import Toast from '$lib/components/Toast.svelte';
   import { initToastManager, ToastManager } from '$lib/logic/toast.svelte';
   import { EventsManager, initEventManager } from '$lib/logic/events-management.svelte';
+  import DetectionStats from '$lib/components/DetectionStats.svelte';
 
   function toggleMagic() {
     locale.set($locale === 'fr' ? 'en' : 'fr');
@@ -32,7 +33,8 @@
   </header>
   <div class="flex h-full w-full gap-5 overflow-hidden">
     <ListDetectionEvents></ListDetectionEvents>
-    <DetectionEventDetails></DetectionEventDetails>
+    <!-- <DetectionEventDetails></DetectionEventDetails> -->
+     <DetectionStats></DetectionStats>
   </div>
 </div>
 <Toast></Toast>
