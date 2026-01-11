@@ -3,4 +3,6 @@
 export const content = [
   './src/**/*.{html,js,svelte,ts}', // Adjust depending on where your components live
 ];
-export const safelist = ['alert-success', 'alert-error', 'alert-warning', 'alert-info'];
+// To use when classes are hard to parse.
+// That's why we advise to declare them explicitly in the code instead, for a better maintainability (see graphical-events for instance)
+export const safelist = [];

@@ -38,7 +38,7 @@ def get_all():
 
 @app.get("/events")
 def get_events():
-    random_selection = random.sample(data, random.randint(1,2))
+    random_selection = random.sample(data, random.randint(1,5))
     return [change_hour(detection) for detection in random_selection]
 
 

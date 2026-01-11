@@ -1,32 +1,34 @@
 <script lang="ts">
-  import type { AppNotification } from '$lib/schemas/notification';
+  import { getToast } from '$lib/logic/toast.svelte';
   import ClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
   import { t } from 'svelte-i18n';
-  let { text, notification = $bindable() }: { text: string; notification: AppNotification | null } =
-    $props();
+  let { text, showText = true }: { text: string; showText?: boolean } = $props();
+
+  const toast = getToast();
 
   async function copyText() {
-    notification = {
-      message: 'Text successfully copied to clipboard',
-      level: 'success',
-      remove: false,
-    };
     try {
       await navigator.clipboard.writeText(text);
+      toast.trigger({
+        message: 'Text successfully copied to clipboard',
+        level: 'success',
+      });
     } catch (err) {
-      notification = {
+      console.error(err);
+      toast.trigger({
         message: $t('event_details.error_copy_path'),
         level: 'error',
-        remove: false,
-      };
+      });
     }
   }
 </script>
 
-{text}
+{#if showText}
+  {text}
+{/if}
 <button
-  onclick={() => copyText()}
-  class="cursor-pointer"
+  class="btn btn-ghost btn-square btn-xs"
+  onclick={copyText}
   title={$t('event_details.tooltip.copy_path')}
 >
   <ClipboardCopy class="h-4 w-4" strokeWidth="0.7" />
