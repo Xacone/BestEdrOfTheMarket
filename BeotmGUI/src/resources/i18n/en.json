@@ -8,7 +8,9 @@
   "list_event": {
     "sort_recent": "Sort by date (most recent events on top)",
     "sort_oldest": "Sort by date (most recent events at the bottom)",
-    "received_count": "Received events"
+    "received_count": "Received events",
+    "filter_events": "Filter received events",
+    "add_filter": "Add filter from category"
   },
   "event_details": {
     "waiting": "Select an event to see its details",

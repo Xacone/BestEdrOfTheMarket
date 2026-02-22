@@ -7,9 +7,15 @@ export class EventsManager {
 
   private poll = () => {
     return setInterval(async () => {
-      const data = await (await fetch('http://127.0.0.1:8000/events')).json();
+      const source = 'http://127.0.0.1:8000';
+      const data = await (await fetch(`${source}/events`)).json();
       const events = DetectionEventSchema.array().parse(data);
-      events.forEach((receivedEvent) => this.loaded.push(receivedEvent));
+      events.forEach((receivedEvent) =>
+        this.loaded.push({
+          ...receivedEvent,
+          Source: source,
+        }),
+      );
       this.loaded.sort((evt1, evt2) => evt1.DateAndTime.getTime() - evt2.DateAndTime.getTime());
     }, 2000);
   };

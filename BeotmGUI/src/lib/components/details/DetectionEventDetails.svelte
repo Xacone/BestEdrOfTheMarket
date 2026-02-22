@@ -38,5 +38,12 @@
     </div>
   {:else}
     <p class="p-2">{$t('event_details.waiting')}</p>
+    <!-- TODO: show the dashboard with (at least) -->
+    <!-- https://www.chartjs.org/docs/latest/samples/line/multi-axis.html#multi-axis-line-chart -->
+    <!-- also -->
+    <!-- https://www.chartjs.org/docs/latest/samples/bar/stacked.html#stacked-bar-chart -->
+    <!-- https://www.chartjs.org/docs/latest/samples/other-charts/doughnut.html -->
+    <!-- Selecting a part of the graph should impact the filter list -->
+    <!-- And (most important) we should be able to select the range... (maybe find a way to make this unique, and not duplicate with list detection...) solution: place it in header ? -->
   {/if}
 </div>

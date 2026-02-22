@@ -2,7 +2,7 @@
   import '../app.css';
   import DarkMode from '$lib/components/DarkMode.svelte';
   import GitHubLink from '$lib/components/GitHubLink.svelte';
-  import ListDetectionEvents from '$lib/components/ListDetectionEvents.svelte';
+  import ListDetectionEvents from '$lib/components/list/ListDetectionEvents.svelte';
   import DetectionEventDetails from '$lib/components/details/DetectionEventDetails.svelte';
   import '../lib/i18n.js';
   import { t, locale } from 'svelte-i18n';
@@ -13,9 +13,14 @@
   function toggleMagic() {
     locale.set($locale === 'fr' ? 'en' : 'fr');
   }
+
   initToastManager(new ToastManager());
   initEventManager(new EventsManager());
 </script>
+
+<svelte:head>
+  <title>BeotmGUI</title>
+</svelte:head>
 
 <!-- TODO: improve keyboard navigation -->
 <div class="flex h-dvh flex-col gap-5 p-5">

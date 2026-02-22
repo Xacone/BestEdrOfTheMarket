@@ -95,4 +95,9 @@ export const DetectionEventSchema = z.object({
   DateAndTime: z.coerce.date(),
   SpecificEventsInfo: z.array(SpecificEventsInfoSchema),
 });
-export type DetectionEvent = z.infer<typeof DetectionEventSchema>;
+
+const LoadedDetectionEventSchema = DetectionEventSchema.extend({
+  Source: z.string(),
+});
+
+export type DetectionEvent = z.infer<typeof LoadedDetectionEventSchema>;
