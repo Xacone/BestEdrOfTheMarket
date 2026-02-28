@@ -12,7 +12,7 @@
   const events = getEvents();
 </script>
 
-<div class="border-base-300 bg-base-100 flex flex-1 flex-col overflow-auto rounded-xl border-1">
+<div class="border-base-300 bg-base-100 flex flex-1 flex-col overflow-auto rounded-xl border">
   {#if events.selected !== null}
     <div>
       <div class="bg-base-100 sticky top-0 flex gap-2 p-2">

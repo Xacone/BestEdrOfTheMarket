@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "format": "prettier --write .",
-    "format-active": "prettier --write $(git diff  --name-only --relative && git diff --staged --name-only --relative)"
+    "format-active": "prettier --write $(git diff  --name-only --relative --diff-filter=ACMR && git diff --staged --name-only --relative --diff-filter=ACMR)"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^6.1.1",

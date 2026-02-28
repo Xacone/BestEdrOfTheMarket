@@ -1,7 +1,6 @@
 <script lang="ts">
   import CalendarArrowDown from '@lucide/svelte/icons/calendar-arrow-down';
   import CalendarArrowUp from '@lucide/svelte/icons/calendar-arrow-up';
-  import Link from '@lucide/svelte/icons/link';
   import FunnelPlus from '@lucide/svelte/icons/funnel-plus';
   import { t } from 'svelte-i18n';
 
@@ -15,8 +14,7 @@
   let listEvents = $state([...events.loaded]);
   let mostRecentTopSort = $state(true);
   let filterText = $state('');
-  let showSettings = $state(false);
-  let filterArea: HTMLElement;
+  let filterArea: HTMLInputElement | undefined = $state<HTMLInputElement>();
 
   // TODO: make this configurable
   const source = 'http://127.0.0.1:3000';
@@ -88,27 +86,14 @@
   class="border-base-300 flex h-full w-3/10 min-w-75 flex-col overflow-visible rounded-xl border"
 >
   <div class="bg-base-200 flex items-center justify-between rounded-t-xl p-2 text-sm">
-    {#if showSettings}
-      <label class="input">
-        <!-- TODO: make the url dynamic -->
-        <!-- TODO: maybe not the best location: should be in some settings, thinking about possibility of multi-sources here (maybe add a add,edit, remove source when filtering) -->
-        <Link class="h-[1em]"></Link>
-        <input type="url" placeholder={source} value={source} />
-        <button
-          class="btn btn-xs focus:bg-base-300 outline-0"
-          onclick={() => (showSettings = !showSettings)}>Close</button
-        >
-      </label>
-    {:else}
-      <!-- TODO: rework that part -->
-      <label title="Source: {source} (click to edit)">
-        <button class="btn" onclick={() => (showSettings = !showSettings)}>
-          <span>
-            {$t('list_event.received_count')}: {events.loaded.length}
-          </span>
-        </button>
-      </label>
-    {/if}
+    <div>
+      {#if listEvents.length == events.loaded.length}
+        {$t('list_event.received_count')}: <span class="font-bold"> {events.loaded.length} </span>
+      {:else}
+        {'Filtered events'}:
+        <span class="font-bold"> {listEvents.length} </span> / {events.loaded.length}
+      {/if}
+    </div>
     <label
       class="btn btn-circle swap swap-rotate"
       title={$t(`list_event.sort_${mostRecentTopSort ? 'oldest' : 'recent'}`)}
@@ -130,7 +115,7 @@
           {evt.DateAndTime.toLocaleDateString()}
         </li>
       {/if}
-      <ListCard {evt} bind:selectedEvent={events.selected}></ListCard>
+      <ListCard {evt} bind:selectedEvent={events.selected} {filterArea}></ListCard>
     {/each}
   </ul>
   <div class="bg-base-200 flex items-center justify-around rounded-b-xl p-2">
@@ -159,7 +144,7 @@
           <button
             onclick={() => {
               filterText += ` ${key}:`;
-              filterArea.focus();
+              filterArea?.focus();
             }}>{key}</button
           >
         </li>

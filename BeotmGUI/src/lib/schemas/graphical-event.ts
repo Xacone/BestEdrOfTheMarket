@@ -3,8 +3,8 @@
  * are explicitly mapped to DaisyUI classes.
  */
 
+import type { ToastLevel } from '$lib/logic/toast.svelte';
 import type { DetectionEvent } from './detection-events';
-import type { AppNotification } from './notification';
 
 export const LevelBadge: Record<DetectionEvent['Level'], string> = {
   Critical: 'badge-error',
@@ -12,7 +12,7 @@ export const LevelBadge: Record<DetectionEvent['Level'], string> = {
   Warning: 'badge-warning',
 };
 
-export const LevelAlert: Record<DetectionEvent['Level'] | AppNotification['level'], string> = {
+export const LevelAlert: Record<DetectionEvent['Level'] | ToastLevel, string> = {
   Critical: 'alert-error',
   Info: 'alert-info',
   Warning: 'alert-warning',

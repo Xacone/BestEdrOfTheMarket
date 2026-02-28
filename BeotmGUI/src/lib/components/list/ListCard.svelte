@@ -8,7 +8,12 @@
   let {
     evt,
     selectedEvent = $bindable(),
-  }: { evt: DetectionEvent; selectedEvent: DetectionEvent | null } = $props();
+    filterArea,
+  }: {
+    evt: DetectionEvent;
+    selectedEvent: DetectionEvent | null;
+    filterArea: HTMLInputElement | undefined;
+  } = $props();
 
   const isSelection = (evt: DetectionEvent) => selectedEvent === evt;
   const updateSelection = (evt: DetectionEvent) => (selectedEvent = isSelection(evt) ? null : evt);
@@ -22,6 +27,12 @@
       : 'bg-base-100 hover:bg-base-200 border-l-transparent'} 
       "
     onclick={() => updateSelection(evt)}
+    onkeydown={(e) => {
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        filterArea?.focus();
+      }
+    }}
   >
     <div class="flex flex-wrap items-center gap-x-2">
       <div class="text-sm">{evt.DateAndTime.toLocaleTimeString()}</div>
