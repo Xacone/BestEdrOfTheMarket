@@ -9,14 +9,23 @@
     evt,
     selectedEvent = $bindable(),
     filterArea,
+    selectedEventCard = $bindable(),
   }: {
     evt: DetectionEvent;
     selectedEvent: DetectionEvent | null;
+    selectedEventCard: HTMLElement | undefined;
     filterArea: HTMLInputElement | undefined;
   } = $props();
 
+  let buttonElement: HTMLElement | undefined = $state<HTMLElement>();
+
   const isSelection = (evt: DetectionEvent) => selectedEvent === evt;
   const updateSelection = (evt: DetectionEvent) => (selectedEvent = isSelection(evt) ? null : evt);
+  $effect(() => {
+    if (isSelection(evt)) {
+      selectedEventCard = buttonElement;
+    }
+  });
 </script>
 
 <li class="border-b-base-300 flex w-full border-b">
@@ -33,6 +42,7 @@
         filterArea?.focus();
       }
     }}
+    bind:this={buttonElement}
   >
     <div class="flex flex-wrap items-center gap-x-2">
       <div class="text-sm">{evt.DateAndTime.toLocaleTimeString()}</div>

@@ -15,9 +15,10 @@
   let mostRecentTopSort = $state(true);
   let filterText = $state('');
   let filterArea: HTMLInputElement | undefined = $state<HTMLInputElement>();
-
-  // TODO: make this configurable
-  const source = 'http://127.0.0.1:3000';
+  let selectedEventCard: HTMLElement | undefined = $state<HTMLElement>();
+  let selectedEventCardIsVisible = $derived(
+    () => !!(events.selected && listEvents.includes(events.selected)),
+  );
 
   const stringFieldFilter = (field: keyof DetectionEvent) => {
     return (evt: DetectionEvent, filterValue: string) => {
@@ -90,7 +91,7 @@
       {#if listEvents.length == events.loaded.length}
         {$t('list_event.received_count')}: <span class="font-bold"> {events.loaded.length} </span>
       {:else}
-        {'Filtered events'}:
+        {$t('list_event.filtered_events')}:
         <span class="font-bold"> {listEvents.length} </span> / {events.loaded.length}
       {/if}
     </div>
@@ -115,7 +116,9 @@
           {evt.DateAndTime.toLocaleDateString()}
         </li>
       {/if}
-      <ListCard {evt} bind:selectedEvent={events.selected} {filterArea}></ListCard>
+      <!-- TODO: improve focus (because now the focus is is 'reset' in case of a refresh of the list - new event) -->
+      <ListCard {evt} bind:selectedEvent={events.selected} bind:selectedEventCard {filterArea}
+      ></ListCard>
     {/each}
   </ul>
   <div class="bg-base-200 flex items-center justify-around rounded-b-xl p-2">
@@ -127,6 +130,17 @@
       bind:value={filterText}
       bind:this={filterArea}
       class="input outline-none"
+      onkeydown={(e) => {
+        if (
+          e.key === 'ArrowLeft' &&
+          filterArea?.selectionStart === 0 &&
+          filterArea?.selectionEnd === 0 &&
+          selectedEventCardIsVisible()
+        ) {
+          e.preventDefault();
+          selectedEventCard?.focus();
+        }
+      }}
     />
     <label title={$t('list_event.add_filter')}>
       <button class="btn" popovertarget="popover-1" style="anchor-name:--anchor-1">
