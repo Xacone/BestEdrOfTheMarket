@@ -1,16 +1,22 @@
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <array>
+#include <deque>
 #include <chrono>
 #include <thread>
 #include <atomic>
 #include <string>
+#include <regex>
+#include <functional>
 #include <queue>
 #include <csignal>
+#include <cctype>
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>

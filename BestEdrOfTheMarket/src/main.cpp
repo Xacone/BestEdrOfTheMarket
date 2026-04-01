@@ -34,7 +34,7 @@ std::mutex security_event_mutex;
 std::atomic<bool> should_update(false);
 
 std::vector<std::string> tab_values{
-    "Detection Events (0)",
+    "Detection Events (0) | Score: 100 (SECURE)",
     "About"
 };
 int tab_selected = 0;
@@ -49,6 +49,49 @@ int tab_1_selected = 0;
 auto tab_1_menu = Menu(&tab_1_menu_items, &tab_1_selected);
 
 std::unordered_set<std::string> benignFSPaths;
+std::unordered_set<std::string> loadedYaraRulePaths;
+std::unordered_set<std::string> lolDriverNames;
+std::unordered_set<std::string> detectedLolDriverPaths;
+
+const std::string kLoadedPotatoYaraRulesDir = R"(D:\Loaded-Potato\detections\yara)";
+const std::string kLoadedPotatoLolDriversCachePath = R"(D:\Loaded-Potato\detections\loldrivers\loldrivers_cache.json)";
+const std::string kLoadedPotatoSigmaRulesDir = R"(D:\Loaded-Potato\detections\sigma)";
+const std::string kDefaultEventsLogPath = R"(beotm_events.jsonl)";
+
+enum class DetectionSeverity : int {
+    Info = 0,
+    Low = 1,
+    Medium = 2,
+    High = 3,
+    Critical = 4
+};
+
+struct CorrelationEvent {
+    time_t timestamp;
+    std::string method;
+    DetectionSeverity severity;
+};
+
+struct SigmaLiteSelector {
+    std::vector<std::string> containsAny;
+    std::vector<std::string> containsAll;
+    std::vector<std::string> startsWithAny;
+    std::vector<std::string> endsWithAny;
+};
+
+struct SigmaLiteRule {
+    std::string title;
+    std::string level;
+    std::string condition;
+    std::unordered_map<std::string, SigmaLiteSelector> selectors;
+};
+
+std::unordered_map<UINT32, std::deque<CorrelationEvent>> g_recentEventsByPid;
+std::unordered_map<UINT32, time_t> g_lastCorrelationAlertByPid;
+std::array<int, 5> g_severityCounters = { 0, 0, 0, 0, 0 };
+std::vector<SigmaLiteRule> g_sigmaRules;
+std::unordered_set<std::string> g_sigmaMatchDedup;
+std::mutex events_log_mutex;
 
 std::string startupAsciiTitle = R"(
 
@@ -131,6 +174,1018 @@ std::string QueryDosDevicePath(const std::string& devicePath) {
     return "";
 }
 
+std::string ToLowerCopy(std::string value) {
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+        });
+
+    return value;
+}
+
+std::string BuildTimestamp() {
+    time_t now = time(0);
+    struct tm timeinfo;
+    localtime_s(&timeinfo, &now);
+    char date_time[80];
+    strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    return std::string(date_time);
+}
+
+std::string TrimCopy(const std::string& input) {
+    size_t start = input.find_first_not_of(" \t\r\n");
+    if (start == std::string::npos) {
+        return "";
+    }
+
+    size_t end = input.find_last_not_of(" \t\r\n");
+    return input.substr(start, end - start + 1);
+}
+
+std::string StripOuterQuotes(const std::string& input) {
+    if (input.size() >= 2) {
+        if ((input.front() == '"' && input.back() == '"') ||
+            (input.front() == '\'' && input.back() == '\'')) {
+            return input.substr(1, input.size() - 2);
+        }
+    }
+
+    return input;
+}
+
+std::string RemoveYamlInlineComment(const std::string& input) {
+    bool inSingleQuote = false;
+    bool inDoubleQuote = false;
+
+    for (size_t i = 0; i < input.size(); ++i) {
+        char c = input[i];
+        if (c == '\'' && !inDoubleQuote) {
+            inSingleQuote = !inSingleQuote;
+        }
+        else if (c == '"' && !inSingleQuote) {
+            inDoubleQuote = !inDoubleQuote;
+        }
+        else if (c == '#' && !inSingleQuote && !inDoubleQuote) {
+            if (i == 0 || std::isspace(static_cast<unsigned char>(input[i - 1]))) {
+                return TrimCopy(input.substr(0, i));
+            }
+        }
+    }
+
+    return TrimCopy(input);
+}
+
+std::string NormalizeSigmaValue(const std::string& rawValue) {
+    std::string value = RemoveYamlInlineComment(TrimCopy(rawValue));
+    value = StripOuterQuotes(value);
+    value = TrimCopy(value);
+    return ToLowerCopy(value);
+}
+
+bool EndsWith(const std::string& text, const std::string& suffix) {
+    if (suffix.size() > text.size()) {
+        return false;
+    }
+
+    return std::equal(suffix.rbegin(), suffix.rend(), text.rbegin());
+}
+
+bool StartsWith(const std::string& text, const std::string& prefix) {
+    if (prefix.size() > text.size()) {
+        return false;
+    }
+
+    return std::equal(prefix.begin(), prefix.end(), text.begin());
+}
+
+std::string JsonEscape(const std::string& input) {
+    std::string output;
+    output.reserve(input.size());
+
+    for (char c : input) {
+        switch (c) {
+        case '\\': output += "\\\\"; break;
+        case '"': output += "\\\""; break;
+        case '\n': output += "\\n"; break;
+        case '\r': output += "\\r"; break;
+        case '\t': output += "\\t"; break;
+        default: output += c; break;
+        }
+    }
+
+    return output;
+}
+
+std::string SeverityToLabel(DetectionSeverity severity) {
+    switch (severity) {
+    case DetectionSeverity::Critical: return "critical";
+    case DetectionSeverity::High: return "high";
+    case DetectionSeverity::Medium: return "medium";
+    case DetectionSeverity::Low: return "low";
+    case DetectionSeverity::Info:
+    default:
+        return "info";
+    }
+}
+
+int SeverityPenalty(DetectionSeverity severity) {
+    switch (severity) {
+    case DetectionSeverity::Critical: return 25;
+    case DetectionSeverity::High: return 15;
+    case DetectionSeverity::Medium: return 8;
+    case DetectionSeverity::Low: return 3;
+    case DetectionSeverity::Info:
+    default:
+        return 1;
+    }
+}
+
+int ComputeSecurityScoreLocked() {
+    int penalty = 0;
+
+    penalty += g_severityCounters[static_cast<int>(DetectionSeverity::Critical)] * SeverityPenalty(DetectionSeverity::Critical);
+    penalty += g_severityCounters[static_cast<int>(DetectionSeverity::High)] * SeverityPenalty(DetectionSeverity::High);
+    penalty += g_severityCounters[static_cast<int>(DetectionSeverity::Medium)] * SeverityPenalty(DetectionSeverity::Medium);
+    penalty += g_severityCounters[static_cast<int>(DetectionSeverity::Low)] * SeverityPenalty(DetectionSeverity::Low);
+    penalty += g_severityCounters[static_cast<int>(DetectionSeverity::Info)] * SeverityPenalty(DetectionSeverity::Info);
+
+    return std::max(0, 100 - penalty);
+}
+
+std::string SecurityLabelFromScore(int score) {
+    if (score >= 90) {
+        return "SECURE";
+    }
+    if (score >= 70) {
+        return "FAIR";
+    }
+    if (score >= 50) {
+        return "AT RISK";
+    }
+    if (score >= 25) {
+        return "POOR";
+    }
+
+    return "CRITICAL";
+}
+
+void PushUniqueValue(std::vector<std::string>& target, const std::string& value) {
+    std::string normalized = NormalizeSigmaValue(value);
+    if (normalized.empty()) {
+        return;
+    }
+
+    if (std::find(target.begin(), target.end(), normalized) == target.end()) {
+        target.push_back(normalized);
+    }
+}
+
+std::string ValueAfterColon(const std::string& line) {
+    size_t colonPos = line.find(':');
+    if (colonPos == std::string::npos || colonPos + 1 >= line.size()) {
+        return "";
+    }
+
+    return TrimCopy(line.substr(colonPos + 1));
+}
+
+bool ParseSigmaRuleFile(const std::filesystem::path& filePath, SigmaLiteRule& outRule) {
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    enum class SigmaParseMode {
+        None,
+        ContainsAny,
+        ContainsAll,
+        StartsWithAny,
+        EndsWithAny
+    };
+
+    auto updateSelectorModeFromLine = [](
+        const std::string& trimmedLine,
+        SigmaLiteSelector& selector,
+        SigmaParseMode& currentMode
+        ) -> bool {
+            if (trimmedLine.find("|contains|all:") != std::string::npos) {
+                currentMode = SigmaParseMode::ContainsAll;
+                PushUniqueValue(selector.containsAll, ValueAfterColon(trimmedLine));
+                return true;
+            }
+            if (trimmedLine.find("|contains:") != std::string::npos) {
+                currentMode = SigmaParseMode::ContainsAny;
+                PushUniqueValue(selector.containsAny, ValueAfterColon(trimmedLine));
+                return true;
+            }
+            if (trimmedLine.find("|startswith:") != std::string::npos) {
+                currentMode = SigmaParseMode::StartsWithAny;
+                PushUniqueValue(selector.startsWithAny, ValueAfterColon(trimmedLine));
+                return true;
+            }
+            if (trimmedLine.find("|endswith:") != std::string::npos) {
+                currentMode = SigmaParseMode::EndsWithAny;
+                PushUniqueValue(selector.endsWithAny, ValueAfterColon(trimmedLine));
+                return true;
+            }
+            if (trimmedLine.rfind("keywords:", 0) == 0) {
+                currentMode = SigmaParseMode::ContainsAny;
+                PushUniqueValue(selector.containsAny, ValueAfterColon(trimmedLine));
+                return true;
+            }
+
+            return false;
+        };
+
+    auto lineIndent = [](const std::string& lineValue) -> int {
+        int count = 0;
+        for (char c : lineValue) {
+            if (c == ' ') {
+                count += 1;
+            }
+            else if (c == '\t') {
+                count += 4;
+            }
+            else {
+                break;
+            }
+        }
+        return count;
+        };
+
+    SigmaParseMode currentMode = SigmaParseMode::None;
+    bool inDetection = false;
+    int detectionIndent = -1;
+    int detectionChildIndent = -1;
+    std::string currentSelectorName;
+    std::string line;
+
+    while (std::getline(file, line)) {
+        std::string trimmed = TrimCopy(line);
+        if (trimmed.empty()) {
+            continue;
+        }
+
+        if (trimmed.rfind("title:", 0) == 0) {
+            outRule.title = TrimCopy(StripOuterQuotes(ValueAfterColon(trimmed)));
+            continue;
+        }
+        if (trimmed.rfind("level:", 0) == 0) {
+            outRule.level = ToLowerCopy(TrimCopy(StripOuterQuotes(ValueAfterColon(trimmed))));
+            continue;
+        }
+        if (trimmed.rfind("detection:", 0) == 0) {
+            inDetection = true;
+            detectionIndent = lineIndent(line);
+            detectionChildIndent = -1;
+            currentMode = SigmaParseMode::None;
+            currentSelectorName.clear();
+            continue;
+        }
+
+        if (!inDetection) {
+            continue;
+        }
+
+        int indent = lineIndent(line);
+        if (indent <= detectionIndent && trimmed.find(':') != std::string::npos) {
+            break;
+        }
+
+        if (detectionChildIndent == -1) {
+            detectionChildIndent = indent;
+        }
+
+        if (indent == detectionChildIndent && trimmed.find(':') != std::string::npos) {
+            std::string selectorKey = ToLowerCopy(TrimCopy(line.substr(0, line.find(':'))));
+            std::string selectorValue = ValueAfterColon(trimmed);
+
+            if (selectorKey == "condition") {
+                outRule.condition = ToLowerCopy(TrimCopy(StripOuterQuotes(selectorValue)));
+                currentSelectorName.clear();
+                currentMode = SigmaParseMode::None;
+                continue;
+            }
+
+            currentSelectorName = selectorKey;
+            SigmaLiteSelector& selector = outRule.selectors[currentSelectorName];
+            currentMode = SigmaParseMode::None;
+
+            if (currentSelectorName == "keywords") {
+                currentMode = SigmaParseMode::ContainsAny;
+            }
+
+            if (updateSelectorModeFromLine(trimmed, selector, currentMode)) {
+                continue;
+            }
+
+            if (!selectorValue.empty()) {
+                if (currentMode == SigmaParseMode::None) {
+                    currentMode = SigmaParseMode::ContainsAny;
+                }
+                PushUniqueValue(selector.containsAny, selectorValue);
+            }
+
+            continue;
+        }
+
+        if (currentSelectorName.empty()) {
+            continue;
+        }
+
+        SigmaLiteSelector& currentSelector = outRule.selectors[currentSelectorName];
+
+        if (updateSelectorModeFromLine(trimmed, currentSelector, currentMode)) {
+            continue;
+        }
+
+        if (trimmed.rfind("-", 0) == 0) {
+            std::string listValue = TrimCopy(trimmed.substr(1));
+            if (listValue.empty()) {
+                continue;
+            }
+
+            if (updateSelectorModeFromLine(listValue, currentSelector, currentMode)) {
+                continue;
+            }
+
+            switch (currentMode) {
+            case SigmaParseMode::ContainsAny:
+                PushUniqueValue(currentSelector.containsAny, listValue);
+                break;
+            case SigmaParseMode::ContainsAll:
+                PushUniqueValue(currentSelector.containsAll, listValue);
+                break;
+            case SigmaParseMode::StartsWithAny:
+                PushUniqueValue(currentSelector.startsWithAny, listValue);
+                break;
+            case SigmaParseMode::EndsWithAny:
+                PushUniqueValue(currentSelector.endsWithAny, listValue);
+                break;
+            case SigmaParseMode::None:
+            default:
+                break;
+            }
+        }
+        else {
+            std::string inlineValue = ValueAfterColon(trimmed);
+            if (!inlineValue.empty()) {
+                if (currentMode == SigmaParseMode::None) {
+                    currentMode = SigmaParseMode::ContainsAny;
+                }
+                PushUniqueValue(currentSelector.containsAny, inlineValue);
+            }
+        }
+    }
+
+    if (outRule.title.empty()) {
+        outRule.title = filePath.stem().string();
+    }
+    if (outRule.level.empty()) {
+        outRule.level = "medium";
+    }
+    if (outRule.condition.empty()) {
+        outRule.condition = "1 of them";
+    }
+
+    return !outRule.selectors.empty();
+}
+
+void LoadSigmaRules(const std::string& sigmaDirectory) {
+    std::error_code existsError;
+    if (!std::filesystem::exists(sigmaDirectory, existsError)) {
+        std::cerr << "[*] Sigma directory not found: " << sigmaDirectory << "\n";
+        return;
+    }
+
+    size_t previousRuleCount = g_sigmaRules.size();
+    std::error_code iterError;
+    std::filesystem::recursive_directory_iterator it(
+        sigmaDirectory,
+        std::filesystem::directory_options::skip_permission_denied,
+        iterError
+    );
+    std::filesystem::recursive_directory_iterator end;
+
+    if (iterError) {
+        std::cerr << "[*] Failed to iterate Sigma directory: " << sigmaDirectory
+            << " (" << iterError.message() << ")\n";
+        return;
+    }
+
+    for (; it != end; it.increment(iterError)) {
+        if (iterError) {
+            iterError.clear();
+            continue;
+        }
+
+        const auto& entry = *it;
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+
+        std::string extension = ToLowerCopy(entry.path().extension().string());
+        if (extension != ".yml" && extension != ".yaml") {
+            continue;
+        }
+
+        SigmaLiteRule parsedRule;
+        if (ParseSigmaRuleFile(entry.path(), parsedRule)) {
+            g_sigmaRules.push_back(std::move(parsedRule));
+        }
+    }
+
+    std::cout << "[*] " << (g_sigmaRules.size() - previousRuleCount)
+        << " Sigma-Lite rules loaded from " << sigmaDirectory << "\n";
+}
+
+bool PatternFoundInFields(const std::vector<std::string>& fields, const std::string& pattern) {
+    for (const auto& field : fields) {
+        if (field.find(pattern) != std::string::npos) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool SelectorMatchesSigmaLite(const SigmaLiteSelector& selector, const std::vector<std::string>& fieldsLower) {
+    bool hasOptional = !selector.containsAny.empty() || !selector.startsWithAny.empty() || !selector.endsWithAny.empty();
+    bool optionalMatched = false;
+
+    for (const auto& pattern : selector.containsAny) {
+        if (PatternFoundInFields(fieldsLower, pattern)) {
+            optionalMatched = true;
+            break;
+        }
+    }
+
+    if (!optionalMatched) {
+        for (const auto& pattern : selector.startsWithAny) {
+            for (const auto& field : fieldsLower) {
+                if (StartsWith(field, pattern)) {
+                    optionalMatched = true;
+                    break;
+                }
+            }
+            if (optionalMatched) {
+                break;
+            }
+        }
+    }
+
+    if (!optionalMatched) {
+        for (const auto& pattern : selector.endsWithAny) {
+            for (const auto& field : fieldsLower) {
+                if (EndsWith(field, pattern)) {
+                    optionalMatched = true;
+                    break;
+                }
+            }
+            if (optionalMatched) {
+                break;
+            }
+        }
+    }
+
+    bool requiredMatched = true;
+    for (const auto& requiredPattern : selector.containsAll) {
+        if (!PatternFoundInFields(fieldsLower, requiredPattern)) {
+            requiredMatched = false;
+            break;
+        }
+    }
+
+    if (!requiredMatched) {
+        return false;
+    }
+
+    if (hasOptional) {
+        return optionalMatched;
+    }
+
+    return requiredMatched;
+}
+
+bool WildcardMatch(const std::string& pattern, const std::string& text) {
+    size_t p = 0;
+    size_t t = 0;
+    size_t star = std::string::npos;
+    size_t match = 0;
+
+    while (t < text.size()) {
+        if (p < pattern.size() && (pattern[p] == text[t])) {
+            p += 1;
+            t += 1;
+        }
+        else if (p < pattern.size() && pattern[p] == '*') {
+            star = p++;
+            match = t;
+        }
+        else if (star != std::string::npos) {
+            p = star + 1;
+            t = ++match;
+        }
+        else {
+            return false;
+        }
+    }
+
+    while (p < pattern.size() && pattern[p] == '*') {
+        p += 1;
+    }
+
+    return p == pattern.size();
+}
+
+std::vector<std::string> ExpandSelectorPattern(
+    const SigmaLiteRule& rule,
+    const std::string& rawPattern
+) {
+    std::string pattern = ToLowerCopy(TrimCopy(rawPattern));
+    std::vector<std::string> matchedSelectors;
+
+    if (pattern == "them") {
+        for (const auto& [selectorName, _] : rule.selectors) {
+            matchedSelectors.push_back(selectorName);
+        }
+        return matchedSelectors;
+    }
+
+    const bool hasWildcard = pattern.find('*') != std::string::npos;
+    for (const auto& [selectorName, _] : rule.selectors) {
+        if (hasWildcard) {
+            if (WildcardMatch(pattern, selectorName)) {
+                matchedSelectors.push_back(selectorName);
+            }
+        }
+        else if (selectorName == pattern) {
+            matchedSelectors.push_back(selectorName);
+        }
+    }
+
+    return matchedSelectors;
+}
+
+std::vector<std::string> TokenizeCondition(const std::string& condition) {
+    std::vector<std::string> tokens;
+    std::string current;
+
+    for (char c : condition) {
+        if (std::isspace(static_cast<unsigned char>(c))) {
+            if (!current.empty()) {
+                tokens.push_back(ToLowerCopy(current));
+                current.clear();
+            }
+            continue;
+        }
+
+        if (c == '(' || c == ')') {
+            if (!current.empty()) {
+                tokens.push_back(ToLowerCopy(current));
+                current.clear();
+            }
+            tokens.push_back(std::string(1, c));
+            continue;
+        }
+
+        current.push_back(c);
+    }
+
+    if (!current.empty()) {
+        tokens.push_back(ToLowerCopy(current));
+    }
+
+    return tokens;
+}
+
+bool EvaluateConditionExpression(
+    const SigmaLiteRule& rule,
+    const std::unordered_map<std::string, bool>& selectorMatches
+) {
+    std::vector<std::string> tokens = TokenizeCondition(rule.condition);
+    if (tokens.empty()) {
+        return false;
+    }
+
+    size_t index = 0;
+
+    std::function<bool(const std::string&, const std::string&)> evalQuantifier =
+        [&](const std::string& quantifier, const std::string& pattern) -> bool {
+            std::vector<std::string> selectors = ExpandSelectorPattern(rule, pattern);
+            if (selectors.empty()) {
+                return false;
+            }
+
+            if (quantifier == "1") {
+                for (const auto& selectorName : selectors) {
+                    auto it = selectorMatches.find(selectorName);
+                    if (it != selectorMatches.end() && it->second) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            if (quantifier == "all") {
+                for (const auto& selectorName : selectors) {
+                    auto it = selectorMatches.find(selectorName);
+                    if (it == selectorMatches.end() || !it->second) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            return false;
+        };
+
+    std::function<bool()> parseExpression;
+    std::function<bool()> parseAnd;
+    std::function<bool()> parseFactor;
+    std::function<bool()> parseAtom;
+
+    parseAtom = [&]() -> bool {
+        if (index >= tokens.size()) {
+            return false;
+        }
+
+        const std::string token = tokens[index];
+        if (token == "(") {
+            index += 1;
+            bool innerResult = parseExpression();
+            if (index < tokens.size() && tokens[index] == ")") {
+                index += 1;
+            }
+            return innerResult;
+        }
+
+        if ((token == "1" || token == "all") &&
+            (index + 2) < tokens.size() &&
+            tokens[index + 1] == "of") {
+            std::string quantifier = token;
+            std::string pattern = tokens[index + 2];
+            index += 3;
+            return evalQuantifier(quantifier, pattern);
+        }
+
+        index += 1;
+        auto matchIt = selectorMatches.find(token);
+        return matchIt != selectorMatches.end() && matchIt->second;
+    };
+
+    parseFactor = [&]() -> bool {
+        if (index < tokens.size() && tokens[index] == "not") {
+            index += 1;
+            return !parseFactor();
+        }
+
+        return parseAtom();
+    };
+
+    parseAnd = [&]() -> bool {
+        bool result = parseFactor();
+        while (index < tokens.size() && tokens[index] == "and") {
+            index += 1;
+            result = result && parseFactor();
+        }
+        return result;
+    };
+
+    parseExpression = [&]() -> bool {
+        bool result = parseAnd();
+        while (index < tokens.size() && tokens[index] == "or") {
+            index += 1;
+            result = result || parseAnd();
+        }
+        return result;
+    };
+
+    return parseExpression();
+}
+
+bool RuleMatchesSigmaLite(const SigmaLiteRule& rule, const std::vector<std::string>& fieldsLower) {
+    std::unordered_map<std::string, bool> selectorMatches;
+
+    for (const auto& [selectorName, selector] : rule.selectors) {
+        selectorMatches[selectorName] = SelectorMatchesSigmaLite(selector, fieldsLower);
+    }
+
+    return EvaluateConditionExpression(rule, selectorMatches);
+}
+
+DetectionSeverity SigmaLevelToSeverity(const std::string& sigmaLevel) {
+    const std::string normalizedLevel = ToLowerCopy(sigmaLevel);
+
+    if (normalizedLevel == "critical") {
+        return DetectionSeverity::Critical;
+    }
+    if (normalizedLevel == "high") {
+        return DetectionSeverity::High;
+    }
+    if (normalizedLevel == "medium") {
+        return DetectionSeverity::Medium;
+    }
+    if (normalizedLevel == "low") {
+        return DetectionSeverity::Low;
+    }
+
+    return DetectionSeverity::Info;
+}
+
+void PersistDetectionEvent(
+    const std::string& timestamp,
+    DetectionSeverity severity,
+    UINT32 pid,
+    const std::string& method,
+    const std::string& message,
+    const std::string& details,
+    int securityScore
+) {
+    std::lock_guard<std::mutex> logLock(events_log_mutex);
+
+    std::ofstream outFile(kDefaultEventsLogPath, std::ios::app);
+    if (!outFile.is_open()) {
+        return;
+    }
+
+    outFile
+        << "{"
+        << "\"timestamp\":\"" << JsonEscape(timestamp) << "\","
+        << "\"severity\":\"" << SeverityToLabel(severity) << "\","
+        << "\"pid\":" << pid << ","
+        << "\"method\":\"" << JsonEscape(method) << "\","
+        << "\"security_score\":" << securityScore << ","
+        << "\"message\":\"" << JsonEscape(message) << "\","
+        << "\"details\":\"" << JsonEscape(details) << "\""
+        << "}"
+        << "\n";
+}
+
+bool ShouldEmitCorrelationAlertLocked(
+    UINT32 pid,
+    const std::string& method,
+    DetectionSeverity severity,
+    std::string& outSummary,
+    std::string& outDetails
+) {
+    if (pid == 0 || pid == curPid) {
+        return false;
+    }
+
+    const time_t now = time(0);
+    auto& history = g_recentEventsByPid[pid];
+    history.push_back({ now, method, severity });
+
+    const time_t correlationWindowSeconds = 120;
+    while (!history.empty() && (now - history.front().timestamp) > correlationWindowSeconds) {
+        history.pop_front();
+    }
+
+    if (history.size() < 2) {
+        return false;
+    }
+
+    std::unordered_set<std::string> uniqueMethods;
+    bool hasHighOrCritical = false;
+
+    for (const auto& event : history) {
+        uniqueMethods.insert(event.method);
+        if (event.severity == DetectionSeverity::High || event.severity == DetectionSeverity::Critical) {
+            hasHighOrCritical = true;
+        }
+    }
+
+    if (uniqueMethods.size() < 2 || !hasHighOrCritical) {
+        return false;
+    }
+
+    const time_t alertCooldownSeconds = 300;
+    auto lastAlertIt = g_lastCorrelationAlertByPid.find(pid);
+    if (lastAlertIt != g_lastCorrelationAlertByPid.end() && (now - lastAlertIt->second) < alertCooldownSeconds) {
+        return false;
+    }
+
+    g_lastCorrelationAlertByPid[pid] = now;
+
+    std::string date_time_str = BuildTimestamp();
+    outSummary = std::to_string(tab_1_menu_items.size()) +
+        " - [!] [Alert] | " + date_time_str +
+        " | Method: Correlation Engine" +
+        " | Multi-method detection chain on PID " + std::to_string(pid);
+
+    outDetails = "Date & Time: " + date_time_str +
+        " | PID: " + std::to_string(pid) +
+        " | Method: Correlation Engine" +
+        " | Trigger: multiple detection methods observed within 120 seconds.";
+
+    return true;
+}
+
+void PushUiDetectionEvent(
+    const std::string& message,
+    const std::string& details,
+    const std::string& method,
+    UINT32 pid,
+    DetectionSeverity severity,
+    bool allowCorrelation = true
+) {
+    std::string timestamp = BuildTimestamp();
+    int securityScore = 100;
+    bool emitCorrelationAlert = false;
+    std::string correlationSummary;
+    std::string correlationDetails;
+
+    {
+        std::lock_guard<std::mutex> lock(security_event_mutex);
+
+        tab_1_menu_items.push_back(message);
+        detectEventsDetails.push_back(details);
+        g_severityCounters[static_cast<int>(severity)] += 1;
+
+        securityScore = ComputeSecurityScoreLocked();
+        tab_values[0] = "Detection Events (" + std::to_string(tab_1_menu_items.size()) + ") | Score: " +
+            std::to_string(securityScore) + " (" + SecurityLabelFromScore(securityScore) + ")";
+        should_update = true;
+
+        if (allowCorrelation) {
+            emitCorrelationAlert = ShouldEmitCorrelationAlertLocked(
+                pid,
+                method,
+                severity,
+                correlationSummary,
+                correlationDetails
+            );
+        }
+
+        auto tab_toggle = Toggle(&tab_values, &tab_selected);
+        screen.PostEvent(Event::Custom);
+    }
+
+    PersistDetectionEvent(timestamp, severity, pid, method, message, details, securityScore);
+
+    if (emitCorrelationAlert) {
+        PushUiDetectionEvent(
+            correlationSummary,
+            correlationDetails,
+            "Method: Correlation Engine",
+            pid,
+            DetectionSeverity::Critical,
+            false
+        );
+    }
+}
+
+void NotifySigmaMatches(
+    UINT32 pid,
+    const std::string& procName,
+    const std::vector<std::string>& candidateFields,
+    const std::string& sourceContext
+) {
+    if (g_sigmaRules.empty() || pid == curPid || candidateFields.empty()) {
+        return;
+    }
+
+    std::vector<std::string> fieldsLower;
+    fieldsLower.reserve(candidateFields.size());
+    for (const auto& field : candidateFields) {
+        std::string normalizedField = ToLowerCopy(TrimCopy(field));
+        if (!normalizedField.empty()) {
+            fieldsLower.push_back(std::move(normalizedField));
+        }
+    }
+
+    if (fieldsLower.empty()) {
+        return;
+    }
+
+    const std::string contextKey = ToLowerCopy(sourceContext) + "|" + fieldsLower.front();
+    int emittedMatches = 0;
+    const int maxMatchesPerEvent = 2;
+
+    for (const auto& rule : g_sigmaRules) {
+        if (!RuleMatchesSigmaLite(rule, fieldsLower)) {
+            continue;
+        }
+
+        const std::string dedupKey = rule.title + "|" + std::to_string(pid) + "|" + contextKey;
+        if (g_sigmaMatchDedup.find(dedupKey) != g_sigmaMatchDedup.end()) {
+            continue;
+        }
+        g_sigmaMatchDedup.insert(dedupKey);
+
+        const std::string dateTime = BuildTimestamp();
+        const std::string message = std::to_string(tab_1_menu_items.size()) +
+            " - [!] [Alert] | " + dateTime +
+            " | " + procName +
+            " | Method: Sigma-Lite Rule Matching" +
+            " | Rule: " + rule.title;
+
+        const std::string details = "Date & Time: " + dateTime +
+            " | " + procName +
+            " | PID: " + std::to_string(pid) +
+            " | Method: Sigma-Lite Rule Matching" +
+            " | Rule: " + rule.title +
+            " | Level: " + rule.level +
+            " | Source Context: " + sourceContext;
+
+        PushUiDetectionEvent(
+            message,
+            details,
+            "Method: Sigma-Lite Rule Matching",
+            pid,
+            SigmaLevelToSeverity(rule.level)
+        );
+
+        emittedMatches += 1;
+        if (emittedMatches >= maxMatchesPerEvent) {
+            break;
+        }
+    }
+}
+
+void NotifyLolDriverMatch(PKERNEL_STRUCTURED_NOTIFICATION notif, const std::string& fullPath) {
+    if (lolDriverNames.empty() || fullPath.empty()) {
+        return;
+    }
+
+    std::filesystem::path fsPath(fullPath);
+    const std::string fileName = ToLowerCopy(fsPath.filename().string());
+    const std::string extension = ToLowerCopy(fsPath.extension().string());
+
+    if (extension != ".sys") {
+        return;
+    }
+
+    if (lolDriverNames.find(fileName) == lolDriverNames.end()) {
+        return;
+    }
+
+    const std::string normalizedPath = ToLowerCopy(fsPath.lexically_normal().string());
+    if (detectedLolDriverPaths.find(normalizedPath) != detectedLolDriverPaths.end()) {
+        return;
+    }
+
+    detectedLolDriverPaths.insert(normalizedPath);
+
+    const std::string date_time_str = BuildTimestamp();
+    const UINT32 pid = static_cast<UINT32>(notif->pid);
+    const std::string procName = std::string(notif->procName);
+
+    const std::string message = std::to_string(tab_1_menu_items.size()) +
+        " - [!] [Warning] | " + date_time_str +
+        " | " + procName +
+        " | Method: LOLDrivers Lookup" +
+        " | Flagged driver file: " + fileName;
+
+    const std::string details = "Date & Time: " + date_time_str +
+        " | " + procName +
+        " | PID: " + std::to_string(pid) +
+        " | Method: LOLDrivers Lookup" +
+        " | Driver: " + fileName +
+        " | Path: " + fullPath;
+
+    PushUiDetectionEvent(
+        message,
+        details,
+        "Method: LOLDrivers Lookup",
+        pid,
+        DetectionSeverity::Medium
+    );
+}
+
+bool LoadLolDriversCache(const std::string& cachePath) {
+    std::ifstream cacheFile(cachePath);
+    if (!cacheFile.is_open()) {
+        std::cerr << "[*] LOLDrivers cache not found at: " << cachePath << "\n";
+        return false;
+    }
+
+    std::string rawJson(
+        (std::istreambuf_iterator<char>(cacheFile)),
+        std::istreambuf_iterator<char>()
+    );
+
+    std::regex fileNameRegex(R"("n"\s*:\s*"([^"]+)")");
+    std::sregex_iterator it(rawJson.begin(), rawJson.end(), fileNameRegex);
+    std::sregex_iterator end;
+
+    size_t beforeLoad = lolDriverNames.size();
+
+    for (; it != end; ++it) {
+        if (it->size() > 1) {
+            std::string driverName = ToLowerCopy((*it)[1].str());
+            if (!driverName.empty()) {
+                lolDriverNames.insert(driverName);
+            }
+        }
+    }
+
+    std::cout << "[*] " << (lolDriverNames.size() - beforeLoad)
+        << " LOLDrivers names loaded from " << cachePath << "\n";
+
+    return !lolDriverNames.empty();
+}
+
 
 int yr_callback_function_file(
     YR_SCAN_CONTEXT* context,
@@ -139,9 +1194,6 @@ int yr_callback_function_file(
     void* user_data)
 {
     if (message == CALLBACK_MSG_RULE_MATCHING) {
-
-        std::lock_guard<std::mutex> lock(security_event_mutex);
-
         KERNEL_STRUCTURED_NOTIFICATION* notif = (PKERNEL_STRUCTURED_NOTIFICATION)user_data;
         UINT32 pid = (UINT32)notif->pid;
 
@@ -194,13 +1246,13 @@ int yr_callback_function_file(
                 " | (!) Process termination failed.";
         }
 
-        tab_1_menu_items.push_back(msgCatch.c_str());
-        detectEventsDetails.push_back(details);
-
-        tab_values[0] = "Detection Events (" + std::to_string(tab_1_menu_items.size()) + ")";
-
-        auto tab_toggle = Toggle(&tab_values, &tab_selected);
-        screen.PostEvent(Event::Custom);
+        PushUiDetectionEvent(
+            msgCatch,
+            details,
+            "Method: In-Memory Loaded Image Analysis",
+            pid,
+            DetectionSeverity::Critical
+        );
 
         return 1;
 
@@ -261,54 +1313,46 @@ int yr_callback_function_byte_stream(
         std::string msgCatch;
         std::string details;
 
-        std::string method = "";
+        std::string rule_identifier = std::string(((YR_RULE*)message_data)->identifier);
 
-        {
-            //std::lock_guard<std::mutex> lock(security_event_mutex);
+        if (endRes) {
 
-            std::string rule_identifier = std::string(((YR_RULE*)message_data)->identifier);
+            msgCatch = std::to_string(tab_1_menu_items.size()) +
+                " - [!] [Alert] | " + date_time_str +
+                " | " + std::string(structBuffer->procName) +
+                " | Byte Stream Analysis | Identified: " + rule_identifier +
+                "\n\n | Process with PID " + std::to_string(pid) + " has been terminated.";
 
-            if (endRes) {
+            details = "Date & Time: " + date_time_str +
+                " | " + std::string(structBuffer->procName) +
+                " | PID: " + std::to_string(pid) +
+                " | Method: Byte Stream Analysis" +
+                " | YARA rule Identifier: " + rule_identifier +
+                " | Process was terminated successfully.";
+        }
+        else {
 
-                msgCatch = std::to_string(tab_1_menu_items.size()) +
-                    " - [!] [Alert] | " + date_time_str +
-                    " | " + std::string(structBuffer->procName) +
-                    " | Byte Stream Analysis | Identified: " + rule_identifier +
-                    "\n\n | Process with PID " + std::to_string(pid) + " has been terminated.";
+            msgCatch = std::to_string(tab_1_menu_items.size()) +
+                " - [!] [Alert] | " + date_time_str +
+                " | " + std::string(structBuffer->procName) +
+                " | Byte Stream Analysis | Identified: " + rule_identifier +
+                "\n\n | (!) Failed to terminate process with PID " + std::to_string(pid);
 
-                details = "Date & Time: " + date_time_str +
-                    " | " + std::string(structBuffer->procName) +
-                    " | PID: " + std::to_string(pid) +
-                    " | Method: Byte Stream Analysis" +
-                    " | YARA rule Identifier: " + rule_identifier +
-                    " | Process was terminated successfully.";
-            }
-            else {
-
-                msgCatch = std::to_string(tab_1_menu_items.size()) +
-                    " - [!] [Alert] | " + date_time_str +
-                    " | " + std::string(structBuffer->procName) +
-                    " | Byte Stream Analysis | Identified: " + rule_identifier +
-                    "\n\n | (!) Failed to terminate process with PID " + std::to_string(pid);
-
-                details = "Date & Time: " + date_time_str +
-                    " | PID: " + std::to_string(pid) +
-                    " | " + std::string(structBuffer->procName) +
-                    " | Method: Byte Stream Analysis" +
-                    " | YARA rule Identifier: " + rule_identifier +
-                    " | (!) Process termination failed.";
-            }
-
-            detectEventsDetails.push_back(details);
-            tab_1_menu_items.push_back(msgCatch.c_str());
-            tab_values[0] = "Detection Events (" + std::to_string(tab_1_menu_items.size()) + ")";
-            should_update = true;
-
-            //std::lock_guard<std::mutex> unlock(security_event_mutex);
+            details = "Date & Time: " + date_time_str +
+                " | PID: " + std::to_string(pid) +
+                " | " + std::string(structBuffer->procName) +
+                " | Method: Byte Stream Analysis" +
+                " | YARA rule Identifier: " + rule_identifier +
+                " | (!) Process termination failed.";
         }
 
-        auto tab_toggle = Toggle(&tab_values, &tab_selected);
-        screen.PostEvent(Event::Custom);
+        PushUiDetectionEvent(
+            msgCatch,
+            details,
+            "Method: Byte Stream Analysis",
+            pid,
+            DetectionSeverity::Critical
+        );
     }
 
     return CALLBACK_CONTINUE;
@@ -386,47 +1430,48 @@ int Notify(PKERNEL_STRUCTURED_NOTIFICATION notif, char* msg) {
                 nullptr
             );
 
-            {
-                if (endRes) {
+            if (endRes) {
 
-                    msgCatch = std::to_string(tab_1_menu_items.size()) +
-                        " - [!] [Alert] | " + date_time_str +
-                        " | " + notif->procName +
-                        " | " + method +
-                        " | " + (char*)msg;
+                msgCatch = std::to_string(tab_1_menu_items.size()) +
+                    " - [!] [Alert] | " + date_time_str +
+                    " | " + notif->procName +
+                    " | " + method +
+                    " | " + (char*)msg;
 
-                    msgCatch += " | Process with PID " + std::to_string(pid) + " has been terminated.";
+                msgCatch += " | Process with PID " + std::to_string(pid) + " has been terminated.";
 
-                    details = "Date & Time: " + date_time_str +
-                        " | " + notif->procName +
-                        " | " + method +
-                        " | " + (char*)msg +
-                        " | PID: " + std::to_string(pid);
+                details = "Date & Time: " + date_time_str +
+                    " | " + notif->procName +
+                    " | " + method +
+                    " | " + (char*)msg +
+                    " | PID: " + std::to_string(pid);
 
-                    details += " | Process was terminated.";
-                }
-                else {
-
-                    msgCatch = std::to_string(tab_1_menu_items.size()) +
-                        " - [!] [Alert] | " + date_time_str +
-                        " | " + notif->procName +
-                        " | " + method +
-                        " | " + (char*)msg +
-                        " | (!) Failed to terminate process with PID " + std::to_string(pid);
-
-                    details = "Date & Time: " + date_time_str +
-                        " | " + notif->procName +
-                        " | " + method +
-                        " | " + (char*)msg +
-                        " | PID: " + std::to_string(pid) +
-                        " | (!) Process termination failed.";
-                }
-
-                detectEventsDetails.push_back(details);
-                tab_1_menu_items.push_back(msgCatch.c_str());
-                tab_values[0] = "Detection Events (" + std::to_string(tab_1_menu_items.size()) + ")";
-                should_update = true;
+                details += " | Process was terminated.";
             }
+            else {
+
+                msgCatch = std::to_string(tab_1_menu_items.size()) +
+                    " - [!] [Alert] | " + date_time_str +
+                    " | " + notif->procName +
+                    " | " + method +
+                    " | " + (char*)msg +
+                    " | (!) Failed to terminate process with PID " + std::to_string(pid);
+
+                details = "Date & Time: " + date_time_str +
+                    " | " + notif->procName +
+                    " | " + method +
+                    " | " + (char*)msg +
+                    " | PID: " + std::to_string(pid) +
+                    " | (!) Process termination failed.";
+            }
+
+            PushUiDetectionEvent(
+                msgCatch,
+                details,
+                method,
+                pid,
+                DetectionSeverity::Critical
+            );
         }
         catch (std::exception& e) {
             std::cerr << "[!] Exception caught: " << e.what() << std::endl;
@@ -447,16 +1492,38 @@ int Notify(PKERNEL_STRUCTURED_NOTIFICATION notif, char* msg) {
             " | " + (char*)msg +
             " | PID: " + std::to_string(pid);
 
-        detectEventsDetails.push_back(details);
-        tab_1_menu_items.push_back(msgCatch.c_str());
-        tab_values[0] = "Detection Events (" + std::to_string(tab_1_menu_items.size()) + ")";
-        should_update = true;
+        PushUiDetectionEvent(
+            msgCatch,
+            details,
+            method,
+            pid,
+            DetectionSeverity::Medium
+        );
 
     }
+    else if (notif->Info) {
+        msgCatch = std::to_string(tab_1_menu_items.size()) +
+            " - [i] [Info] | " + date_time_str +
+            " | " + method +
+            " | " + notif->procName +
+            " | " + (char*)msg;
 
-    auto tab_toggle = Toggle(&tab_values, &tab_selected);
-    screen.PostEvent(Event::Custom);
+        details = "Date & Time: " + date_time_str +
+            " | " + notif->procName +
+            " | " + method +
+            " | " + (char*)msg +
+            " | PID: " + std::to_string(pid);
 
+        PushUiDetectionEvent(
+            msgCatch,
+            details,
+            method,
+            pid,
+            DetectionSeverity::Info
+        );
+    }
+
+    return 0;
 }
 
 void setConsoleColor(WORD color) {
@@ -464,7 +1531,71 @@ void setConsoleColor(WORD color) {
     SetConsoleTextAttribute(hConsole, color);
 }
 
-VOID InitYara(char* yaraRulesPath) {
+void AddYaraRulesFromDirectory(const std::string& rulesDirectory) {
+    std::error_code existsError;
+    if (!std::filesystem::exists(rulesDirectory, existsError)) {
+        std::cerr << "[*] YARA directory not found: " << rulesDirectory << "\n";
+        return;
+    }
+
+    std::error_code iterError;
+    std::filesystem::recursive_directory_iterator iter(
+        rulesDirectory,
+        std::filesystem::directory_options::skip_permission_denied,
+        iterError
+    );
+    std::filesystem::recursive_directory_iterator end;
+
+    if (iterError) {
+        std::cerr << "[*] Failed to iterate YARA directory: " << rulesDirectory
+            << " (" << iterError.message() << ")\n";
+        return;
+    }
+
+    for (; iter != end; iter.increment(iterError)) {
+        if (iterError) {
+            iterError.clear();
+            continue;
+        }
+
+        const auto& entry = *iter;
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+
+        std::string extension = ToLowerCopy(entry.path().extension().string());
+        if (extension != ".yar" && extension != ".yara") {
+            continue;
+        }
+
+        std::string normalizedRulePath = ToLowerCopy(entry.path().lexically_normal().string());
+        if (loadedYaraRulePaths.find(normalizedRulePath) != loadedYaraRulePaths.end()) {
+            continue;
+        }
+
+        FILE* rule_file;
+        if (fopen_s(&rule_file, entry.path().string().c_str(), "r") != 0 || rule_file == NULL) {
+            std::cerr << "Failed to open Yara rule: " << entry.path().string() << "\n";
+            continue;
+        }
+
+        if (yr_compiler_add_file(compiler, rule_file, NULL, entry.path().string().c_str()) != ERROR_SUCCESS) {
+            std::cerr << "Failed to add Yara rule: " << entry.path().string() << "\n";
+            fclose(rule_file);
+            continue;
+        }
+
+        fclose(rule_file);
+        loadedYaraRulePaths.insert(normalizedRulePath);
+        yara_rules_count += 1;
+
+        setConsoleColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+        printf("\t [+] Adding Yara rule: %s\n", entry.path().string().c_str());
+        setConsoleColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+    }
+}
+
+VOID InitYara(const std::vector<std::string>& yaraRulesDirectories) {
 
     if (yr_initialize() != ERROR_SUCCESS) {
         std::cerr << "Failed to initialize Yara\n";
@@ -477,41 +1608,8 @@ VOID InitYara(char* yaraRulesPath) {
         return;
     }
 
-    std::string rules_directory = yaraRulesPath;
-
-    for (const auto& entry : std::filesystem::directory_iterator(rules_directory)) {
-
-        if (entry.is_regular_file() && entry.path().extension() == ".yar") {
-
-            FILE* rule_file;
-
-            if (fopen_s(&rule_file, entry.path().string().c_str(), "r") != 0) {
-                std::cerr << "Failed to open Yara rule: " << entry.path().string() << "\n";
-                system("pause");
-                continue;
-            }
-
-            if (rule_file == NULL) {
-                std::cerr << "Failed to open Yara rule: " << entry.path().string() << "\n";
-                system("pause");
-                continue;
-            }
-
-            yara_rules_count += 1;
-
-            setConsoleColor(FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-            printf("\t [+] Adding Yara rule: %s\n", entry.path().string().c_str());
-            setConsoleColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
-
-            if (yr_compiler_add_file(compiler, rule_file, NULL, entry.path().string().c_str()) != ERROR_SUCCESS) {
-                std::cerr << "Failed to add Yara rule: " << entry.path().string() << "\n";
-                system("pause");
-                fclose(rule_file);
-                continue;
-            }
-
-            fclose(rule_file);
-        }
+    for (const auto& directory : yaraRulesDirectories) {
+        AddYaraRulesFromDirectory(directory);
     }
 
     int result = yr_compiler_get_rules(compiler, &rules);
@@ -656,6 +1754,17 @@ void ConsumeIOCTLData(LPCWSTR deviceName, DWORD ioctlCode, int sleepDurationMs) 
 
                             std::string litFileName = msg;
                             std::string fullPath = QueryDosDevicePath(litFileName);
+                            if (fullPath.empty()) {
+                                fullPath = litFileName;
+                            }
+
+                            NotifyLolDriverMatch(notif, fullPath);
+                            NotifySigmaMatches(
+                                static_cast<UINT32>(notif->pid),
+                                std::string(notif->procName),
+                                { fullPath, litFileName, std::string(notif->procName) },
+                                "file_path_notification"
+                            );
 
                             if (benignFSPaths.find(fullPath) != benignFSPaths.end()) {
                                 continue;
@@ -671,6 +1780,12 @@ void ConsumeIOCTLData(LPCWSTR deviceName, DWORD ioctlCode, int sleepDurationMs) 
                             );
                         }
                         else {
+                            NotifySigmaMatches(
+                                static_cast<UINT32>(notif->pid),
+                                std::string(notif->procName),
+                                { std::string(msg), std::string(notif->procName) },
+                                "generic_notification"
+                            );
 
                             Notify(notif, msg);
                         }
@@ -889,14 +2004,30 @@ int main(int argc, char* argv[]) {
 
     std::signal(SIGINT, SignalHandler);
 
-    if (argc < 3) {
-        std::cerr << "Usage: " << argv[0] << " <path to driver> <path to YARA rules directory>\n";
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <path to driver> [path to YARA rules directory] [path to LOLDrivers cache] [path to Sigma rules directory]\n";
         return 1;
     }
 
     std::wstring driverPath = std::wstring(argv[1], argv[1] + strlen(argv[1]));
-    std::wstring yaraRulesPath = std::wstring(argv[2], argv[2] + strlen(argv[2]));
     std::wstring driverName = L"BeotmDrv";
+    std::vector<std::string> yaraRulesDirectories;
+
+    if (argc >= 3 && strlen(argv[2]) > 0) {
+        yaraRulesDirectories.push_back(argv[2]);
+    }
+
+    yaraRulesDirectories.push_back(kLoadedPotatoYaraRulesDir);
+
+    std::string lolDriversCachePath = kLoadedPotatoLolDriversCachePath;
+    if (argc >= 4 && strlen(argv[3]) > 0) {
+        lolDriversCachePath = argv[3];
+    }
+
+    std::string sigmaRulesDirectory = kLoadedPotatoSigmaRulesDir;
+    if (argc >= 5 && strlen(argv[4]) > 0) {
+        sigmaRulesDirectory = argv[4];
+    }
 
     std::wstring fullPath = GetFullPath(driverPath);
 
@@ -908,9 +2039,14 @@ int main(int argc, char* argv[]) {
 
     curPid = static_cast<UINT32>(GetCurrentProcessId());
 
+    std::cout << "[*] Loading LOLDrivers cache...\n";
+    LoadLolDriversCache(lolDriversCachePath);
+    std::cout << "[*] Loading Sigma rules...\n";
+    LoadSigmaRules(sigmaRulesDirectory);
+
     printf("[*] Loading YARA rules...\n");
 
-    InitYara(argv[2]);
+    InitYara(yaraRulesDirectories);
 
     printf("[*] %d Yara Rules Loaded & Compiled\n", yara_rules_count);
     system("pause");

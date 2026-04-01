@@ -1,116 +1,83 @@
-
-# <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html"> Best EDR Of The Market (BEOTM) V3 🐲🏴‍☠️ </a>
-
-<img src="Assets/beotm_banner.png">
-
-Best Edr Of The Market is an open-source lab designed to implement and understand, from a low-level perspective, the detection methods used by Endpoints Detection & Response security products and their workarounds. These techniques are mainly based on the exploitation of Windows NT's telemetric capabilities to dynamically analyze process behavior.
-
-<div align="center">
-<u><b><a href="https://xacone.github.io/BestEdrOfTheMarketV3.html">➡️​ What's New in the Kernel Version of BestEdrOfTheMarket? </a></b></u>
-</div>
-
 <h2>Defensive Capabilities</h2>
-This current version (v3) focuses on some of the interception capabilities offered by the Windows kernel. These include:
-<br><br>
 
-- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4"> System Calls Interception via Alternative System Call Handlers  </a><br>
-- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#3"> 
-Exploitation of the Virtual Address Descriptor (VAD) Tree for Image Integrity Checking  </a><br>
-- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#2"> Using kernel callbacks to capture events related to thread creation, process creation, image loading into memory, registry operations, and object-related operations. </a><br>
-- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#5"> Code injection detection by validating the integrity of thread call stacks. </a><br>
-- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4"> Integration of Yara rules for rapid pattern detection in memory buffers/files </a><br>
-- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4"> Integrity checking of system calls </a><br>
-- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#6"> Leverage of the Shadow Stack to Verify Thread Call Stacks Integrity </a><br>
+BEOTTOM (Best EDR Of The Total Online Market) is a fork of Xacone's BEOTM v3 focused on defensive telemetry and detection engineering in a Windows lab environment.
 
-<br>
+Core defensive capabilities include:
 
-Thus, this 3rd version makes it possible to detect a bunch of TTPs such as PPID Spoofing (<a href="https://attack.mitre.org/techniques/T1134/004/">T1134.004</a>), Credential Dumping (<a href="https://attack.mitre.org/techniques/T1003/001/">T1003.001</a>), process Hollowing/Ghosting/Tampering (<a href="https://attack.mitre.org/techniques/T1055/012/">T1055.012</a>), memory code injection (<a href="https://attack.mitre.org/techniques/T1055/">T1055</a>) methods including APC queuing (<a href="https://attack.mitre.org/techniques/T1055/004/">T1055.004</a>) & Thread Hijacking (<a href="https://attack.mitre.org/techniques/T1055/003/">T1055.003</a>), Abnormal System Calls (<a href="https://attack.mitre.org/techniques/T1106/">T1106</a>), Registry Persistence Operations (<a href="https://attack.mitre.org/techniques/T1547/001/">T1547.001</a>) and many more...
+- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4">System Calls Interception via Alternative System Call Handlers</a>
+- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#3">Exploitation of the Virtual Address Descriptor (VAD) Tree for image integrity checking</a>
+- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#2">Kernel callbacks for thread/process creation, image loading, registry operations, and object operations</a>
+- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#5">Code injection detection via thread call stack integrity checks</a>
+- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4">YARA integration for memory and file pattern detection</a>
+- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#4">System call integrity checking</a>
+- [x] <a href="https://xacone.github.io/BestEdrOfTheMarketV3.html#6">Shadow Stack verification for thread call stack integrity</a>
+- [x] Automatic recursive YARA loading from `D:\Loaded-Potato\detections\yara` (plus optional CLI path)
+- [x] LOLDrivers detection using `D:\Loaded-Potato\detections\loldrivers\loldrivers_cache.json`
+- [x] Sigma-Lite support with stricter selection/filter condition evaluation (`selection`, `filter`, `1 of`, `all of`, `and`, `or`, `not`)
+- [x] Sigma string operators for detection tuning: `contains`, `contains|all`, `startswith`, `endswith`
+- [x] Deterministic detection severity scoring and live UI security score
+- [x] PID-level short-window correlation alerts when multiple detection methods hit the same process
+- [x] Persistent JSONL telemetry logging to `beotm_events.jsonl`
 
-<h2>Release Structure</h2>
+<h2>Project Artemis Comparison</h2>
 
-The project incorporates a clone of @Elastic's <a href="">protection-artifacts</a> repository for the provision of Yara rules. 
-
-```
-📁 beotmv3
-    ⚙️ beotm.sys
-    📄 beotm.exe
-    📁 protection-artifacts/
-        📁 rules/
-            📁 yara/
-                📄 Windows_Trojan_Metasploit.yar
-                📄 Windows_Hacktool_Mimikatz.yar
-                📄 Windows_Hacktool_Rubeus.yar
-                📄 ...
-    📄 libcrypto-3-x64.dll
-```
+Compared to <a href="https://github.com/bytecreeper/project-artemis">Project Artemis</a>, this fork currently adopts the most immediately useful defensive workflow elements for this codebase: consistent severity scoring, event correlation, and structured persistent event logging. The implementation here is intentionally lightweight and integrated into BEOTM's existing userland event pipeline.
 
 <h2>Usage</h2>
 
 ```
-beotm.exe <path to driver> <path to Yara rules folder>
+beotm.exe <path to driver> [path to Yara rules folder] [path to LOLDrivers cache json] [path to Sigma rules folder]
 ```
 
-Example with ``protection-artifacts``:
+Example with `protection-artifacts`:
 ```
 .\beotm.exe .\beotm.sys .\protection-artifacts\yara\rules\
 ```
-beotm.exe installs the beotm.sys driver on the system by itself, and asks to be run in administrator mode before starting. Once the driver is installed, it retrieves and compiles the Yara rules supplied in the path specified in its parameters:
+
+Example using external detection sources from Loaded-Potato:
+```
+.\beotm.exe .\beotm.sys D:\Loaded-Potato\detections\yara D:\Loaded-Potato\detections\loldrivers\loldrivers_cache.json D:\Loaded-Potato\detections\sigma
+```
+
+If no optional paths are supplied, BEOTM still tries to auto-load from these defaults:
+`D:\Loaded-Potato\detections\yara`, `D:\Loaded-Potato\detections\loldrivers\loldrivers_cache.json`, and `D:\Loaded-Potato\detections\sigma`.
+
+`beotm.exe` installs the `beotm.sys` driver and requires administrator privileges before starting. Once the driver is installed, YARA rules are compiled from the provided path.
 
 ![Yara Rules Compiling](Assets/beotm_yara_rules_compiling.png)
 
-Once all Yara rules have been compiled, press any key and you'll be redirected to the UI panel:
+After rule compilation, the UI panel becomes available:
 
-![BEOTM Ui](Assets/beotm_simple_ui_panel.png)
+![BEOTM UI](Assets/beotm_simple_ui_panel.png)
 
-When beotm.exe is terminated, the service associated with the driver remains active on the system, so if you run beotm.exe again, there's no need to re-install the driver. The service is called “BeotmDrv”:
+When `beotm.exe` terminates, the driver service remains active (`BeotmDrv`).
 
 ```
 C:\Windows\system32>sc.exe query type=driver | findstr /i "beotm"
 SERVICE_NAME: BeotmDrv
 DISPLAY_NAME: BeotmDrv
 ```
-You can stop the service if you wish, as follows:
+
+To stop the service:
 ```
-C:\Windows\system32> sc.exe stop BeotmDrv 
+C:\Windows\system32>sc.exe stop BeotmDrv
 ```
 
 <h2>Requirements</h2>
 
-You'll need a test environment such as a Windows virtual machine. <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/install/the-testsigning-boot-configuration-option#enable-or-disable-use-of-test-signed-code">The machine must be configured in ``TESTSIGNING`` mode.</a>
+Use a Windows test VM configured in `TESTSIGNING` mode:
+<a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/install/the-testsigning-boot-configuration-option#enable-or-disable-use-of-test-signed-code">Microsoft test-signing documentation</a>.
 
-I recommend a Windows 10 22H2 VM (this is the version on which BEOTM was tested), but the project should be compatible between Windows 10 20H1 and Windows 10 22H2.
+Recommended baseline: Windows 10 22H2 (originally tested target), though compatibility should span Windows 10 20H1 through 22H2.
 
-<a href="https://www.apriorit.com/dev-blog/kernel-driver-debugging-with-windbg">You can also debug the remote VM kernel if you would like to test your changes.</a> A debug message is displayed when BEOTM is launched, informing whether or not the callbacks have been successfully registered:
-
-```
-1: kd> g
- ____            _     _____ ____  ____     ___   __   _____ _          
-| __ )  ___  ___| |_  | ____|  _ \|  _ \   / _ \ / _| |_   _| |__   ___ 
-|  _ \ / _ \/ __| __| |  _| | | | | |_) | | | | | |_    | | | '_ \ / _ \
-| |_) |  __/\__ \ |_  | |___| |_| |  _ <  | |_| |  _|   | | | | | |  __/
-|____/_\___||___/\__| |_____|____/|_| \_\  \___/|_|     |_| |_| |_|\___|     v3
-|  \/  | __ _ _ __| | _____| |_                                         
-| |\/| |/ _` | '__| |/ / _ \ __|                                        
-| |  | | (_| | |  |   <  __/ |_           Yazidou - github.com/Xacone  
-|_|  |_|\__,_|_|  |_|\_\___|\__|                                        
-
-[+] Win Kernel Structs offsets initialized
-[+] Altsyscall handler registered !
-[+] PsSetCreateThreadNotifyRoutine success
-[+] PsSetCreateProcessNotifyRoutineEx success
-[+] PsSetLoadImageNotifyRoutine success
-[+] ObRegisterCallbacks 1 success
-[+] CmRegisterCallbackEx success
-[+] Driver loaded
-```
+For remote kernel debugging guidance:
+<a href="https://www.apriorit.com/dev-blog/kernel-driver-debugging-with-windbg">Kernel debugging with WinDbg</a>.
 
 <h2>Building the Project</h2>
 
-The project was designed in Visual Studio 2022. Make sure you have the WDK upstream and all the prerequisites, such as the x64 spectrum mitigation libraries. <a href="https://learn.microsoft.com/en-us/windows-hardware/drivers/download-the-wdk">The Windows Hardware documentation details how to proceed.</a>
+The project was designed in Visual Studio 2022 with C++20 and WDK dependencies.
 
-The project uses C++20.
-
-The project includes as yet unimplemented TCP/IP filtering functionality based on NDIS. If you encounter "Symbol not found"-like errors. Make sure to link the following libraries in <i>BestEdrOfTheMarketDriver -> Project Properties -> Linker -> Entry -> Additional Dependencies</i>:
+If you hit unresolved symbol errors related to unfinished NDIS/TCP-IP filtering code, ensure these libraries are linked in `BestEdrOfTheMarketDriver -> Project Properties -> Linker -> Entry -> Additional Dependencies`:
 
 ```
 $(DDK_LIB_PATH)\fwpkclnt.lib
@@ -118,26 +85,36 @@ $(DDK_LIB_PATH)\ndis.lib
 $(SDK_LIB_PATH)\uuid.lib
 ```
 
-On the user side, make sure you install <a href="https://vcpkg.link/ports/yara">yara</a> with <a href="https://github.com/microsoft/vcpkg">vcpkg</a>:
+On the user side, install dependencies with vcpkg:
 
 ```
 .\vcpkg\vcpkg.exe install yara
 ```
 
-Here's how to get the vcpkg.exe executable:
+Bootstrap vcpkg:
+
 ```
 git clone https://github.com/microsoft/vcpkg
 .\vcpkg\bootstrap-vcpkg.bat
 ```
 
+If your shell environment has conflicting `PATH`/`Path` variables, build with:
+
+```
+python .\tools\build_msbuild_clean_env.py --solution .\BestEdrOfTheMarket.sln --cwd .
+```
+
 <h2>Issue Reporting</h2>
 
-Feel free <a href="https://github.com/Xacone/BestEdrOfTheMarket/issues">to open an issue</a> for any crash/bug/BSOD you encounter or any excessive false positives.
+Open issues here: <a href="https://github.com/Xacone/BestEdrOfTheMarket/issues">BestEdrOfTheMarket issues</a>.
 
-Please provide me with as much information as possible to help me pinpoint the cause of the error. To do this, nothing better than to provide me with the conditions under which the bug was reproduced and, incidentally, the artifact that caused it + the output of `analyze -v` on WinDbg in kernel debugging mode, (if possible).
+For crash/bug/BSOD reports, include:
 
-If it was one of your artifacts that caused the crash/bug/BSOD, it would be cool if I could also have its source code. 
+- Reproduction conditions
+- Triggering artifact (if available)
+- WinDbg `analyze -v` output in kernel debugging mode
+- Source code of your artifact when shareable
 
-<h2>Disclaimer ⚠️</h2>
+<h2>Disclaimer</h2>
 
-The scope of this project is purely educational. The driver is to be used in a **controlled testing environment** only.
+This project is educational and should only be used in a controlled testing environment.
